@@ -25,6 +25,12 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v2
+        with:
+            java-version: 17
+            distribution: "temurin"
+
       - name: Linter
         run: ./gradlew detekt
 
