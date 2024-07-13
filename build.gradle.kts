@@ -1,8 +1,9 @@
 plugins {
 	id("org.springframework.boot") version "3.3.1"
 	id("io.spring.dependency-management") version "1.1.5"
-	kotlin("jvm") version "2.0.0"
-	kotlin("plugin.spring") version "2.0.0"
+	id("io.gitlab.arturbosch.detekt") version "1.23.6"
+	kotlin("jvm") version "1.9.23"
+	kotlin("plugin.spring") version "1.9.23"
 }
 
 group = "io.github.anki"
@@ -10,7 +11,7 @@ version = "0.0.1-SNAPSHOT"
 
 java {
 	toolchain {
-		languageVersion = JavaLanguageVersion.of(22)
+		languageVersion = JavaLanguageVersion.of(21)
 	}
 }
 
@@ -39,4 +40,12 @@ kotlin {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+}
+
+
+detekt {
+	buildUponDefaultConfig = true // preconfigure defaults
+	allRules = false // activate all available (even unstable) rules.
+//	config.setFrom("$projectDir/config/detekt.yml") // point to your custom config defining rules to run, overwriting default behavior
+//	baseline = file("$projectDir/config/baseline.xml") // a way of suppressing issues before introducing detekt
 }
