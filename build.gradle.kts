@@ -1,6 +1,7 @@
 plugins {
 	id("org.springframework.boot") version "3.3.1"
 	id("io.spring.dependency-management") version "1.1.5"
+	id("io.github.surpsg.delta-coverage") version "2.1.0"
 	id("io.gitlab.arturbosch.detekt") version "1.23.6"
 	kotlin("jvm") version "1.9.23"
 	kotlin("plugin.spring") version "1.9.23"
@@ -48,4 +49,13 @@ detekt {
 	allRules = false // activate all available (even unstable) rules.
 //	config.setFrom("$projectDir/config/detekt.yml") // point to your custom config defining rules to run, overwriting default behavior
 //	baseline = file("$projectDir/config/baseline.xml") // a way of suppressing issues before introducing detekt
+}
+
+configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
+    diffSource.file.set("/Users/oleksandrkurta/IdeaProjects/Anki/src/main/kotlin/io/github/anki/Anki/AnkiApplication.kt")
+
+    violationRules.failIfCoverageLessThan(0.9)
+    reports {
+        html.set(true)
+    }
 }
