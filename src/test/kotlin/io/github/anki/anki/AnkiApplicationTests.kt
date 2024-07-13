@@ -1,4 +1,4 @@
-package io.github.anki.Anki
+package io.github.anki.anki
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
