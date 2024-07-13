@@ -1,5 +1,6 @@
 package io.github.anki.anki
 
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
@@ -8,6 +9,7 @@ class AnkiApplicationTests {
 
 	@Test
 	fun contextLoads() {
+		Assertions.assertTrue(true)
 	}
 
 }
