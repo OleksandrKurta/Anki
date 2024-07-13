@@ -1,4 +1,4 @@
-package io.github.anki.Anki
+package io.github.anki.anki
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -7,5 +7,6 @@ import org.springframework.boot.runApplication
 class AnkiApplication
 
 fun main(args: Array<String>) {
+	@Suppress("SpreadOperator")
 	runApplication<AnkiApplication>(*args)
 }
