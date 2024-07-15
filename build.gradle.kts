@@ -52,7 +52,7 @@ detekt {
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
-    diffSource.file.set("/Users/oleksandrkurta/IdeaProjects/Anki/src/main/kotlin/io/github/anki/Anki/AnkiApplication.kt")
+    diffSource.file.set("./src/main/kotlin/io/github/anki/anki/AnkiApplication.kt")
 
     violationRules.failIfCoverageLessThan(0.9)
     reports {
