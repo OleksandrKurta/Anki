@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest
 class AnkiApplicationTests {
 
 	@Test
-	fun contextLoads() {
+	fun testAssertTrue() {
 		Assertions.assertTrue(true)
 	}
 
