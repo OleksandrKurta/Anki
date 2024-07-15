@@ -52,7 +52,7 @@ detekt {
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
-    diffSource.file.set("/Users/oleksandrkurta/IdeaProjects/Anki/src/main/kotlin/io/github/anki/anki/Sample.kt")
+	diffSource.file.set("./src/main/kotlin/io/github/anki/anki/AnkiApplication.kt")
 	coverageBinaryFiles = allprojects.asSequence()
     .map { subproject ->
         subproject.fileTree(subproject.layout.buildDirectory) {
