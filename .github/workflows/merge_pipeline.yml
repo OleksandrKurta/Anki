@@ -34,3 +34,6 @@ jobs:
 
       - name: Build Application
         run: ./gradlew build
+
+      - name: Run deltaCoverage
+        run: ./gradlew deltaCoverage
