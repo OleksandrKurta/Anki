@@ -3,6 +3,7 @@ plugins {
 	id("io.spring.dependency-management") version "1.1.5"
 	id("io.github.surpsg.delta-coverage") version "2.1.0"
 	id("io.gitlab.arturbosch.detekt") version "1.23.6"
+	id("com.adarshr.test-logger") version "4.0.0"
 	kotlin("jvm") version "1.9.23"
 	kotlin("plugin.spring") version "1.9.23"
 }
