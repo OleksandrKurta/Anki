@@ -31,8 +31,8 @@ jobs:
             java-version: 21
             distribution: "temurin"
 
-      - name: Build
-        run: ./gradlew build
+      - name: Linter
+        run: ./gradlew detekt
 
       - name: Code Coverage
         run: ./gradlew test deltaCoverage
