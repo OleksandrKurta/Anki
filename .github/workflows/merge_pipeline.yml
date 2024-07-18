@@ -30,9 +30,7 @@ jobs:
         with:
             java-version: 21
             distribution: "temurin"
+            cache: gradle
 
-      - name: Linter
-        run: ./gradlew detekt
-
-      - name: Code Coverage
-        run: ./gradlew test deltaCoverage
+      - name: Build Application
+        run: ./gradlew build
