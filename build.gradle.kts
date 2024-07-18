@@ -54,8 +54,18 @@ detekt {
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
-    diffSource.file.set("./src/main/kotlin/io/github/anki/anki/AnkiApplication.kt")
-
+    diffSource {
+		git.compareWith("refs/remotes/origin/master")
+	}
+    coverageBinaryFiles = allprojects.asSequence()
+        .map { subproject ->
+                subproject.fileTree(subproject.layout.buildDirectory) {
+                    setIncludes(listOf("*/**/*.exec"))
+                }
+            }
+            .fold(files()) { all, files ->
+                all.from(files)
+            }
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)

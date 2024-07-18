@@ -1,4 +1,4 @@
-package io.github.anki.anki.controllers
+package io.github.anki.anki.controller
 
 import io.github.anki.anki.models.Card
 import io.github.anki.anki.service.CardsService
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus
 
 
 @RestController
-@RequestMapping("/card")
+@RequestMapping(("/api/v1/cards"))
 class CardsController(private val service: CardsService) {
 
     @ExceptionHandler(NoSuchElementException::class)
@@ -37,7 +37,7 @@ class CardsController(private val service: CardsService) {
     fun createCard(@RequestBody card: Card): Card = service.addCard(card)
 
     @PatchMapping
-    fun updateBank(@RequestBody card: Card): Card = service.updateCard(card)
+    fun updateCard(@RequestBody card: Card): Card = service.updateCard(card)
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
