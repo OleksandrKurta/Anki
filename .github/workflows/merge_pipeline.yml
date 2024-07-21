@@ -26,5 +26,5 @@ jobs:
       - name: Linter
         run: ./gradlew detekt
 
-      - name: Run checks
-        run: ./gradlew test deltaCoverage
+      - name: Run deltaCoverage
+        run: ./gradlew deltaCoverage

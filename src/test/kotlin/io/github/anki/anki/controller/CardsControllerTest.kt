@@ -1,6 +1,8 @@
 package io.github.anki.anki.controller
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.github.anki.anki.models.Card
+import io.github.anki.anki.controller.model.CardDto
+import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.model.MongoCard
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,14 +21,17 @@ import org.springframework.test.web.servlet.delete
 class CardsControllerTest @Autowired constructor(
     val mockMvc: MockMvc,
     val objectMapper: ObjectMapper,
+    val dataSource: CardRepository,
 ) {
 
     val baseUrl = ("/api/v1/cards")
 
-    @DisplayName("GET /api/v1/cards/{id}")
+    @DisplayName("GET /api/v1/cards/collection/{id}")
     @Test
     fun `should get concrete card`() {
-        mockMvc.get("$baseUrl/0")
+        val newCard = CardDto(parentCollectionId = "123", cardKey = "newkey", cardValue ="newvalue")
+        dataSource.insert(newCard.toModel())
+        mockMvc.get("$baseUrl/collections/${newCard.parentCollectionId}")
                 .andDo{ print() }
                 .andExpect { status { isOk() }
                              jsonPath("$.id") { value("0")
@@ -35,10 +40,13 @@ class CardsControllerTest @Autowired constructor(
         }
     }
 
-    @DisplayName("GET /api/v1/cards/{id} not found")
+    @DisplayName("GET /api/v1/cards/collection/{id} not found")
     @Test
     fun `should get null if not found`() {
-        mockMvc.get("$baseUrl/3")
+        // given
+        val newCard = CardDto(parentCollectionId = "321", cardKey = "newkey", cardValue ="newvalue")
+
+        mockMvc.get("$baseUrl/collections/${newCard.parentCollectionId}")
             .andDo{ print() }
             .andExpect { status { isNotFound() } }
     }
@@ -47,7 +55,7 @@ class CardsControllerTest @Autowired constructor(
     @DisplayName("POST /api/v1/cards")
     @Test
     fun `should post card`() {
-        val newCard = Card(id=3, parentCollectionId = 0, key="newkey", value="newvalue")
+        val newCard = CardDto(parentCollectionId = "21", cardKey = "newkey", cardValue ="newvalue")
 
         val performPost = mockMvc.post(baseUrl) {
             contentType = MediaType.APPLICATION_JSON
@@ -64,7 +72,7 @@ class CardsControllerTest @Autowired constructor(
                 }
             }
 
-        mockMvc.get("$baseUrl/${newCard.id}")
+        mockMvc.get("$baseUrl/collection/${newCard.parentCollectionId}")
             .andExpect { content { json(objectMapper.writeValueAsString(newCard)) } }
 
 
@@ -72,17 +80,20 @@ class CardsControllerTest @Autowired constructor(
     @DisplayName("POST /api/v1/cards already exists")
     @Test
     fun `should get BAD REQUEST when already exists`() {
-        // given
-        val existingCard = Card(1, 0, "key2", "value2")
+        //given
+        val nonExistingCard = CardDto("0", "key2", "value2")
+        val card: CardDto = dataSource.insert(nonExistingCard.toModel()).toDto()
 
         // when
-        val performPost = mockMvc.post(baseUrl) {
+        val existingCard = CardDto( "0", "key2", "value2")
+        existingCard.id = card.id
+        val performPostExisting = mockMvc.post(baseUrl) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(existingCard)
         }
 
         // then
-        performPost
+        performPostExisting
             .andDo { print() }
             .andExpect { status { isBadRequest() } }
     }
@@ -91,9 +102,13 @@ class CardsControllerTest @Autowired constructor(
     @Test
     fun `should update an existing card`() {
         // given
-        val updatedCard = Card(0, 0, "key0", "value0")
+        val nonExistingCard = CardDto("1111", "key2", "value2")
+        val card: CardDto = dataSource.insert(nonExistingCard.toModel()).toDto()
 
         // when
+        val updatedCard = CardDto("1111", "key3", "value3")
+        updatedCard.id = card.id
+
         val performPatchRequest = mockMvc.patch(baseUrl) {
             contentType = MediaType.APPLICATION_JSON
             content = objectMapper.writeValueAsString(updatedCard)
@@ -116,14 +131,14 @@ class CardsControllerTest @Autowired constructor(
 
     @DisplayName("PATCH /api/v1/cards")
     @Test
-    fun `should get BAD REQUEST when card exists`() {
+    fun `should get BAD REQUEST when card not exists`() {
         // given
-        val invalidCard = Card(550, 0, "key0", "value0")
+        val invalidIdCard = MongoCard("111", "key2", "value2")
 
         // when
         val performPatchRequest = mockMvc.patch(baseUrl) {
             contentType = MediaType.APPLICATION_JSON
-            content = objectMapper.writeValueAsString(invalidCard)
+            content = objectMapper.writeValueAsString(invalidIdCard)
         }
 
         // then
@@ -138,16 +153,17 @@ class CardsControllerTest @Autowired constructor(
     @DirtiesContext
     fun `should delete the card`() {
         // given
-        val givenId = 0
+        val dto = CardDto("22", "key2", "value2")
+        val model = dataSource.insert(dto.toModel())
 
         // when/then
-        mockMvc.delete("$baseUrl/$givenId")
+        mockMvc.delete("$baseUrl/$model.id")
             .andDo { print() }
             .andExpect {
                 status { isNoContent() }
             }
 
-        mockMvc.get("$baseUrl/$givenId")
+        mockMvc.get("$baseUrl/collection/${dto.parentCollectionId}")
             .andExpect { status { isNotFound() } }
     }
 
@@ -155,10 +171,11 @@ class CardsControllerTest @Autowired constructor(
     @Test
     fun `should get NOT FOUND when no card exists`() {
         // given
-        val invalidId = 550
+        val invalidIdCard = CardDto( "0", "key2", "value2")
+        dataSource.deleteById(invalidIdCard.toModel().id)
 
         // when/then
-        mockMvc.delete("$baseUrl/$invalidId")
+        mockMvc.delete("$baseUrl/$invalidIdCard.id")
             .andDo { print() }
             .andExpect { status { isNotFound() } }
     }
