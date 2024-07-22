@@ -1,5 +1,6 @@
 package io.github.anki.anki.controller
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.github.anki.anki.AnkiApplication
 import io.github.anki.anki.controller.model.CardDto
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.model.MongoCard
@@ -16,7 +17,7 @@ import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.delete
 
-@SpringBootTest
+@SpringBootTest()
 @AutoConfigureMockMvc
 class CardsControllerTest @Autowired constructor(
     val mockMvc: MockMvc,

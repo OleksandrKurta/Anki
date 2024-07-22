@@ -5,12 +5,14 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.model.MongoCard
 import io.github.anki.anki.service.model.Card
 import org.bson.types.ObjectId
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import java.util.*
 
 
 @Service
-class CardsService(private val dataSource: CardRepository) {
+class CardsService(
+    private val dataSource: CardRepository) {
 
     fun getCards(collectionId: String): List<Card> {
         val dtoList = mutableListOf<Card>()
