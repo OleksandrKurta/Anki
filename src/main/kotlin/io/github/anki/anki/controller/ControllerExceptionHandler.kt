@@ -1,5 +1,7 @@
-package io.github.anki.anki.exception
+package io.github.anki.anki.controller
 
+import io.github.anki.anki.exception.ErrorMessage
+import io.github.anki.anki.exception.ResourceNotFoundException
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus

@@ -1,38 +1,33 @@
 package io.github.anki.anki.service
-
-import io.github.anki.anki.controller.model.CardDto
+import io.github.anki.anki.exception.ResourceNotFoundException
 import io.github.anki.anki.repository.mongodb.CardRepository
-import io.github.anki.anki.repository.mongodb.model.MongoCard
+import io.github.anki.anki.repository.mongodb.model.mapRepositoryToService
 import io.github.anki.anki.service.model.Card
-import org.bson.types.ObjectId
-import org.springframework.beans.factory.annotation.Qualifier
+import io.github.anki.anki.service.model.mapServiceToRepository
 import org.springframework.stereotype.Service
-import java.util.*
+
 
 
 @Service
 class CardsService(
-    private val dataSource: CardRepository) {
-
-    fun getCards(collectionId: String): List<Card> {
-        val dtoList = mutableListOf<Card>()
-        val models =  dataSource.findByParentCollectionId(collectionId)
-        for (model in models)
-            dtoList.add(model.toEntity())
-        return dtoList
-    }
-
+    private val dataSource: CardRepository,
+) {
     fun addCard(card: Card): Card {
-        val cardModel = dataSource.insert(card.toModel())
-        return cardModel.toEntity()
+        val cardModel = dataSource.insert(mapServiceToRepository(card))
+        return mapRepositoryToService(cardModel)
     }
 
-    fun updateCard(card: Card): Card {
-        return dataSource.save(card.toModel()).toEntity()
+    fun updateCard(card: Card): Card? {
+        if (dataSource.existsById(mapServiceToRepository(card).id.toString()))
+            return mapRepositoryToService(dataSource.save(mapServiceToRepository(card)))
+        return null
     }
 
-    fun deleteCard(cardId: String): String {
-        dataSource.deleteById(cardId)
-        return cardId
+    fun deleteCard(cardId: String): String? {
+        if (dataSource.existsById(cardId)){
+            dataSource.deleteById(cardId)
+            return cardId
+        }
+        return null
     }
 }

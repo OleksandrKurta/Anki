@@ -1,11 +1,13 @@
 package io.github.anki.anki.controller
 
 import io.github.anki.anki.controller.model.CardDto
+import io.github.anki.anki.controller.model.NewCardDto
+import io.github.anki.anki.controller.model.mapDtoToService
+import io.github.anki.anki.controller.model.mapNewDtoToCard
 import io.github.anki.anki.service.CardsService
-import io.github.anki.anki.service.model.Card
+import io.github.anki.anki.service.model.mapServiceToDto
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
@@ -20,32 +22,20 @@ import org.springframework.web.bind.annotation.RequestBody
 class CardsController(
     private val service: CardsService) {
 
-
-    @GetMapping("/collection/{collectionId}")
-    fun getCards(@PathVariable collectionId: String): ResponseEntity<Any> {
-        val cards: List<Card> = service.getCards(collectionId)
-        if (cards.isEmpty())
-            return ResponseEntity<Any>(HttpStatus.NO_CONTENT)
-        cards.forEach { it.toDto() }
-        return ResponseEntity(cards, HttpStatus.OK)
-    }
-
     @PostMapping
-    fun createCard(@RequestBody card: CardDto): ResponseEntity<Any> {
-        return ResponseEntity(service.addCard(card.toEntity()).toDto(), HttpStatus.OK)
+    fun createCard(@RequestBody card: NewCardDto): ResponseEntity<Any> {
+        return ResponseEntity(mapServiceToDto(service.addCard(mapNewDtoToCard(card))), HttpStatus.CREATED)
     }
 
     @PatchMapping
     fun updateCard(@RequestBody card: CardDto): ResponseEntity<Any> {
-        val updatedDto = service.updateCard(card.toEntity()).toDto()
-        return ResponseEntity(updatedDto, HttpStatus.CREATED)
-
+        val updatedCard = service.updateCard(mapDtoToService(card)) ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+        return ResponseEntity(mapServiceToDto(updatedCard), HttpStatus.OK)
     }
 
     @DeleteMapping("/{id}")
     fun deleteCard(@PathVariable id: String): ResponseEntity<Any> {
-        return ResponseEntity(service.deleteCard(id), HttpStatus.OK)
+        val deletedId = service.deleteCard(id) ?: return ResponseEntity(HttpStatus.NOT_FOUND)
+        return ResponseEntity(deletedId, HttpStatus.OK)
     }
-
-
 }

@@ -1,6 +1,5 @@
 package io.github.anki.anki.exception
-
-import java.util.*
+import java.util.Date
 
 class ErrorMessage(
     val statusCode: Int,
