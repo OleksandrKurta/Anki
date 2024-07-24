@@ -1,42 +1,27 @@
 package io.github.anki.anki.controller
 
-import io.github.anki.anki.exception.ErrorMessage
-import io.github.anki.anki.exception.ResourceNotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.context.request.WebRequest
-import java.util.*
-
 
 @RestControllerAdvice
 class ControllerExceptionHandler {
 
-
-    @ExceptionHandler(ResourceNotFoundException::class)
-    @ResponseStatus(value = HttpStatus.NOT_FOUND)
-    fun resourceNotFoundException(ex: ResourceNotFoundException, request: WebRequest): ErrorMessage {
-        val message = ErrorMessage(
-            HttpStatus.NOT_FOUND.value(),
-            Date(),
-            ex.message!!,
-            request.getDescription(false)
-        )
-
-        return message
-    }
-
     @ExceptionHandler(Exception::class)
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
-    fun globalExceptionHandler(ex: Exception, request: WebRequest): ErrorMessage {
-        val message = ErrorMessage(
-            HttpStatus.INTERNAL_SERVER_ERROR.value(),
-            Date(),
-            ex.message!!,
-            request.getDescription(false)
-        )
+    fun globalExceptionHandler(
+        ex: Exception,
+        request: WebRequest
+    ): ResponseEntity<String> {
+        LOG.error("Handling global exception", ex)
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
+    }
 
-        return message
+    companion object {
+        private val LOG = LoggerFactory.getLogger(ControllerExceptionHandler::class.java)
     }
 }
