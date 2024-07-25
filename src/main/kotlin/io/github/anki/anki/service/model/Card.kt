@@ -1,9 +1,8 @@
 package io.github.anki.anki.service.model
 
-
-class Card (
+data class Card(
     var id: String? = null,
-    var parentCollectionId: String?,
+    var collectionId: String?,
     var cardKey: String?,
     var cardValue: String?,
 )
