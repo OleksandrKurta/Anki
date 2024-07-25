@@ -4,6 +4,7 @@ import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Test
 
@@ -13,12 +14,12 @@ class CardMapperKtTest {
     fun `should map card to mongo when id is null`() {
         // GIVEN
         val card = Card(
-            collectionId = "66a166c38a31e37947a0d5ae",
+            deckId = "66a166c38a31e37947a0d5ae",
             cardKey = "cardKey",
             cardValue = "cardValue"
         )
         val expectedMongoCard = MongoCard(
-            collectionId = ObjectId("66a166c38a31e37947a0d5ae"),
+            deckId = ObjectId("66a166c38a31e37947a0d5ae"),
             cardKey = "cardKey",
             cardValue = "cardValue"
         )
@@ -30,7 +31,7 @@ class CardMapperKtTest {
         actual.shouldBeEqualToIgnoringFields(expectedMongoCard, MongoCard::id)
 
         // AND
-        actual.id shouldBe null
+        actual.id shouldNotBe null
     }
 
     @Test
@@ -38,13 +39,13 @@ class CardMapperKtTest {
         // GIVEN
         val card = Card(
             id = "66a1678919893744c4b30a33",
-            collectionId = "66a166c38a31e37947a0d5ae",
+            deckId = "66a166c38a31e37947a0d5ae",
             cardKey = "cardKey",
             cardValue = "cardValue"
         )
         val expectedMongoCard = MongoCard(
             id = ObjectId("66a1678919893744c4b30a33"),
-            collectionId = ObjectId("66a166c38a31e37947a0d5ae"),
+            deckId = ObjectId("66a166c38a31e37947a0d5ae"),
             cardKey = "cardKey",
             cardValue = "cardValue"
         )

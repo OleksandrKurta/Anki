@@ -7,17 +7,18 @@ import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
-@Document(collection = MongoCard.COLLECTION_NAME)
-data class MongoCard(
+
+@Document(collation = MongoDeck.COLLECTION_NAME)
+data class MongoDeck(
     @Id
-    var id: ObjectId = ObjectId(),
-
-    val cardKey: String? = null,
-
-    val cardValue: String? = null,
+    var id: ObjectId? = ObjectId(),
 
     @Indexed
-    val deckId: ObjectId? = null,
+    var userId: ObjectId,
+
+    var name: String,
+
+    var description: String? = null,
 
     @CreatedDate
     val createdAt: Instant? = null,
@@ -25,8 +26,7 @@ data class MongoCard(
     @LastModifiedDate
     val modifiedAt: Instant? = null,
 ) {
-
-  companion object {
-      const val COLLECTION_NAME = "cards"
-  }
+    companion object {
+        const val COLLECTION_NAME = "decks"
+    }
 }
