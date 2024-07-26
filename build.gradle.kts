@@ -1,8 +1,11 @@
+import java.net.URI
+
 plugins {
 	id("org.springframework.boot") version "3.3.1"
 	id("io.spring.dependency-management") version "1.1.5"
 	id("io.github.surpsg.delta-coverage") version "2.1.0"
 	id("io.gitlab.arturbosch.detekt") version "1.23.6"
+	id("com.adarshr.test-logger") version "4.0.0"
 	kotlin("jvm") version "1.9.23"
 	kotlin("plugin.spring") version "1.9.23"
 }
@@ -18,6 +21,10 @@ java {
 
 repositories {
 	mavenCentral()
+    maven {
+        url = URI("https://oss.sonatype.org/content/repositories/snapshots/")
+
+	}
 }
 
 dependencies {
@@ -31,6 +38,7 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+	testImplementation("io.mockk:mockk:1.10.4")
 }
 
 kotlin {
@@ -52,8 +60,18 @@ detekt {
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
-    diffSource.file.set("./src/main/kotlin/io/github/anki/anki/AnkiApplication.kt")
-
+    diffSource {
+		git.compareWith("refs/remotes/origin/master")
+	}
+    coverageBinaryFiles = allprojects.asSequence()
+        .map { subproject ->
+                subproject.fileTree(subproject.layout.buildDirectory) {
+                    setIncludes(listOf("*/**/*.exec"))
+                }
+            }
+            .fold(files()) { all, files ->
+                all.from(files)
+            }
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)
