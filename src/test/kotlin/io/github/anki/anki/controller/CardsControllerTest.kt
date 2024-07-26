@@ -88,64 +88,6 @@ class CardsControllerTest @Autowired constructor(
         }
     }
 
-
-//    @Nested
-//    @DisplayName("PATCH /api/v1/cards")
-//    @TestInstance(Lifecycle.PER_CLASS)
-//    inner class UpdateCard {
-//
-//        @Test
-//        fun `should update an existing card`() {
-//            // given
-//            val cardToUpdate: CardDtoResponse = generateRandomCard()
-//            val currentModel = cardRepository.insert(mapDtoToRepository(newCard))
-//            cleanupModels.add(currentModel)
-//            cardToUpdate.id = currentModel.id.toString()
-//
-//            // when
-//            val performPatchRequest = mockMvc.patch(baseUrl) {
-//                contentType = MediaType.APPLICATION_JSON
-//                content = objectMapper.writeValueAsString(cardToUpdate)
-//            }
-//            val resultCard = performPatchRequest.andReturn()
-//                .response
-//                .contentAsString
-//                .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
-//            cleanupModels.add(mapDtoToRepository(resultCard))
-//
-//            // then
-//            performPatchRequest
-//                .andDo { print() }
-//                .andExpect {
-//                    status { isOk() }
-//                    content {
-//                        contentType(MediaType.APPLICATION_JSON)
-//                        json(objectMapper.writeValueAsString(cardToUpdate))
-//                    }
-//                }
-//        }
-//
-//        @Test
-//        fun `should get BAD REQUEST when card not exists`() {
-//            // given
-//            val invalidIdCard = generateRandomCard()
-//            invalidIdCard.id = ObjectId().toString()
-//
-//            // when
-//            val performPatchRequest = mockMvc.patch(baseUrl) {
-//                contentType = MediaType.APPLICATION_JSON
-//                content = objectMapper.writeValueAsString(invalidIdCard)
-//            }
-//
-//            // then
-//            performPatchRequest
-//                .andDo { print() }
-//                .andExpect { status { isNotFound() } }
-//        }
-//
-//
-//    }
-
     @Nested
     @DisplayName("DELETE api/v1/cards/{id}")
     @TestInstance(Lifecycle.PER_CLASS)
@@ -166,6 +108,7 @@ class CardsControllerTest @Autowired constructor(
 
         @Test
         fun `should get NOT FOUND when no card exists`() {
+            // given
             val notExistingCardID = newCard.id
             // when/then
             mockMvc.delete("$baseUrl/$notExistingCardID")
