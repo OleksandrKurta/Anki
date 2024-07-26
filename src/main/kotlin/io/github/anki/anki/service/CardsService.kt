@@ -1,33 +1,32 @@
 package io.github.anki.anki.service
-import io.github.anki.anki.exception.ResourceNotFoundException
 import io.github.anki.anki.repository.mongodb.CardRepository
-import io.github.anki.anki.repository.mongodb.model.mapRepositoryToService
 import io.github.anki.anki.service.model.Card
-import io.github.anki.anki.service.model.mapServiceToRepository
+import io.github.anki.anki.service.model.mapper.toCard
+import io.github.anki.anki.service.model.mapper.toMongo
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-
-
 
 @Service
 class CardsService(
-    private val dataSource: CardRepository,
+    private val cardRepository: CardRepository,
 ) {
-    fun addCard(card: Card): Card {
-        val cardModel = dataSource.insert(mapServiceToRepository(card))
-        return mapRepositoryToService(cardModel)
+
+    fun createNewCard(card: Card): Card {
+        LOG.info("Creating new card: {}", card)
+        return cardRepository.insert(
+            card.toMongo()
+        )
+            .toCard()
+            .also { LOG.info("Successfully saved new card: {}", it) }
     }
 
-    fun updateCard(card: Card): Card? {
-        if (dataSource.existsById(mapServiceToRepository(card).id.toString()))
-            return mapRepositoryToService(dataSource.save(mapServiceToRepository(card)))
-        return null
+    fun deleteCard(cardId: String) {
+        LOG.info("Deleting card with id: {}", cardId)
+        cardRepository.deleteById(cardId)
+        LOG.info("Successfully deleted card with id: {}", cardId)
     }
 
-    fun deleteCard(cardId: String): String? {
-        if (dataSource.existsById(cardId)){
-            dataSource.deleteById(cardId)
-            return cardId
-        }
-        return null
+    companion object {
+        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
     }
 }
