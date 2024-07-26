@@ -30,7 +30,6 @@ class CardMapperKtTest {
         // THEN
         actual.shouldBeEqualToIgnoringFields(expectedMongoCard, MongoCard::id)
 
-        // AND
         actual.id shouldNotBe null
     }
 

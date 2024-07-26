@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service
 class CardsService(
     private val cardRepository: CardRepository,
 ) {
+
     fun createNewCard(card: Card): Card {
         LOG.info("Creating new card: {}", card)
         return cardRepository.insert(

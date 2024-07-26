@@ -6,7 +6,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
-import org.springframework.web.context.request.WebRequest
 
 @RestControllerAdvice
 class ControllerExceptionHandler {
@@ -15,7 +14,6 @@ class ControllerExceptionHandler {
     @ResponseStatus(value = HttpStatus.INTERNAL_SERVER_ERROR)
     fun globalExceptionHandler(
         ex: Exception,
-        request: WebRequest
     ): ResponseEntity<String> {
         LOG.error("Handling global exception", ex)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
