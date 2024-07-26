@@ -26,6 +26,10 @@ jobs:
 
       - name: Deploy infrastructure
         run: docker-compose -f compose.yaml up -d
+        with:
+          context: .
+            - cache-from: type=gha
+            - cache-to: type=gha,mode=max
 
       - name: Build Application
         run: ./gradlew build
