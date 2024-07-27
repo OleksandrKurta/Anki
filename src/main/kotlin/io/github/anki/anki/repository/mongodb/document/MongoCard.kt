@@ -10,7 +10,7 @@ import java.time.Instant
 @Document(collection = MongoCard.COLLECTION_NAME)
 data class MongoCard(
     @Id
-    var id: ObjectId = ObjectId(),
+    var id: ObjectId? = null,
 
     val cardKey: String? = null,
 

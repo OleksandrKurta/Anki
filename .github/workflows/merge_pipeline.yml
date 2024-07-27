@@ -24,15 +24,8 @@ jobs:
             distribution: "temurin"
             cache: gradle
 
-      - name: Deploy infrastructure
-        run: docker-compose -f compose.yaml up -d
-
       - name: Build Application
         run: ./gradlew build
 
       - name: Run deltaCoverage
         run: ./gradlew deltaCoverage
-
-      - name: Destroy infrastructure
-        if: always()
-        run: docker-compose -f compose.yaml down
