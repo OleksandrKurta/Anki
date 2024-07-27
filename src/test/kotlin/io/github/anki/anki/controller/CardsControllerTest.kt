@@ -6,6 +6,8 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.model.mapper.toMongo
+import io.github.anki.testing.newMongoContainer
+import io.github.anki.testing.setMongo
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -130,12 +132,13 @@ class CardsControllerTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)
 
         @Container
-        private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
+        private val mongoDBContainer: MongoDBContainer = newMongoContainer()
 
         @DynamicPropertySource
         @JvmStatic
+        @Suppress("unused")
         fun setProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+            registry.setMongo(mongoDBContainer.replicaSetUrl)
         }
     }
 }
