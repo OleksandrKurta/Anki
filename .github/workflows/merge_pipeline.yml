@@ -20,19 +20,12 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v2
         with:
-            java-version: 21
-            distribution: "temurin"
-            cache: gradle
-
-      - name: Deploy infrastructure
-        run: docker-compose -f compose.yaml up -d
+          java-version: 21
+          distribution: "temurin"
+          cache: gradle
 
       - name: Build Application
         run: ./gradlew build
 
       - name: Run deltaCoverage
         run: ./gradlew deltaCoverage
-
-      - name: Destroy infrastructure
-        if: always()
-        run: docker-compose -f compose.yaml down

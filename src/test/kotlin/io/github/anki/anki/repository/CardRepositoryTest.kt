@@ -8,13 +8,19 @@ import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.util.Assert
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
 
-@SpringBootTest()
+@SpringBootTest
+@Testcontainers
 class CardRepositoryTest @Autowired constructor(
     val cardRepository: CardRepository,
 ){
@@ -69,5 +75,15 @@ class CardRepositoryTest @Autowired constructor(
 
     companion object {
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+
+        @Container
+        private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setProperties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+        }
+
     }
 }

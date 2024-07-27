@@ -17,9 +17,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.delete
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 
 import kotlin.test.AfterTest
@@ -27,6 +32,7 @@ import kotlin.test.BeforeTest
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@Testcontainers
 class CardsControllerTest @Autowired constructor(
     val mockMvc: MockMvc,
     val objectMapper: ObjectMapper,
@@ -120,7 +126,16 @@ class CardsControllerTest @Autowired constructor(
 
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
-    }
 
+        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+
+        @Container
+        private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setProperties(registry: DynamicPropertyRegistry) {
+            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+        }
+    }
 }

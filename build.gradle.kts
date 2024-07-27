@@ -40,7 +40,10 @@ dependencies {
 	testImplementation("io.kotest:kotest-assertions-core-jvm:5.0.0")
 	testImplementation("io.mockk:mockk:1.13.12")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	testImplementation("io.mockk:mockk:1.10.4")
+	testImplementation("org.testcontainers:testcontainers:1.20.0")
+	testImplementation("org.testcontainers:junit-jupiter:1.20.0")
+	testImplementation("org.testcontainers:mongodb:1.20.0")
+
 }
 
 kotlin {
