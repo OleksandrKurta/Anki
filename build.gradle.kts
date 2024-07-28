@@ -8,6 +8,7 @@ plugins {
 	id("com.adarshr.test-logger") version "4.0.0"
 	kotlin("jvm") version "1.9.23"
 	kotlin("plugin.spring") version "1.9.23"
+	`java-test-fixtures`
 }
 
 group = "io.github.anki"
@@ -43,7 +44,11 @@ dependencies {
 	testImplementation("org.testcontainers:testcontainers:1.20.0")
 	testImplementation("org.testcontainers:junit-jupiter:1.20.0")
 	testImplementation("org.testcontainers:mongodb:1.20.0")
-
+	testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
+	testFixturesImplementation("org.testcontainers:testcontainers:1.20.0")
+	testFixturesImplementation("org.testcontainers:junit-jupiter:1.20.0")
+	testFixturesImplementation("org.testcontainers:mongodb:1.20.0")
+	testFixturesImplementation("org.jetbrains.kotlin:kotlin-reflect")
 }
 
 kotlin {
