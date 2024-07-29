@@ -1,27 +1,18 @@
 package io.github.anki.anki.repository
 import io.github.anki.anki.repository.mongodb.CardRepository
-import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.service.CardsService
-import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import org.bson.types.ObjectId
+import io.github.anki.anki.repository.mongodb.model.MongoCard
+import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.util.Assert
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
 
-@SpringBootTest
-@Testcontainers
+@IntegrationTest
 class CardRepositoryTest @Autowired constructor(
     val cardRepository: CardRepository,
 ){

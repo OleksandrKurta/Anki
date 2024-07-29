@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id

@@ -7,6 +7,12 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.model.mapper.toMongo
+import io.github.anki.testing.MVCTest
+import io.github.anki.testing.testcontainers.TestContainersFactory
+import io.github.anki.testing.testcontainers.with
+import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.anki.service.CardsService
+import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -15,25 +21,23 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
 import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-
-@SpringBootTest
-@AutoConfigureMockMvc
-@Testcontainers
+@MVCTest
 class CardsControllerTest @Autowired constructor(
     val mockMvc: MockMvc,
     val objectMapper: ObjectMapper,
@@ -134,8 +138,8 @@ class CardsControllerTest @Autowired constructor(
 
         @DynamicPropertySource
         @JvmStatic
-        fun setProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+        fun setMongoUri(registry: DynamicPropertyRegistry) {
+            registry.with(mongoDBContainer)
         }
     }
 }
