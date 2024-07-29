@@ -6,8 +6,9 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.model.mapper.toMongo
-import io.github.anki.testing.IntegrationTest
-import io.github.anki.testing.TestContainersFactory
+import io.github.anki.testing.MVCTest
+import io.github.anki.testing.testcontainers.TestContainersFactory
+import io.github.anki.testing.testcontainers.with
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -29,8 +30,7 @@ import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-
-@IntegrationTest
+@MVCTest
 class CardsControllerTest @Autowired constructor(
     val mockMvc: MockMvc,
     val objectMapper: ObjectMapper,
@@ -132,7 +132,7 @@ class CardsControllerTest @Autowired constructor(
         @DynamicPropertySource
         @JvmStatic
         fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+            registry.with(mongoDBContainer)
         }
     }
 }

@@ -48,7 +48,6 @@ dependencies {
 	testFixturesImplementation("org.testcontainers:testcontainers:1.20.0")
 	testFixturesImplementation("org.testcontainers:junit-jupiter:1.20.0")
 	testFixturesImplementation("org.testcontainers:mongodb:1.20.0")
-	testFixturesImplementation("org.jetbrains.kotlin:kotlin-reflect")
 }
 
 kotlin {
