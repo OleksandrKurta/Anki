@@ -2,22 +2,27 @@ package io.github.anki.anki.repository
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.CardsService
+import io.github.anki.testing.IntegrationTest
+import io.github.anki.testing.testcontainers.TestContainersFactory
+import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.util.Assert
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
 import java.util.*
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
-
-@SpringBootTest()
+@IntegrationTest
 class CardRepositoryTest @Autowired constructor(
     val cardRepository: CardRepository,
-){
+) {
 
     private lateinit var cleanupModels: MutableList<MongoCard>
     private lateinit var newCard: MongoCard
@@ -40,7 +45,7 @@ class CardRepositoryTest @Autowired constructor(
         MongoCard(
             deckId = ObjectId(),
             cardKey = UUID.randomUUID().toString(),
-            cardValue =UUID.randomUUID().toString(),
+            cardValue = UUID.randomUUID().toString(),
         )
 
     @Test
@@ -68,6 +73,17 @@ class CardRepositoryTest @Autowired constructor(
     }
 
     companion object {
+
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+
+        @Container
+        val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setMongoUri(registry: DynamicPropertyRegistry) {
+            registry.with(mongoDBContainer)
+        }
+
     }
 }

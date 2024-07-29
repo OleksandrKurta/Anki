@@ -8,6 +8,7 @@ plugins {
 	id("com.adarshr.test-logger") version "4.0.0"
 	kotlin("jvm") version "1.9.23"
 	kotlin("plugin.spring") version "1.9.23"
+	`java-test-fixtures`
 }
 
 group = "io.github.anki"
@@ -40,7 +41,13 @@ dependencies {
 	testImplementation("io.kotest:kotest-assertions-core-jvm:5.0.0")
 	testImplementation("io.mockk:mockk:1.13.12")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-	testImplementation("io.mockk:mockk:1.10.4")
+	testImplementation("org.testcontainers:testcontainers:1.20.0")
+	testImplementation("org.testcontainers:junit-jupiter:1.20.0")
+	testImplementation("org.testcontainers:mongodb:1.20.0")
+	testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
+	testFixturesImplementation("org.testcontainers:testcontainers:1.20.0")
+	testFixturesImplementation("org.testcontainers:junit-jupiter:1.20.0")
+	testFixturesImplementation("org.testcontainers:mongodb:1.20.0")
 }
 
 kotlin {
