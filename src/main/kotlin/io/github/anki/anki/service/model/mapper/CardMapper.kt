@@ -6,7 +6,7 @@ import org.bson.types.ObjectId
 
 fun Card.toMongo() =
     MongoCard(
-        id = this.id?.toObjectId(),
+        id = this.id?.let { ObjectId(it) },
         deckId = ObjectId(this.deckId),
         cardKey = this.cardKey,
         cardValue = this.cardValue
@@ -19,3 +19,4 @@ fun MongoCard.toCard() =
         cardKey = this.cardKey,
         cardValue = this.cardValue
     )
+

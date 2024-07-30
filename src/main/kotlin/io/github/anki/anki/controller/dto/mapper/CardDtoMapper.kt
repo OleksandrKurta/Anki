@@ -6,21 +6,13 @@ import io.github.anki.anki.service.model.Card
 
 fun NewCardRequest.toCard(): Card =
     Card(
-        deckId = this.deckId,
-        cardKey = this.cardKey,
-        cardValue = this.cardValue,
+        deckId = this.deckId!!,
+        cardKey = this.cardKey!!,
+        cardValue = this.cardValue!!,
     )
 
 fun Card.toDto(): CardDtoResponse =
     CardDtoResponse(
-        id = this.id,
-        deckId = this.deckId,
-        cardKey = this.cardKey,
-        cardValue = this.cardValue,
-    )
-
-fun CardDtoResponse.toCard(): Card =
-    Card(
         id = this.id,
         deckId = this.deckId,
         cardKey = this.cardKey,

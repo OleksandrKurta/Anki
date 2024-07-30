@@ -6,6 +6,7 @@ import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.model.Card
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -23,7 +24,7 @@ class CardsController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createCard(@RequestBody request: NewCardRequest): CardDtoResponse {
+    fun createCard(@Valid @RequestBody request: NewCardRequest): CardDtoResponse {
         val newCard: Card = service.createNewCard(request.toCard())
         return newCard.toDto()
     }

@@ -13,12 +13,12 @@ data class MongoCard(
     @Id
     var id: ObjectId? = null,
 
+    @Indexed
+    val deckId: ObjectId? = null,
+
     val cardKey: String? = null,
 
     val cardValue: String? = null,
-
-    @Indexed
-    val deckId: ObjectId? = null,
 
     @CreatedDate
     val createdAt: Instant? = null,

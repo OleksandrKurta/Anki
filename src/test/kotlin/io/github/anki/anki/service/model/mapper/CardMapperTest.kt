@@ -1,8 +1,9 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.model.Card
+import io.github.anki.testing.getRandomID
+import io.github.anki.testing.getRandomString
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -12,22 +13,14 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.slf4j.LoggerFactory
-import java.util.UUID
 import kotlin.test.BeforeTest
 
-class CardMapperKtTest {
+class CardMapperTest {
 
     private lateinit var randomCardID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomCardKey: String
     private lateinit var randomCardValue: String
-
-    private fun getRandomID(): ObjectId =
-        ObjectId.get().also { LOG.info("Generating random ObjectId {}", it) }
-
-    private fun getRandomString(): String =
-        UUID.randomUUID().toString().also { LOG.info("Generating random String {}", it) }
 
     @BeforeTest
     fun setUp() {
@@ -97,13 +90,11 @@ class CardMapperKtTest {
         fun `should map mongo to card if id is null`() {
             //given
             val mongoCard = MongoCard(
-                id = null,
                 deckId = randomDeckID,
                 cardKey = randomCardKey,
                 cardValue = randomCardValue,
             )
             val expectedCard = Card(
-                id = null,
                 deckId = randomDeckID.toString(),
                 cardKey = randomCardKey,
                 cardValue = randomCardValue,
@@ -118,9 +109,31 @@ class CardMapperKtTest {
             actual.id shouldBe null
 
         }
-    }
 
-    companion object {
-        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+        @Test
+        fun `should map mongo to card if id is NOT null`() {
+            //given
+            val mongoCard = MongoCard(
+                id = randomCardID,
+                deckId = randomDeckID,
+                cardKey = randomCardKey,
+                cardValue = randomCardValue,
+            )
+            val expectedCard = Card(
+                id = randomCardID.toString(),
+                deckId = randomDeckID.toString(),
+                cardKey = randomCardKey,
+                cardValue = randomCardValue,
+            )
+
+            //when
+            val actual = mongoCard.toCard()
+
+            //then
+            actual shouldBe expectedCard
+
+            actual.id shouldNotBe null
+
+        }
     }
 }

@@ -16,7 +16,7 @@ data class MongoDeck(
     @Indexed
     var userId: ObjectId,
 
-    var name: String,
+    var name: String? = null,
 
     var description: String? = null,
 

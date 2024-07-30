@@ -1,14 +1,19 @@
 package io.github.anki.anki.repository
 import io.github.anki.anki.repository.mongodb.CardRepository
-import io.github.anki.anki.repository.mongodb.model.MongoCard
-import org.junit.jupiter.api.DisplayName
+import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.testing.IntegrationTest
+import io.github.anki.testing.getRandomID
+import io.github.anki.testing.getRandomString
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.util.Assert
-import java.util.*
-import kotlin.test.AfterTest
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
 
@@ -17,35 +22,18 @@ class CardRepositoryTest @Autowired constructor(
     val cardRepository: CardRepository,
 ){
 
-    private lateinit var cleanupModels: MutableList<MongoCard>
     private lateinit var newCard: MongoCard
 
     @BeforeTest
     fun setUp() {
-        LOG.info("Initializing cards list")
-        cleanupModels = mutableListOf()
+        LOG.info("Initializing new MongoCard")
         newCard = generateRandomCard()
     }
-
-    @AfterTest
-    fun teardown() {
-        LOG.info("Cleaning up after the test for existing Card")
-        cardRepository.deleteAll(cleanupModels)
-        LOG.info("Successfully deleted test cards")
-    }
-
-    fun generateRandomCard(): MongoCard =
-        MongoCard(
-            deckId = ObjectId(),
-            cardKey = UUID.randomUUID().toString(),
-            cardValue =UUID.randomUUID().toString(),
-        )
 
     @Test
     fun `should insert card`() {
         // given
         val cardFromMongo = cardRepository.insert(newCard)
-        cleanupModels.add(cardFromMongo)
 
         // when, then
         cardFromMongo.id shouldNotBe null
@@ -56,7 +44,6 @@ class CardRepositoryTest @Autowired constructor(
     fun `should delete existing card by id`() {
         //given
         val cardFromMongo = cardRepository.insert(newCard)
-        cleanupModels.add(cardFromMongo)
 
         //when
         cardRepository.deleteById(cardFromMongo.id.toString())
@@ -66,8 +53,15 @@ class CardRepositoryTest @Autowired constructor(
 
     }
 
+    private fun generateRandomCard(): MongoCard =
+        MongoCard(
+            deckId = getRandomID(),
+            cardKey = getRandomString(),
+            cardValue = getRandomString(),
+        )
+
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+        private val LOG = LoggerFactory.getLogger(CardRepositoryTest::class.java)
 
         @Container
         private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
