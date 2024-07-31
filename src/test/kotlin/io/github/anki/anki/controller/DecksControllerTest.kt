@@ -9,6 +9,7 @@ import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -175,7 +176,7 @@ class DecksControllerTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(DecksControllerTest::class.java)
 
         @Container
-        private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
+        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
         @JvmStatic

@@ -5,6 +5,7 @@ import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -79,7 +80,7 @@ class DeckRepositoryTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(DeckRepositoryTest::class.java)
 
         @Container
-        private val mongoDBContainer: MongoDBContainer = MongoDBContainer("mongo:7")
+        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
         @JvmStatic
