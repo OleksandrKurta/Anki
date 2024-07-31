@@ -1,9 +1,11 @@
 package io.github.anki.anki.repository
+
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
@@ -53,6 +55,19 @@ class CardRepositoryTest @Autowired constructor(
 
     }
 
+    @Test
+    fun `should delete NOT existing card by id`() {
+        // given
+        val notExistingCardId = getRandomID()
+
+        //when
+        cardRepository.deleteById(notExistingCardId)
+
+        //then
+        cardRepository.existsById(notExistingCardId) shouldBe false
+
+    }
+
     private fun generateRandomCard(): MongoCard =
         MongoCard(
             deckId = getRandomID(),
@@ -69,7 +84,7 @@ class CardRepositoryTest @Autowired constructor(
         @DynamicPropertySource
         @JvmStatic
         fun setProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.data.mongodb.uri") { mongoDBContainer.replicaSetUrl }
+            registry.with(mongoDBContainer)
         }
 
     }

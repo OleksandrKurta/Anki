@@ -13,8 +13,8 @@ fun NewCardRequest.toCard(): Card =
 
 fun Card.toDto(): CardDtoResponse =
     CardDtoResponse(
-        id = this.id,
-        deckId = this.deckId,
-        cardKey = this.cardKey,
-        cardValue = this.cardValue,
+        id = this.id!!,
+        deckId = this.deckId!!,
+        cardKey = this.cardKey!!,
+        cardValue = this.cardValue!!,
     )

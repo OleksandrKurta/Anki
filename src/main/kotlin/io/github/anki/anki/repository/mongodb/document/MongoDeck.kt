@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -8,17 +9,17 @@ import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
 
-@Document(collation = MongoDeck.COLLECTION_NAME)
+@Document(collection = MongoDeck.COLLECTION_NAME)
 data class MongoDeck(
     @Id
-    var id: ObjectId? = ObjectId(),
+    val id: ObjectId? = null,
 
     @Indexed
-    var userId: ObjectId,
+    val userId: ObjectId,
 
-    var name: String? = null,
+    val name: String? = null,
 
-    var description: String? = null,
+    val description: String? = null,
 
     @CreatedDate
     val createdAt: Instant? = null,

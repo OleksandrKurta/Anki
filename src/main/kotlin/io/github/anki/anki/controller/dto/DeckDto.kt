@@ -4,16 +4,14 @@ import jakarta.validation.constraints.NotBlank
 
 data class NewDeckRequest (
     @field:NotBlank(message = "should not be blank")
-    var name: String?,
+    val name: String?,
 
-    var description: String?,
-) {
-    lateinit var userId: String
-}
+    val description: String?,
+)
 
 data class DeckDtoResponse (
-    var id: String?,
-    var userId: String?,
-    var name: String?,
-    var description: String?,
+    val id: String,
+    val userId: String,
+    val name: String,
+    val description: String,
 )

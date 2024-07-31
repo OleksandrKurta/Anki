@@ -21,7 +21,14 @@ class DeckService(
             .also { LOG.info("Successfully saved new collection: {}", it) }
     }
 
+    fun deleteCard(deckId: String) {
+        LOG.info("Deleting deck with id: {}", deckId)
+        deckRepository.deleteById(deckId)
+        LOG.info("Successfully deleted card with id: {}", deckId)
+    }
+
+
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardsService::class.java)
+        private val LOG = LoggerFactory.getLogger(DeckService::class.java)
     }
 }

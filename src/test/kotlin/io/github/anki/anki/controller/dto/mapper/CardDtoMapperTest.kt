@@ -1,9 +1,7 @@
 package io.github.anki.anki.controller.dto.mapper
 
+import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
-import io.github.anki.anki.service.model.mapper.toCard
-
-import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -67,39 +65,15 @@ class CardDtoMapperTest {
     @TestInstance(Lifecycle.PER_CLASS)
     inner class CardToDto {
         @Test
-        fun `should map mongo to card if id is null`() {
+        fun `should map Card to CardDtoResponse`() {
             //given
-            val mongoCard = MongoCard(
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
+            val card = Card(
+                id = randomCardID.toString(),
                 deckId = randomDeckID.toString(),
                 cardKey = randomCardKey,
                 cardValue = randomCardValue,
             )
-
-            //when
-            val actual = mongoCard.toCard()
-
-            //then
-            actual shouldBe expectedCard
-
-            actual.id shouldBe null
-
-        }
-
-        @Test
-        fun `should map mongo to card if id is NOT null`() {
-            //given
-            val mongoCard = MongoCard(
-                id = randomCardID,
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
+            val expectedCard = CardDtoResponse(
                 id = randomCardID.toString(),
                 deckId = randomDeckID.toString(),
                 cardKey = randomCardKey,
@@ -107,7 +81,7 @@ class CardDtoMapperTest {
             )
 
             //when
-            val actual = mongoCard.toCard()
+            val actual = card.toDto()
 
             //then
             actual shouldBe expectedCard

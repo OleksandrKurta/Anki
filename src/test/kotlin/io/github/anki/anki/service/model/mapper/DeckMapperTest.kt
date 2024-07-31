@@ -1,7 +1,6 @@
-package io.github.anki.anki.controller.dto.mapper
+package io.github.anki.anki.service.model.mapper
 
-import io.github.anki.anki.controller.dto.DeckDtoResponse
-import io.github.anki.anki.controller.dto.NewDeckRequest
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -14,14 +13,12 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-class DeckDtoMapperTest {
+class DeckMapperTest {
 
     private lateinit var randomUserID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomDeckName: String
     private lateinit var randomDeckDescription: String
-
-    private val commonUserId = "66a11305dc669eefd22b5f3a"
 
     @BeforeTest
     fun setUp() {
@@ -32,41 +29,37 @@ class DeckDtoMapperTest {
     }
 
     @Nested
-    @DisplayName("NewDeckRequest.toCollection()")
+    @DisplayName("Deck.toMongo()")
     @TestInstance(Lifecycle.PER_CLASS)
-    inner class NewDeckRequestToDeck {
+    inner class DeckToMongo {
         @Test
-        fun `should map NewDeckRequest to Deck`() {
+        fun `should map Deck to MongoDeck when id is null`() {
             //given
-            val newDeckRequest = NewDeckRequest(
+            val deck = Deck(
+                id = null,
+                userId = randomUserID.toString(),
                 name = randomDeckName,
                 description = randomDeckDescription,
             )
-            val expectedDeck = Deck(
-                userId = commonUserId,
+            val expectedMongoDeck = MongoDeck(
+                id = null,
+                userId = randomUserID,
                 name = randomDeckName,
                 description = randomDeckDescription,
             )
 
             //when
-            val actualDeck = newDeckRequest.toDeck(commonUserId)
+            val actualMongoDeck = deck.toMongo()
 
             //then
+            actualMongoDeck shouldBe expectedMongoDeck
 
-            actualDeck shouldBe expectedDeck
-
-            actualDeck.id shouldBe null
+            actualMongoDeck.id shouldBe null
 
         }
-    }
-
-    @Nested
-    @DisplayName("Deck.toDto()")
-    @TestInstance(Lifecycle.PER_CLASS)
-    inner class DeckToDeckDtoResponse {
 
         @Test
-        fun `should map Deck to DeckDtoResponse`() {
+        fun `should map Deck to MongoDeck when id is NOT null`() {
             //given
             val deck = Deck(
                 id = randomDeckID.toString(),
@@ -74,20 +67,20 @@ class DeckDtoMapperTest {
                 name = randomDeckName,
                 description = randomDeckDescription,
             )
-
-            val expectedDeckDtoResponse = DeckDtoResponse(
-                id = randomDeckID.toString(),
-                userId = randomUserID.toString(),
+            val expectedMongoDeck = MongoDeck(
+                id = randomDeckID,
+                userId = randomUserID,
                 name = randomDeckName,
                 description = randomDeckDescription,
             )
 
             //when
-            val actualDeckDtoResponse = deck.toDto()
+            val actualMongoDeck = deck.toMongo()
 
             //then
+            actualMongoDeck shouldBe expectedMongoDeck
 
-            actualDeckDtoResponse shouldBe expectedDeckDtoResponse
         }
     }
 }
+

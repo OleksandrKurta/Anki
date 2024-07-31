@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
 
 @RestController
-@RequestMapping(("/api/v1/cards"))
+@RequestMapping("/api/v1/cards")
 class CardsController(
     private val service: CardsService
 ) {

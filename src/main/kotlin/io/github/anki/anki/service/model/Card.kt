@@ -1,8 +1,8 @@
 package io.github.anki.anki.service.model
 
 data class Card(
-    var id: String? = null,
-    var deckId: String?,
-    var cardKey: String?,
-    var cardValue: String?,
+    val id: String? = null,
+    val deckId: String?,
+    val cardKey: String?,
+    val cardValue: String?,
 )

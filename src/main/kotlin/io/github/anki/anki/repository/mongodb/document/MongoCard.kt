@@ -11,7 +11,7 @@ import java.time.Instant
 @Document(collection = MongoCard.COLLECTION_NAME)
 data class MongoCard(
     @Id
-    var id: ObjectId? = null,
+    val id: ObjectId? = null,
 
     @Indexed
     val deckId: ObjectId? = null,

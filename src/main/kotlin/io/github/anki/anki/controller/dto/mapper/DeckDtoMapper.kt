@@ -4,19 +4,17 @@ import io.github.anki.anki.controller.dto.DeckDtoResponse
 import io.github.anki.anki.controller.dto.NewDeckRequest
 import io.github.anki.anki.service.model.Deck
 
-
-fun NewDeckRequest.toDeck(): Deck =
+fun NewDeckRequest.toDeck(userId: String): Deck =
     Deck(
-        userId = this.userId,
+        userId = userId,
         name = this.name,
         description = this.description,
     )
 
-
 fun Deck.toDto(): DeckDtoResponse =
     DeckDtoResponse(
-        id = this.id,
-        userId = this.userId,
-        name = this.name,
-        description = this.description,
+        id = this.id!!,
+        userId = this.userId!!,
+        name = this.name!!,
+        description = this.description!!,
     )

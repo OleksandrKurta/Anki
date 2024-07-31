@@ -32,9 +32,8 @@ import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import java.util.stream.Stream
-import kotlin.reflect.KMutableProperty1
-import kotlin.reflect.full.memberProperties
 import kotlin.test.BeforeTest
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -64,17 +63,17 @@ class CardsControllerTest @Autowired constructor(
     @Nested
     @DisplayName("POST /api/v1/cards")
     @TestInstance(Lifecycle.PER_CLASS)
-    inner class PostCards {
+    inner class PostCard {
 
         @Test
-        fun `should post card`() {
+        fun `should create new Card`() {
             val performPost = postNewCard(newCard)
 
             val createdCard = performPost.andReturn()
                 .response
                 .contentAsString
                 .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
-            // covered in repository test
+
             performPost
                 .andDo { print() }
                 .andExpect {
@@ -91,9 +90,9 @@ class CardsControllerTest @Autowired constructor(
 
         @ParameterizedTest
         @MethodSource("invalidNewRequestCardsProvider")
-        fun `should be error if any value is null`(fieldName: String, fieldValue: String?) {
+        fun `should be error if any value is not valid`(fieldName: String, fieldValue: String?) {
             // given
-            newCard.setProperty(fieldName, fieldValue)
+            newCard = getNewCardRequestWithInvalidFieldValue(fieldName, fieldValue)
 
             //when
             val performPost = postNewCard(newCard)
@@ -110,14 +109,25 @@ class CardsControllerTest @Autowired constructor(
                 }
         }
 
-        private fun NewCardRequest.setProperty(propertyName: String, value: Any?) {
-            val kClass = NewCardRequest::class
-            val property = kClass.memberProperties.find { it.name == propertyName }
-                    as? KMutableProperty1<NewCardRequest, *>
-                ?: throw IllegalArgumentException("Property $propertyName does not exist")
-
-            property.setter.call(this, value)
-        }
+        private fun getNewCardRequestWithInvalidFieldValue(fieldName: String, fieldValue: String?): NewCardRequest =
+            when (fieldName) {
+                "deckId" ->  { NewCardRequest(
+                    deckId = fieldValue,
+                    cardKey = getRandomString(),
+                    cardValue = getRandomString())
+                }
+                "cardKey" -> { NewCardRequest(
+                    deckId = getRandomID().toString(),
+                    cardKey = fieldValue,
+                    cardValue = getRandomString())
+                }
+                "cardValue" -> { NewCardRequest(
+                    deckId = getRandomID().toString(),
+                    cardKey = getRandomString(),
+                    cardValue = fieldValue)
+                }
+                else -> { error("Unknown field name") }
+            }
 
         private fun postNewCard(newCard: NewCardRequest): ResultActionsDsl =
             mockMvc.post(baseUrl) {
@@ -159,6 +169,8 @@ class CardsControllerTest @Autowired constructor(
             assertNull(result.response.contentType)
 
             assertTrue(result.response.contentAsString.isEmpty())
+
+            assertFalse(cardRepository.existsById(model.id!!))
         }
 
         @Test
@@ -178,6 +190,8 @@ class CardsControllerTest @Autowired constructor(
             assertNull(result.response.contentType)
 
             assertTrue(result.response.contentAsString.isEmpty())
+
+            assertFalse(cardRepository.existsById(notExistingCardID))
         }
 
         private fun sendDeleteCard(cardId: String): ResultActionsDsl =
