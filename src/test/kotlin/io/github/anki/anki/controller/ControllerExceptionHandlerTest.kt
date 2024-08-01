@@ -14,6 +14,7 @@ import org.springframework.validation.BeanPropertyBindingResult
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.MethodArgumentNotValidException
 import java.util.stream.Stream
+import kotlin.test.Test
 
 
 @MVCTest
@@ -26,12 +27,9 @@ class ControllerExceptionHandlerTest {
     fun `should catch exception and return 500`(exception: Exception) {
         val responseEntity = exceptionHandler.globalExceptionHandler(exception)
 
-        LOG.info("Got {} on ERROR", responseEntity)
-
         responseEntity.statusCode shouldBe HttpStatus.INTERNAL_SERVER_ERROR
 
         responseEntity.body shouldBe "Internal Server Error"
-
     }
 
     @ParameterizedTest
@@ -51,7 +49,6 @@ class ControllerExceptionHandlerTest {
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
         responseEntity.body shouldBe linkedMapOf(fieldName to defaultMessage)
-
     }
 
     @ParameterizedTest
@@ -69,7 +66,24 @@ class ControllerExceptionHandlerTest {
 
         // then
         responseBodyMap shouldBe linkedMapOf(fieldName to defaultMessage)
+    }
 
+    @Test
+    fun `should return 404 if method or path not found`() {
+        val responseEntity = exceptionHandler.methodNotSupportedHandler()
+
+        responseEntity.statusCode shouldBe HttpStatus.NOT_FOUND
+
+        responseEntity.body shouldBe "Not Found"
+    }
+
+    @Test
+    fun `should return 400 if user does not have such deck`() {
+        val responseEntity = exceptionHandler.deckDoesNotExistHandler(DeckDoesNotExistException())
+
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "Deck does not exist"
     }
 
     private fun createMethodArgumentNotValidException(
@@ -87,8 +101,6 @@ class ControllerExceptionHandlerTest {
     }
 
     companion object {
-
-        private val LOG = LoggerFactory.getLogger(ControllerExceptionHandlerTest::class.java)
 
         @JvmStatic
         @Suppress("UnusedPrivateMember")

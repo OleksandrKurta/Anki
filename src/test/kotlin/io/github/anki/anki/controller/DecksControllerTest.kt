@@ -1,16 +1,23 @@
 package io.github.anki.anki.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.anki.anki.controller.dto.DeckDtoResponse
 import io.github.anki.anki.controller.dto.NewDeckRequest
+import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
+import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
+import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
+import io.kotest.matchers.shouldBe
+import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
@@ -20,13 +27,11 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.ResultActionsDsl
-import org.springframework.test.web.servlet.delete
-import org.springframework.test.web.servlet.post
+import org.springframework.test.web.servlet.*
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import java.util.stream.Stream
@@ -41,7 +46,7 @@ class DecksControllerTest @Autowired constructor(
 ) {
 
     private val baseUrl = ("/api/v1/decks")
-    private val commonUserId = "66a11305dc669eefd22b5f3a"
+    private val mockUserId = "66a11305dc669eefd22b5f3a"
     private lateinit var newDeck: NewDeckRequest
 
     @BeforeTest
@@ -122,6 +127,179 @@ class DecksControllerTest @Autowired constructor(
     }
 
     @Nested
+    @DisplayName("GET api/v1/decks/")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class GetDecks {
+
+        @Test
+        fun `should return all decks if they exist`() {
+            //given
+            val numberOfRandomCards = (5..100).random()
+            val insertedDecks = insertRandomDecks(numberOfRandomCards, ObjectId(mockUserId))
+
+            //when
+            val performGet = sendGetDecks()
+
+            //then
+            val result = performGet
+                .andExpect {
+                    status { isOk() }
+                    content { contentType(MediaType.APPLICATION_JSON) }
+                }
+                .andReturn()
+
+            val actualDecks: List<DeckDtoResponse> = objectMapper.readValue(result.response.contentAsString)
+
+            actualDecks shouldBe insertedDecks.map { it.toDeck().toDto() }
+        }
+
+        private fun sendGetDecks(): ResultActionsDsl =
+            mockMvc.get(baseUrl)
+    }
+
+    @Nested
+    @DisplayName("PATCH api/v1/decks/{deckId}")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class PatchDeck {
+
+        @Test
+        fun `should patch deck if it exists`() {
+            //given
+            val insertedDeck = insertRandomDecks(1, ObjectId(mockUserId)).first()
+
+            val patchDeckRequest = PatchDeckRequest(name = getRandomString(), description = getRandomString())
+
+            //when
+            val actualDeck = sendPatchAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+
+            //then
+            actualDeck.name shouldBe patchDeckRequest.name
+            actualDeck.description shouldBe patchDeckRequest.description
+
+            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+
+            deckFromMongo.name shouldBe patchDeckRequest.name
+
+            deckFromMongo.description shouldBe patchDeckRequest.description
+        }
+
+        @Test
+        fun `should change nothing if all fields is null`() {
+            //given
+            val insertedDeck = insertRandomDecks(1, ObjectId(mockUserId)).first()
+
+            val patchDeckRequest = PatchDeckRequest(name = null, description = null)
+
+            //when
+            val actualDeck = sendPatchAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+
+            //then
+            actualDeck shouldBe insertedDeck.toDeck().toDto()
+
+            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+
+            deckFromMongo shouldBe insertedDeck
+        }
+
+        @Test
+        fun `should change nothing if all fields is actual`() {
+            //given
+            val insertedDeck = insertRandomDecks(1, ObjectId(mockUserId)).first()
+
+            val patchDeckRequest = PatchDeckRequest(name = insertedDeck.name, description = insertedDeck.description)
+
+            //when
+            val actualDeck = sendPatchAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+
+            //then
+            actualDeck shouldBe insertedDeck.toDeck().toDto()
+
+            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+
+            deckFromMongo shouldBe insertedDeck
+        }
+
+        @Test
+        fun `should patch only name if deck exists`() {
+            //given
+            val insertedDeck = insertRandomDecks(1, ObjectId(mockUserId)).first()
+
+            val patchDeckRequest = PatchDeckRequest(name = getRandomString())
+
+            //when
+            val actualDeck = sendPatchAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+
+            //then
+            actualDeck.name shouldBe patchDeckRequest.name
+            actualDeck.description shouldBe insertedDeck.description
+
+            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+
+            deckFromMongo.name shouldBe patchDeckRequest.name
+
+            deckFromMongo.description shouldBe insertedDeck.description
+        }
+
+        @Test
+        fun `should patch only description if deck exists`() {
+            //given
+            val insertedDeck = insertRandomDecks(1, ObjectId(mockUserId)).first()
+
+            val patchDeckRequest = PatchDeckRequest(description = getRandomString())
+
+            //when
+            val actualDeck = sendPatchAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+
+            //then
+            actualDeck.name shouldBe insertedDeck.name
+            actualDeck.description shouldBe patchDeckRequest.description
+
+            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+
+            deckFromMongo.name shouldBe insertedDeck.name
+
+            deckFromMongo.description shouldBe patchDeckRequest.description
+        }
+
+        @Test
+        fun `should return 400 if it does not  exist`() {
+            //given
+            val notExistingDeckID = getRandomID().toString()
+
+            //when
+            val performPatch = sendPatchDeck(notExistingDeckID, PatchDeckRequest())
+
+            //then
+            val result = performPatch
+                .andExpect {
+                    status { isBadRequest() }
+                }
+                .andReturn()
+
+            result.response.contentAsString shouldBe "Deck does not exist"
+
+            deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
+        }
+
+        private fun sendPatchAndValidateStatusAndContentType(
+            deckId: String, patchDeckRequest: PatchDeckRequest,
+        ): DeckDtoResponse =
+            sendPatchDeck(deckId, patchDeckRequest)
+            .andExpect {
+                status { isOk() }
+                content { contentType(MediaType.APPLICATION_JSON) }
+            }
+            .andReturn()
+            .let{ objectMapper.readValue(it.response.contentAsString) }
+
+        private fun sendPatchDeck(deckId: String, patchDeckRequest: PatchDeckRequest): ResultActionsDsl =
+            mockMvc.patch("$baseUrl/$deckId") {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(patchDeckRequest)
+            }
+    }
+
+    @Nested
     @DisplayName("DELETE api/v1/decks/{id}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class DeleteDeck {
@@ -129,21 +307,22 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val model = deckRepository.insert(newDeck.toDeck(commonUserId).toMongo())
+            val model = deckRepository.insert(newDeck.toDeck(mockUserId).toMongo())
 
             //when
             val performDelete = sendDeleteDeck(model.id!!.toString())
             // then
             val result = performDelete
                 .andExpect {
-                    status { (isNoContent()) }
+                    status { isNoContent() }
                 }.andReturn()
 
-            kotlin.test.assertNull(result.response.contentType)
+            result.response.contentType shouldBe null
 
-            kotlin.test.assertTrue(result.response.contentAsString.isEmpty())
+            result.response.contentAsString.isEmpty() shouldBe true
 
-            kotlin.test.assertFalse(deckRepository.existsById(model.id!!))
+            deckRepository.existsById(model.id!!) shouldBe false
+
         }
 
         @Test
@@ -160,15 +339,30 @@ class DecksControllerTest @Autowired constructor(
                 .andExpect { status { isNoContent() } }
                 .andReturn()
 
-            kotlin.test.assertNull(result.response.contentType)
+            result.response.contentType shouldBe null
 
-            kotlin.test.assertTrue(result.response.contentAsString.isEmpty())
+            result.response.contentAsString.isEmpty() shouldBe true
 
-            kotlin.test.assertFalse(deckRepository.existsById(notExistingDeckID))
+            deckRepository.existsById(notExistingDeckID) shouldBe false
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =
             mockMvc.delete("$baseUrl/$deckId")
+    }
+
+    private fun insertRandomDecks(numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
+        val listOfDecks: MutableList<MongoDeck> = mutableListOf()
+        while (listOfDecks.size != numberOfDecks) {
+            listOfDecks.add(
+                MongoDeck(
+                    userId = userId,
+                    name = getRandomString(),
+                    description = getRandomString(),
+                )
+            )
+        }
+        LOG.info("Inserting {} decks", listOfDecks.size)
+        return deckRepository.insert(listOfDecks)
     }
 
     companion object {
@@ -183,6 +377,5 @@ class DecksControllerTest @Autowired constructor(
         fun setMongoUri(registry: DynamicPropertyRegistry) {
             registry.with(mongoDBContainer)
         }
-
     }
 }

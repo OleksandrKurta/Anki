@@ -11,4 +11,9 @@ interface DeckRepository : MongoRepository<MongoDeck, ObjectId> {
     fun deleteById(deckId: String) {
         deleteById(ObjectId(deckId))
     }
+
+    fun findByUserId(userId: ObjectId): List<MongoDeck>
+
+    fun findByIdAndUserId(id: ObjectId, userId: ObjectId): MongoDeck?
+
 }

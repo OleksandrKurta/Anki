@@ -17,9 +17,9 @@ data class MongoDeck(
     @Indexed
     val userId: ObjectId,
 
-    val name: String? = null,
+    var name: String? = null,
 
-    val description: String? = null,
+    var description: String? = null,
 
     @CreatedDate
     val createdAt: Instant? = null,
