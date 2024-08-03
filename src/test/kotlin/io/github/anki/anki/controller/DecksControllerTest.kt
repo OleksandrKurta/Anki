@@ -9,15 +9,16 @@ import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
-import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.github.anki.testing.insertRandomCards
 import io.github.anki.testing.insertRandomDecks
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
@@ -53,21 +54,17 @@ class DecksControllerTest @Autowired constructor(
     val cardRepository: CardRepository,
 ) {
 
-    private val baseUrl = ("/api/v1/decks")
+    private val baseUrl = "/api/v1/decks"
     private val mockUserId = "66a11305dc669eefd22b5f3a"
-    private lateinit var newDeck: NewDeckRequest
+    private lateinit var newDeckRequest: NewDeckRequest
 
     @BeforeTest
     fun setUp() {
-        LOG.info("Initializing NewDeckRequest")
-        newDeck = generateRandomDeck()
-    }
-
-    fun generateRandomDeck(): NewDeckRequest =
-        NewDeckRequest(
+        newDeckRequest = NewDeckRequest(
             name = getRandomString(),
             description = getRandomString(),
         )
+    }
 
     @Nested
     @DisplayName("POST /api/v1/decks")
@@ -77,7 +74,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should create new Deck`() {
             //when
-            val performPost = postNewDeck(newDeck)
+            val performPost = postNewDeck(newDeckRequest)
 
             val createdDeck = performPost.andReturn()
                 .response
@@ -89,23 +86,28 @@ class DecksControllerTest @Autowired constructor(
                 .andDo { print() }
                 .andExpect {
                     status { isCreated() }
-                    content { contentType(MediaType.APPLICATION_JSON)
-                        json(objectMapper.writeValueAsString(createdDeck))
-                    }
+                    content { contentType(MediaType.APPLICATION_JSON) }
                 }
+
+            createdDeck.name shouldBe newDeckRequest.name
+            createdDeck.description shouldBe newDeckRequest.description
+
+            val deckFromMongo = deckRepository.findByIdOrNull(ObjectId(createdDeck.id))!!
+
+            createdDeck shouldBe deckFromMongo.toDeck().toDto()
         }
 
         @ParameterizedTest
         @MethodSource("invalidNewDeckRequestProvider")
         fun `should be error if deck name is not valid`(nameValue: String?) {
             //given
-            newDeck = NewDeckRequest(
+            newDeckRequest = NewDeckRequest(
                 name = nameValue,
                 description = getRandomString(),
             )
 
             //when
-            val performPost = postNewDeck(newDeck)
+            val performPost = postNewDeck(newDeckRequest)
 
             //then
             performPost
@@ -158,7 +160,23 @@ class DecksControllerTest @Autowired constructor(
 
             val actualDecks: List<DeckDtoResponse> = objectMapper.readValue(result.response.contentAsString)
 
-            actualDecks shouldBe insertedDecks.map { it.toDeck().toDto() }
+            actualDecks shouldContainExactlyInAnyOrder insertedDecks.map { it.toDeck().toDto() }
+        }
+
+        @org.junit.jupiter.api.Test
+        fun `should return empty list if there are no decks`() {
+            //when
+            val result = sendGetDecks()
+
+            //then
+            val cardsFromResponse: List<DeckDtoResponse> = result
+                .andExpect {
+                    status { isOk() }
+                }
+                .andReturn()
+                .let { objectMapper.readValue(it.response.contentAsString) }
+
+            cardsFromResponse.isEmpty() shouldBe true
         }
 
         private fun sendGetDecks(): ResultActionsDsl =
@@ -315,8 +333,8 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val insertedDeck = deckRepository.insert(newDeck.toDeck(mockUserId).toMongo())
-            insertRandomCards((5..100).random(), insertedDeck.id!!)
+            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
+            insertRandomCards(cardRepository, (5..100).random(), insertedDeck.id!!)
 
             //when
             val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())
@@ -336,7 +354,7 @@ class DecksControllerTest @Autowired constructor(
         }
 
         @Test
-        fun `should get IsNoContent when deck does not exist`() {
+        fun `should get 204 when deck does not exist`() {
             // given
             val notExistingDeckID = getRandomID()
 
@@ -356,29 +374,11 @@ class DecksControllerTest @Autowired constructor(
             deckRepository.existsById(notExistingDeckID) shouldBe false
         }
 
-        private fun insertRandomCards(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
-            val listOfCards: MutableList<MongoCard> = mutableListOf()
-            while (listOfCards.size != numberOfCards) {
-                listOfCards.add(
-                    MongoCard(
-                        deckId = deckId,
-                        cardKey = getRandomString(),
-                        cardValue = getRandomString(),
-                    )
-                )
-            }
-            LOG.info("Inserting {} cards", listOfCards.size)
-            return cardRepository.insert(listOfCards)
-        }
-
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =
             mockMvc.delete("$baseUrl/$deckId")
     }
 
     companion object {
-
-        private val LOG = LoggerFactory.getLogger(DecksControllerTest::class.java)
-
         @Container
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 

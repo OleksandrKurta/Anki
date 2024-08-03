@@ -2,6 +2,7 @@ package io.github.anki.anki.controller.dto.mapper
 
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
+import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.service.model.Card
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -56,7 +57,35 @@ class CardDtoMapperTest {
 
             actual.id shouldBe null
         }
+    }
 
+    @Nested
+    @DisplayName("PatchCardRequest.toCard()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class PatchCardRequestToCard {
+        @Test
+        fun `should map PatchCardRequest to Card`() {
+            // GIVEN
+            val patchCardRequest = PatchCardRequest(
+                cardKey = randomCardKey,
+                cardValue = randomCardValue,
+            )
+            val expectedCard = Card(
+                id = randomCardID.toString(),
+                deckId = randomDeckID.toString(),
+                cardKey = randomCardKey,
+                cardValue = randomCardValue,
+            )
+
+            // WHEN
+            val actualCard: Card = patchCardRequest.toCard(
+                cardId = randomCardID.toString(),
+                deckId = randomDeckID.toString(),
+            )
+
+            // THEN
+            actualCard shouldBe expectedCard
+        }
     }
 
     @Nested
@@ -86,7 +115,6 @@ class CardDtoMapperTest {
             actual shouldBe expectedCard
 
             actual.id shouldNotBe null
-
         }
     }
 }

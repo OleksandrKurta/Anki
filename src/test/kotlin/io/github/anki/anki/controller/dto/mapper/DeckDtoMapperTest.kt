@@ -2,6 +2,7 @@ package io.github.anki.anki.controller.dto.mapper
 
 import io.github.anki.anki.controller.dto.DeckDtoResponse
 import io.github.anki.anki.controller.dto.NewDeckRequest
+import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -21,7 +22,7 @@ class DeckDtoMapperTest {
     private lateinit var randomDeckName: String
     private lateinit var randomDeckDescription: String
 
-    private val commonUserId = "66a11305dc669eefd22b5f3a"
+    private val mockUserId = "66a11305dc669eefd22b5f3a"
 
     @BeforeTest
     fun setUp() {
@@ -32,7 +33,7 @@ class DeckDtoMapperTest {
     }
 
     @Nested
-    @DisplayName("NewDeckRequest.toCollection()")
+    @DisplayName("NewDeckRequest.toDeck()")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class NewDeckRequestToDeck {
         @Test
@@ -43,20 +44,48 @@ class DeckDtoMapperTest {
                 description = randomDeckDescription,
             )
             val expectedDeck = Deck(
-                userId = commonUserId,
+                userId = mockUserId,
                 name = randomDeckName,
                 description = randomDeckDescription,
             )
 
             //when
-            val actualDeck = newDeckRequest.toDeck(commonUserId)
+            val actualDeck = newDeckRequest.toDeck(mockUserId)
 
             //then
 
             actualDeck shouldBe expectedDeck
 
             actualDeck.id shouldBe null
+        }
+    }
 
+    @Nested
+    @DisplayName("PatchDeckRequest.toDeck()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class PatchDeckRequestToDeck {
+        @org.junit.jupiter.api.Test
+        fun `should map PatchDeckRequest to Deck`() {
+            // GIVEN
+            val patchDeckRequest = PatchDeckRequest(
+                name = randomDeckName,
+                description = randomDeckDescription,
+            )
+            val expectedDeck = Deck(
+                id = randomDeckID.toString(),
+                userId = randomUserID.toString(),
+                name = randomDeckName,
+                description = randomDeckDescription,
+            )
+
+            // WHEN
+            val actualDeck: Deck = patchDeckRequest.toDeck(
+                deckId = randomDeckID.toString(),
+                userId = randomUserID.toString(),
+            )
+
+            // THEN
+            actualDeck shouldBe expectedDeck
         }
     }
 

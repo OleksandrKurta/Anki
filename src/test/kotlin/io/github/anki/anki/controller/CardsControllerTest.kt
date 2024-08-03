@@ -19,7 +19,6 @@ import io.github.anki.testing.insertRandomDecks
 import io.github.anki.testing.testcontainers.with
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -60,24 +59,17 @@ class CardsControllerTest @Autowired constructor(
     private val baseUrl = "/api/v1/decks/%s/cards"
     private val mockUserId = "66a11305dc669eefd22b5f3a"
     private lateinit var newCard: NewCardRequest
-    private lateinit var mongoDeck: MongoDeck
+    private lateinit var insertedDeck: MongoDeck
 
     @BeforeTest
     fun setUp() {
-        LOG.info("Initializing new card request")
-        newCard = generateRandomCard()
-        mongoDeck = deckRepository.insert(MongoDeck(
-            userId = ObjectId(mockUserId),
-            name = getRandomString(),
-            description = getRandomString(),
-        ))
-    }
-
-    fun generateRandomCard(): NewCardRequest =
-        NewCardRequest(
+        newCard = NewCardRequest(
             cardKey = getRandomString(),
             cardValue =getRandomString(),
-            )
+        )
+        insertedDeck = insertRandomDecks(deckRepository, 1, userId = ObjectId(mockUserId)).first()
+        LOG.info("Inserted new Deck {}", insertedDeck)
+    }
 
     @Nested
     @DisplayName("POST /api/v1/decks/{deckId}/cards")
@@ -86,7 +78,7 @@ class CardsControllerTest @Autowired constructor(
 
         @Test
         fun `should create new Card`() {
-            val performPost = postNewCard(newCard, mongoDeck.id!!.toString())
+            val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
 
             val createdCard = performPost.andReturn()
                 .response
@@ -103,11 +95,13 @@ class CardsControllerTest @Autowired constructor(
                     }
                 }
 
-            createdCard.id shouldNotBe null
+            val cardFromMongo = cardRepository.findByIdOrNull(ObjectId(createdCard.id))!!
+
+            createdCard shouldBe cardFromMongo.toCard().toDto()
         }
 
         @Test
-        fun `should return error if deck does not exist`() {
+        fun `should return 400 if deck does not exist`() {
             //when
             val performPost = postNewCard(newCard, getRandomID().toString())
             val result = performPost
@@ -121,9 +115,9 @@ class CardsControllerTest @Autowired constructor(
 
         @ParameterizedTest
         @MethodSource("invalidNewRequestCardsProvider")
-        fun `should be error if any value is not valid`(fieldName: String, newCard: NewCardRequest) {
+        fun `should return 400 if any value is not valid`(fieldName: String, newCard: NewCardRequest) {
             //when
-            val performPost = postNewCard(newCard, mongoDeck.id!!.toString())
+            val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
 
             //then
             performPost
@@ -161,10 +155,10 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should return all cards if they exist`() {
             //given
-            val mongoCards = insertRandomCards(cardRepository, (5..100).random(), mongoDeck.id!!)
+            val mongoCards = insertRandomCards(cardRepository, (5..100).random(), insertedDeck.id!!)
 
             //when
-            val result = sendGetCards(mongoDeck.id!!.toString())
+            val result = sendGetCards(insertedDeck.id!!.toString())
 
             //then
             result.andExpect {
@@ -177,6 +171,24 @@ class CardsControllerTest @Autowired constructor(
 
             cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
         }
+
+        @Test
+        fun `should return empty list if there are no cards`() {
+            //when
+            val result = sendGetCards(insertedDeck.id!!.toString())
+
+            //then
+            result.andExpect {
+                status { isOk() }
+            }
+
+            val cardsFromResponse: List<CardDtoResponse> = result
+                .andReturn()
+                .let { objectMapper.readValue(it.response.contentAsString) }
+
+            cardsFromResponse.isEmpty() shouldBe true
+        }
+
         private fun sendGetCards(deckId: String): ResultActionsDsl = mockMvc.get(String.format(baseUrl, deckId))
     }
 
@@ -186,15 +198,12 @@ class CardsControllerTest @Autowired constructor(
     inner class PatchCard {
 
         private val patchBaseUrl = "/api/v1/decks/%s/cards/%s"
-        private lateinit var insertedDeck: MongoDeck
         private lateinit var insertedCard: MongoCard
 
         @BeforeTest
-        fun createDeckAndCard() {
-            insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
-            LOG.info("Created Deck {}", insertedDeck)
+        fun createCard() {
             insertedCard = insertRandomCards(cardRepository, 1, insertedDeck.id!!).first()
-            LOG.info("Created Card {}", insertedCard)
+            LOG.info("Inserted new Card {}", insertedCard)
         }
 
         @Test
@@ -362,10 +371,10 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should delete the card`() {
             // given
-            val model = insertRandomCards(cardRepository,1, deckId = mongoDeck.id!!).first()
+            val model = insertRandomCards(cardRepository,1, deckId = insertedDeck.id!!).first()
 
             //when
-            val performDelete = sendDeleteCard(mongoDeck.id!!.toString(), model.id!!.toString())
+            val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), model.id!!.toString())
             // then
             val result = performDelete
                 .andExpect {
@@ -380,12 +389,12 @@ class CardsControllerTest @Autowired constructor(
         }
 
         @Test
-        fun `should get IsNoContent when no card exists`() {
+        fun `should get 204 when no card exists`() {
             // given
             val notExistingCardID = ObjectId.get()
 
             // when
-            val performDelete = sendDeleteCard(mongoDeck.id!!.toString(), notExistingCardID.toString())
+            val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), notExistingCardID.toString())
 
             // when/then
             val result = performDelete

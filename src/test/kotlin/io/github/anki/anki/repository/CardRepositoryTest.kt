@@ -30,7 +30,11 @@ class CardRepositoryTest @Autowired constructor(
     @BeforeTest
     fun setUp() {
         LOG.info("Initializing new MongoCard")
-        newCard = generateRandomCard()
+        newCard = MongoCard(
+            deckId = getRandomID(),
+            cardKey = getRandomString(),
+            cardValue = getRandomString(),
+        )
     }
 
     @Test
@@ -66,15 +70,7 @@ class CardRepositoryTest @Autowired constructor(
 
         //then
         cardRepository.existsById(notExistingCardId) shouldBe false
-
     }
-
-    private fun generateRandomCard(): MongoCard =
-        MongoCard(
-            deckId = getRandomID(),
-            cardKey = getRandomString(),
-            cardValue = getRandomString(),
-        )
 
     companion object {
         private val LOG = LoggerFactory.getLogger(CardRepositoryTest::class.java)

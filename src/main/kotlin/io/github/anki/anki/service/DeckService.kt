@@ -23,7 +23,7 @@ class DeckService(
             deck.toMongo()
         )
             .toDeck()
-            .also { LOG.info("Successfully saved new collection: {}", it) }
+            .also { LOG.info("Successfully saved new Deck: {}", it) }
     }
 
     fun getDecks(userId: String): List<Deck> {

@@ -30,7 +30,6 @@ class ControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
     }
 
-
     @ExceptionHandler(Exception::class)
     fun globalExceptionHandler(
         ex: Exception,
@@ -38,7 +37,6 @@ class ControllerExceptionHandler {
         LOG.error("Handling global exception", ex)
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
     }
-
 
     fun getErrorsFromMethodArgumentNotValidException(
         ex: MethodArgumentNotValidException): LinkedHashMap<String, String>? {

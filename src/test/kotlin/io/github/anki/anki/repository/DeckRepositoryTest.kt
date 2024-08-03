@@ -29,7 +29,11 @@ class DeckRepositoryTest @Autowired constructor(
 
     @BeforeTest
     fun setUp() {
-        newDeck = generateRandomDeck()
+        newDeck = MongoDeck(
+            userId = getRandomID(),
+            name = getRandomString(),
+            description = getRandomString(),
+        )
         LOG.info("Initialized new {}", newDeck)
     }
 
@@ -68,13 +72,6 @@ class DeckRepositoryTest @Autowired constructor(
         deckRepository.existsById(notExistingDeckId) shouldBe false
 
     }
-
-    private fun generateRandomDeck(): MongoDeck =
-        MongoDeck(
-            userId = getRandomID(),
-            name = getRandomString(),
-            description = getRandomString(),
-        )
 
     companion object {
         private val LOG = LoggerFactory.getLogger(DeckRepositoryTest::class.java)
