@@ -7,7 +7,9 @@ import io.github.anki.anki.controller.dto.NewDeckRequest
 import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
+import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
@@ -31,7 +33,12 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.*
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActionsDsl
+import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.patch
+import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import java.util.stream.Stream
@@ -43,6 +50,7 @@ class DecksControllerTest @Autowired constructor(
     val mockMvc: MockMvc,
     val objectMapper: ObjectMapper,
     val deckRepository: DeckRepository,
+    val cardRepository: CardRepository,
 ) {
 
     private val baseUrl = ("/api/v1/decks")
@@ -307,10 +315,11 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val model = deckRepository.insert(newDeck.toDeck(mockUserId).toMongo())
+            val insertedDeck = deckRepository.insert(newDeck.toDeck(mockUserId).toMongo())
+            insertRandomCards((5..100).random(), insertedDeck.id!!)
 
             //when
-            val performDelete = sendDeleteDeck(model.id!!.toString())
+            val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())
             // then
             val result = performDelete
                 .andExpect {
@@ -321,12 +330,13 @@ class DecksControllerTest @Autowired constructor(
 
             result.response.contentAsString.isEmpty() shouldBe true
 
-            deckRepository.existsById(model.id!!) shouldBe false
+            deckRepository.existsById(insertedDeck.id!!) shouldBe false
 
+            cardRepository.findByDeckId(insertedDeck.id!!).isEmpty() shouldBe true
         }
 
         @Test
-        fun `should get IsNoContent when no card exists`() {
+        fun `should get IsNoContent when deck does not exist`() {
             // given
             val notExistingDeckID = getRandomID()
 
@@ -344,6 +354,21 @@ class DecksControllerTest @Autowired constructor(
             result.response.contentAsString.isEmpty() shouldBe true
 
             deckRepository.existsById(notExistingDeckID) shouldBe false
+        }
+
+        private fun insertRandomCards(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
+            val listOfCards: MutableList<MongoCard> = mutableListOf()
+            while (listOfCards.size != numberOfCards) {
+                listOfCards.add(
+                    MongoCard(
+                        deckId = deckId,
+                        cardKey = getRandomString(),
+                        cardValue = getRandomString(),
+                    )
+                )
+            }
+            LOG.info("Inserting {} cards", listOfCards.size)
+            return cardRepository.insert(listOfCards)
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =

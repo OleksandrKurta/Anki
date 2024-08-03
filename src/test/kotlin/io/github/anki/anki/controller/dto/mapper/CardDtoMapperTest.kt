@@ -39,7 +39,6 @@ class CardDtoMapperTest {
         fun `should map NewCardRequest to Card`() {
             // GIVEN
             val newCardRequest = NewCardRequest(
-                deckId = randomDeckID.toString(),
                 cardKey = randomCardKey,
                 cardValue = randomCardValue,
             )
@@ -50,7 +49,7 @@ class CardDtoMapperTest {
             )
 
             // WHEN
-            val actual: Card = newCardRequest.toCard()
+            val actual: Card = newCardRequest.toCard(randomDeckID.toString())
 
             // THEN
             actual.shouldBeEqualToIgnoringFields(expectedCard, Card::id)

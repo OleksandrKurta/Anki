@@ -11,4 +11,8 @@ interface CardRepository: MongoRepository<MongoCard, ObjectId> {
     fun deleteById(id: String) {
         deleteById(ObjectId(id))
     }
+
+    fun deleteByDeckId(deckId: ObjectId)
+
+    fun findByDeckId(deckId: ObjectId): List<MongoCard>
 }

@@ -5,9 +5,6 @@ import jakarta.validation.constraints.NotBlank
 
 data class NewCardRequest (
     @field:NotBlank(message = "should not be blank")
-    val deckId: String?,
-
-    @field:NotBlank(message = "should not be blank")
     val cardKey: String?,
 
     @field:NotBlank(message = "should not be blank")

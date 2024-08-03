@@ -4,9 +4,9 @@ import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
 import io.github.anki.anki.service.model.Card
 
-fun NewCardRequest.toCard(): Card =
+fun NewCardRequest.toCard(deckId: String): Card =
     Card(
-        deckId = this.deckId!!,
+        deckId = deckId,
         cardKey = this.cardKey!!,
         cardValue = this.cardValue!!,
     )

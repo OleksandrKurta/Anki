@@ -44,7 +44,7 @@ class DecksController (
 
     @DeleteMapping("/{deckId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCard(@PathVariable deckId: String) {
-        service.deleteCard(deckId)
+    fun deleteDeck(@PathVariable deckId: String) {
+        service.deleteDeck(deckId)
     }
 }

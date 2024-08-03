@@ -4,6 +4,7 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
+import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
@@ -20,6 +21,9 @@ class CardsService(
             .toCard()
             .also { LOG.info("Successfully saved new card: {}", it) }
     }
+
+    fun getAllCardsFromDeck(deckId: String): List<Card> =
+        cardRepository.findByDeckId(ObjectId(deckId)).map { it.toCard() }
 
     fun deleteCard(cardId: String) {
         LOG.info("Deleting card with id: {}", cardId)

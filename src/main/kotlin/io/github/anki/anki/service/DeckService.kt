@@ -1,6 +1,7 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.controller.DeckDoesNotExistException
+import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.Deck
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service
 @Service
 class DeckService(
     private val deckRepository: DeckRepository,
+    private val cardRepository: CardRepository
 ) {
     fun createNewDeck(deck: Deck): Deck {
         LOG.info("Creating new deck: {}", deck)
@@ -33,22 +35,21 @@ class DeckService(
     }
 
     fun updateDeck(deck: Deck): Deck {
-        val mongoDeck = deckRepository.findByIdAndUserId(
-            id = ObjectId(deck.id!!),
-            userId = ObjectId(deck.userId),
-        )
-        if ( mongoDeck == null) {
-            throw DeckDoesNotExistException()
-        } else {
-            return deckRepository.save(getUpdatedMongoDeck(mongoDeck, deck)).toDeck()
+        val mongoDeck = getDeckByIdAndUserId(deck.id!!, deck.userId)
+        return deckRepository.save(getUpdatedMongoDeck(mongoDeck, deck)).toDeck()
         }
-    }
 
-    fun deleteCard(deckId: String) {
+    fun deleteDeck(deckId: String) {
         LOG.info("Deleting deck with id: {}", deckId)
         deckRepository.deleteById(deckId)
-        LOG.info("Successfully deleted card with id: {}", deckId)
+        LOG.info("Successfully deleted deck with id: {}", deckId)
+        cardRepository.deleteByDeckId(ObjectId(deckId))
+        LOG.info("Successfully deleted all cards with deckId: {}", deckId)
     }
+
+    fun getDeckByIdAndUserId(deckId: String, userId: String): MongoDeck =
+        deckRepository.findByIdAndUserId(id = ObjectId(deckId), userId = ObjectId(userId))
+            ?: throw DeckDoesNotExistException()
 
     private fun getUpdatedMongoDeck(mongoDeck: MongoDeck, deck: Deck): MongoDeck =
         mongoDeck.copy().apply {
