@@ -1,5 +1,8 @@
 package io.github.anki.anki.controller
 
+import io.github.anki.anki.controller.exceptions.CardDoesNotExistException
+import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
+import io.github.anki.anki.controller.exceptions.DoesNotExist
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -22,10 +25,11 @@ class ControllerExceptionHandler {
         return ResponseEntity(getErrorsFromMethodArgumentNotValidException(ex), HttpStatus.BAD_REQUEST)
     }
 
-    @ExceptionHandler(DeckDoesNotExistException::class)
-    fun deckDoesNotExistHandler(ex: DeckDoesNotExistException): ResponseEntity<String> {
+    @ExceptionHandler(DeckDoesNotExistException::class, CardDoesNotExistException::class)
+    fun doesNotExistHandler(ex: DoesNotExist): ResponseEntity<String> {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
     }
+
 
     @ExceptionHandler(Exception::class)
     fun globalExceptionHandler(

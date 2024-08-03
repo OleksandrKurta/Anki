@@ -1,5 +1,7 @@
 package io.github.anki.anki.controller
 
+import io.github.anki.anki.controller.exceptions.CardDoesNotExistException
+import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomString
 import io.kotest.matchers.shouldBe
@@ -78,11 +80,20 @@ class ControllerExceptionHandlerTest {
 
     @Test
     fun `should return 400 if user does not have such deck`() {
-        val responseEntity = exceptionHandler.deckDoesNotExistHandler(DeckDoesNotExistException())
+        val responseEntity = exceptionHandler.doesNotExistHandler(DeckDoesNotExistException())
 
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
         responseEntity.body shouldBe "Deck does not exist"
+    }
+
+    @Test
+    fun `should return 400 if user does not have such card`() {
+        val responseEntity = exceptionHandler.doesNotExistHandler(CardDoesNotExistException())
+
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "Card does not exist"
     }
 
     private fun createMethodArgumentNotValidException(

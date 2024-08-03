@@ -2,6 +2,7 @@ package io.github.anki.anki.controller
 
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
+import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.CardsService
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
 
@@ -41,11 +43,21 @@ class CardsController(
         return cardService.getAllCardsFromDeck(deckId).map { it.toDto() }
     }
 
+    @PatchMapping("/{cardId}")
+    @ResponseStatus(HttpStatus.OK)
+    fun patchCard(
+        @PathVariable deckId: String,
+        @PathVariable cardId: String,
+        @RequestBody request: PatchCardRequest,
+    ): CardDtoResponse {
+        deckService.getDeckByIdAndUserId(deckId, requestUserId)
+        return cardService.updateCard(request.toCard(cardId, deckId)).toDto()
+    }
 
-
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{cardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCard(@PathVariable id: String) {
-        cardService.deleteCard(id)
+    fun deleteCard(@PathVariable deckId: String, @PathVariable cardId: String) {
+        deckService.getDeckByIdAndUserId(deckId, requestUserId)
+        cardService.deleteCard(cardId)
     }
 }

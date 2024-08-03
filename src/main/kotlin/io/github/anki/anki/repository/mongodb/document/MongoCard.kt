@@ -16,9 +16,9 @@ data class MongoCard(
     @Indexed
     val deckId: ObjectId? = null,
 
-    val cardKey: String? = null,
+    var cardKey: String? = null,
 
-    val cardValue: String? = null,
+    var cardValue: String? = null,
 
     @CreatedDate
     val createdAt: Instant? = null,

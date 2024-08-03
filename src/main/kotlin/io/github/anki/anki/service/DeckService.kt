@@ -1,6 +1,6 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.controller.DeckDoesNotExistException
+import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
