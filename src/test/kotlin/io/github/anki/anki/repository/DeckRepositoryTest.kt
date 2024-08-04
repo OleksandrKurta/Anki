@@ -19,21 +19,20 @@ import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
-
 @IntegrationTest
 class DeckRepositoryTest @Autowired constructor(
     val deckRepository: DeckRepository,
-){
-
+) {
     private lateinit var newDeck: MongoDeck
 
     @BeforeTest
     fun setUp() {
-        newDeck = MongoDeck(
-            userId = getRandomID(),
-            name = getRandomString(),
-            description = getRandomString(),
-        )
+        newDeck =
+            MongoDeck(
+                userId = getRandomID(),
+                name = getRandomString(),
+                description = getRandomString(),
+            )
         LOG.info("Initialized new {}", newDeck)
     }
 
@@ -49,15 +48,14 @@ class DeckRepositoryTest @Autowired constructor(
 
     @Test
     fun `should delete existing deck by id`() {
-        //given
+        // given
         val deckFromMongo = deckRepository.insert(newDeck)
 
-        //when
+        // when
         deckRepository.deleteById(deckFromMongo.id.toString())
 
-        //then
+        // then
         deckRepository.existsById(deckFromMongo.id!!) shouldBe false
-
     }
 
     @Test
@@ -65,18 +63,18 @@ class DeckRepositoryTest @Autowired constructor(
         // given
         val notExistingDeckId = getRandomID()
 
-        //when
+        // when
         deckRepository.deleteById(notExistingDeckId)
 
-        //then
+        // then
         deckRepository.existsById(notExistingDeckId) shouldBe false
-
     }
 
     companion object {
         private val LOG = LoggerFactory.getLogger(DeckRepositoryTest::class.java)
 
         @Container
+        @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
@@ -84,6 +82,5 @@ class DeckRepositoryTest @Autowired constructor(
         fun setProperties(registry: DynamicPropertyRegistry) {
             registry.with(mongoDBContainer)
         }
-
     }
 }

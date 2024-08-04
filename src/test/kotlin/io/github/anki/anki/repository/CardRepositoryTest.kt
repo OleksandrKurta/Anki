@@ -19,22 +19,21 @@ import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
-
 @IntegrationTest
 class CardRepositoryTest @Autowired constructor(
     val cardRepository: CardRepository,
-){
-
+) {
     private lateinit var newCard: MongoCard
 
     @BeforeTest
     fun setUp() {
         LOG.info("Initializing new MongoCard")
-        newCard = MongoCard(
-            deckId = getRandomID(),
-            cardKey = getRandomString(),
-            cardValue = getRandomString(),
-        )
+        newCard =
+            MongoCard(
+                deckId = getRandomID(),
+                cardKey = getRandomString(),
+                cardValue = getRandomString(),
+            )
     }
 
     @Test
@@ -49,15 +48,14 @@ class CardRepositoryTest @Autowired constructor(
 
     @Test
     fun `should delete existing card by id`() {
-        //given
+        // given
         val cardFromMongo = cardRepository.insert(newCard)
 
-        //when
+        // when
         cardRepository.deleteById(cardFromMongo.id.toString())
 
-        //then
+        // then
         cardRepository.existsById(cardFromMongo.id!!) shouldBe false
-
     }
 
     @Test
@@ -65,10 +63,10 @@ class CardRepositoryTest @Autowired constructor(
         // given
         val notExistingCardId = getRandomID()
 
-        //when
+        // when
         cardRepository.deleteById(notExistingCardId)
 
-        //then
+        // then
         cardRepository.existsById(notExistingCardId) shouldBe false
     }
 
@@ -76,6 +74,7 @@ class CardRepositoryTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(CardRepositoryTest::class.java)
 
         @Container
+        @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
@@ -83,6 +82,5 @@ class CardRepositoryTest @Autowired constructor(
         fun setProperties(registry: DynamicPropertyRegistry) {
             registry.with(mongoDBContainer)
         }
-
     }
 }

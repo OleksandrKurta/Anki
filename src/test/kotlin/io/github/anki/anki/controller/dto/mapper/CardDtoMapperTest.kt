@@ -18,7 +18,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import kotlin.test.BeforeTest
 
 class CardDtoMapperTest {
-
     private lateinit var randomCardID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomCardKey: String
@@ -39,15 +38,17 @@ class CardDtoMapperTest {
         @Test
         fun `should map NewCardRequest to Card`() {
             // GIVEN
-            val newCardRequest = NewCardRequest(
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            val newCardRequest =
+                NewCardRequest(
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedCard =
+                Card(
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
             // WHEN
             val actual: Card = newCardRequest.toCard(randomDeckID.toString())
@@ -66,22 +67,25 @@ class CardDtoMapperTest {
         @Test
         fun `should map PatchCardRequest to Card`() {
             // GIVEN
-            val patchCardRequest = PatchCardRequest(
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
-                id = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            val patchCardRequest =
+                PatchCardRequest(
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedCard =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
             // WHEN
-            val actualCard: Card = patchCardRequest.toCard(
-                cardId = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-            )
+            val actualCard: Card =
+                patchCardRequest.toCard(
+                    cardId = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                )
 
             // THEN
             actualCard shouldBe expectedCard
@@ -94,24 +98,26 @@ class CardDtoMapperTest {
     inner class CardToDto {
         @Test
         fun `should map Card to CardDtoResponse`() {
-            //given
-            val card = Card(
-                id = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = CardDtoResponse(
-                id = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            // given
+            val card =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedCard =
+                CardDtoResponse(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
-            //when
+            // when
             val actual = card.toDto()
 
-            //then
+            // then
             actual shouldBe expectedCard
 
             actual.id shouldNotBe null

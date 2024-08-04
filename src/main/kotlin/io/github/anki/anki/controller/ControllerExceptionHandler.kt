@@ -15,20 +15,17 @@ import java.util.LinkedHashMap
 
 @RestControllerAdvice
 class ControllerExceptionHandler {
-
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
     fun methodNotSupportedHandler(): ResponseEntity<String> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not Found")
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
-    fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<Map<String, String>> {
-        return ResponseEntity(getErrorsFromMethodArgumentNotValidException(ex), HttpStatus.BAD_REQUEST)
-    }
+    fun handleValidationExceptions(ex: MethodArgumentNotValidException): ResponseEntity<Map<String, String>> =
+        ResponseEntity(getValidationException(ex), HttpStatus.BAD_REQUEST)
 
     @ExceptionHandler(DeckDoesNotExistException::class, CardDoesNotExistException::class)
-    fun doesNotExistHandler(ex: DoesNotExist): ResponseEntity<String> {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
-    }
+    fun doesNotExistHandler(ex: DoesNotExist): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
 
     @ExceptionHandler(Exception::class)
     fun globalExceptionHandler(
@@ -38,8 +35,9 @@ class ControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
     }
 
-    fun getErrorsFromMethodArgumentNotValidException(
-        ex: MethodArgumentNotValidException): LinkedHashMap<String, String>? {
+    fun getValidationException(
+        ex: MethodArgumentNotValidException,
+    ): LinkedHashMap<String, String>? {
         val firstValidationError: FieldError? = ex.bindingResult.fieldError
         return linkedMapOf(firstValidationError!!.field to firstValidationError.defaultMessage!!)
     }

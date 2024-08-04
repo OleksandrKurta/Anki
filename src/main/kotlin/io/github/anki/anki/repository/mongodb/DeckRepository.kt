@@ -7,7 +7,6 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface DeckRepository : MongoRepository<MongoDeck, ObjectId> {
-
     fun deleteById(deckId: String) {
         deleteById(ObjectId(deckId))
     }
@@ -15,5 +14,4 @@ interface DeckRepository : MongoRepository<MongoDeck, ObjectId> {
     fun findByUserId(userId: ObjectId): List<MongoDeck>
 
     fun findByIdAndUserId(id: ObjectId, userId: ObjectId): MongoDeck?
-
 }

@@ -16,12 +16,11 @@ class CardsService(
     private val cardRepository: CardRepository,
     private val deckService: DeckService,
 ) {
-
     fun createNewCard(deckId: String, userId: String, card: Card): Card {
         deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Creating new card: {}", card)
         return cardRepository.insert(
-            card.toMongo()
+            card.toMongo(),
         )
             .toCard()
             .also { LOG.info("Successfully saved new card: {}", it) }
@@ -33,12 +32,13 @@ class CardsService(
 
     fun updateCard(deckId: String, userId: String, card: Card): Card =
         deckService.getDeckByIdAndUserId(deckId, userId)
-            .run { cardRepository
-                .save(getUpdatedMongoCard(getCardById(card.id!!), card))
-                .toCard()
+            .run {
+                cardRepository
+                    .save(getUpdatedMongoCard(getCardById(card.id!!), card))
+                    .toCard()
             }
 
-    fun deleteCard(deckId: String, userId:String, cardId: String) {
+    fun deleteCard(deckId: String, userId: String, cardId: String) {
         deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Deleting card with id: {}", cardId)
         cardRepository.deleteById(cardId)

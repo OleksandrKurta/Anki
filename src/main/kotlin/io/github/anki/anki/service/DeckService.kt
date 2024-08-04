@@ -11,16 +11,15 @@ import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 
-
 @Service
 class DeckService(
     private val deckRepository: DeckRepository,
-    private val cardRepository: CardRepository
+    private val cardRepository: CardRepository,
 ) {
     fun createNewDeck(deck: Deck): Deck {
         LOG.info("Creating new deck: {}", deck)
         return deckRepository.insert(
-            deck.toMongo()
+            deck.toMongo(),
         )
             .toDeck()
             .also { LOG.info("Successfully saved new Deck: {}", it) }
@@ -37,7 +36,7 @@ class DeckService(
     fun updateDeck(deck: Deck): Deck {
         val mongoDeck = getDeckByIdAndUserId(deck.id!!, deck.userId)
         return deckRepository.save(getUpdatedMongoDeck(mongoDeck, deck)).toDeck()
-        }
+    }
 
     fun deleteDeck(deckId: String) {
         LOG.info("Deleting deck with id: {}", deckId)
@@ -53,9 +52,9 @@ class DeckService(
 
     private fun getUpdatedMongoDeck(mongoDeck: MongoDeck, deck: Deck): MongoDeck =
         mongoDeck.copy().apply {
-                deck.name?.takeIf { it != name }?.let { name = it }
-                deck.description?.takeIf { it != description }?.let { description = it }
-            }
+            deck.name?.takeIf { it != name }?.let { name = it }
+            deck.description?.takeIf { it != description }?.let { description = it }
+        }
 
     companion object {
         private val LOG = LoggerFactory.getLogger(DeckService::class.java)

@@ -16,7 +16,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import kotlin.test.BeforeTest
 
 class CardMapperTest {
-
     private lateinit var randomCardID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomCardKey: String
@@ -37,16 +36,18 @@ class CardMapperTest {
         @Test
         fun `should map card to mongo when id is null`() {
             // GIVEN
-            val card = Card(
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedMongoCard = MongoCard(
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            val card =
+                Card(
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedMongoCard =
+                MongoCard(
+                    deckId = randomDeckID,
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
             // WHEN
             val actual: MongoCard = card.toMongo()
@@ -60,18 +61,20 @@ class CardMapperTest {
         @Test
         fun `should map card to mongo when id is not null`() {
             // GIVEN
-            val card = Card(
-                id = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedMongoCard = MongoCard(
-                id = randomCardID,
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            val card =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedMongoCard =
+                MongoCard(
+                    id = randomCardID,
+                    deckId = randomDeckID,
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
             // WHEN
             val actual: MongoCard = card.toMongo()
@@ -79,7 +82,6 @@ class CardMapperTest {
             // THEN
             actual shouldBe expectedMongoCard
         }
-
     }
 
     @Nested
@@ -88,52 +90,54 @@ class CardMapperTest {
     inner class MongoToCard {
         @Test
         fun `should map mongo to card if id is null`() {
-            //given
-            val mongoCard = MongoCard(
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            // given
+            val mongoCard =
+                MongoCard(
+                    deckId = randomDeckID,
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedCard =
+                Card(
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
-            //when
+            // when
             val actual = mongoCard.toCard()
 
-            //then
+            // then
             actual shouldBe expectedCard
 
             actual.id shouldBe null
-
         }
 
         @Test
         fun `should map mongo to card if id is NOT null`() {
-            //given
-            val mongoCard = MongoCard(
-                id = randomCardID,
-                deckId = randomDeckID,
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
-            val expectedCard = Card(
-                id = randomCardID.toString(),
-                deckId = randomDeckID.toString(),
-                cardKey = randomCardKey,
-                cardValue = randomCardValue,
-            )
+            // given
+            val mongoCard =
+                MongoCard(
+                    id = randomCardID,
+                    deckId = randomDeckID,
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
+            val expectedCard =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    cardKey = randomCardKey,
+                    cardValue = randomCardValue,
+                )
 
-            //when
+            // when
             val actual = mongoCard.toCard()
 
-            //then
+            // then
             actual shouldBe expectedCard
 
             actual.id shouldNotBe null
-
         }
     }
 }

@@ -9,7 +9,7 @@ fun Card.toMongo() =
         id = this.id?.let { ObjectId(it) },
         deckId = ObjectId(this.deckId),
         cardKey = this.cardKey,
-        cardValue = this.cardValue
+        cardValue = this.cardValue,
     )
 
 fun MongoCard.toCard() =
@@ -17,6 +17,5 @@ fun MongoCard.toCard() =
         id = this.id?.toString(),
         deckId = this.deckId.toString(),
         cardKey = this.cardKey,
-        cardValue = this.cardValue
+        cardValue = this.cardValue,
     )
-

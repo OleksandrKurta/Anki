@@ -14,7 +14,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class DeckMapperTest {
-
     private lateinit var randomUserID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomDeckName: String
@@ -34,53 +33,54 @@ class DeckMapperTest {
     inner class DeckToMongo {
         @Test
         fun `should map Deck to MongoDeck when id is null`() {
-            //given
-            val deck = Deck(
-                id = null,
-                userId = randomUserID.toString(),
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
-            val expectedMongoDeck = MongoDeck(
-                id = null,
-                userId = randomUserID,
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            // given
+            val deck =
+                Deck(
+                    id = null,
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
+            val expectedMongoDeck =
+                MongoDeck(
+                    id = null,
+                    userId = randomUserID,
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
-            //when
+            // when
             val actualMongoDeck = deck.toMongo()
 
-            //then
+            // then
             actualMongoDeck shouldBe expectedMongoDeck
 
             actualMongoDeck.id shouldBe null
-
         }
 
         @Test
         fun `should map Deck to MongoDeck when id is NOT null`() {
-            //given
-            val deck = Deck(
-                id = randomDeckID.toString(),
-                userId = randomUserID.toString(),
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
-            val expectedMongoDeck = MongoDeck(
-                id = randomDeckID,
-                userId = randomUserID,
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            // given
+            val deck =
+                Deck(
+                    id = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
+            val expectedMongoDeck =
+                MongoDeck(
+                    id = randomDeckID,
+                    userId = randomUserID,
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
-            //when
+            // when
             val actualMongoDeck = deck.toMongo()
 
-            //then
+            // then
             actualMongoDeck shouldBe expectedMongoDeck
-
         }
     }
 }
-

@@ -17,10 +17,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import java.util.stream.Stream
 import kotlin.test.Test
 
-
 @MVCTest
 class ControllerExceptionHandlerTest {
-
     private val exceptionHandler = ControllerExceptionHandler()
 
     @ParameterizedTest
@@ -37,7 +35,8 @@ class ControllerExceptionHandlerTest {
     @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
     fun `should return 400 when MethodArgumentNotValidException`(
         objectName: String,
-        fieldName: String) {
+        fieldName: String,
+    ) {
         // given
         val defaultMessage = "should not be blank"
 
@@ -56,14 +55,15 @@ class ControllerExceptionHandlerTest {
     @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
     fun `should return right map from MethodArgumentNotValidException`(
         objectName: String,
-        fieldName: String) {
+        fieldName: String,
+    ) {
         // given
         val defaultMessage = getRandomString()
 
         val exception = createMethodArgumentNotValidException(objectName, fieldName, defaultMessage)
 
         // when
-        val responseBodyMap = exceptionHandler.getErrorsFromMethodArgumentNotValidException(exception)
+        val responseBodyMap = exceptionHandler.getValidationException(exception)
 
         // then
         responseBodyMap shouldBe linkedMapOf(fieldName to defaultMessage)
@@ -111,7 +111,6 @@ class ControllerExceptionHandlerTest {
     }
 
     companion object {
-
         @JvmStatic
         @Suppress("UnusedPrivateMember")
         private fun getExceptionTypes(): Stream<Arguments> =
@@ -119,7 +118,7 @@ class ControllerExceptionHandlerTest {
                 Arguments.of(Exception()),
                 Arguments.of(NullPointerException()),
                 Arguments.of(RuntimeException()),
-                Arguments.of(IllegalStateException())
+                Arguments.of(IllegalStateException()),
             )
 
         @JvmStatic

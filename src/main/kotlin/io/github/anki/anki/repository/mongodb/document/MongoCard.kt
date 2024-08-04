@@ -12,22 +12,16 @@ import java.time.Instant
 data class MongoCard(
     @Id
     val id: ObjectId? = null,
-
     @Indexed
     val deckId: ObjectId? = null,
-
     var cardKey: String? = null,
-
     var cardValue: String? = null,
-
     @CreatedDate
     val createdAt: Instant? = null,
-
     @LastModifiedDate
     val modifiedAt: Instant? = null,
 ) {
-
-  companion object {
-      const val COLLECTION_NAME = "cards"
-  }
+    companion object {
+        const val COLLECTION_NAME = "cards"
+    }
 }

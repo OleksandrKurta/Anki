@@ -16,7 +16,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class DeckDtoMapperTest {
-
     private lateinit var randomUserID: ObjectId
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomDeckName: String
@@ -38,21 +37,23 @@ class DeckDtoMapperTest {
     inner class NewDeckRequestToDeck {
         @Test
         fun `should map NewDeckRequest to Deck`() {
-            //given
-            val newDeckRequest = NewDeckRequest(
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
-            val expectedDeck = Deck(
-                userId = mockUserId,
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            // given
+            val newDeckRequest =
+                NewDeckRequest(
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
+            val expectedDeck =
+                Deck(
+                    userId = mockUserId,
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
-            //when
+            // when
             val actualDeck = newDeckRequest.toDeck(mockUserId)
 
-            //then
+            // then
 
             actualDeck shouldBe expectedDeck
 
@@ -67,22 +68,25 @@ class DeckDtoMapperTest {
         @org.junit.jupiter.api.Test
         fun `should map PatchDeckRequest to Deck`() {
             // GIVEN
-            val patchDeckRequest = PatchDeckRequest(
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
-            val expectedDeck = Deck(
-                id = randomDeckID.toString(),
-                userId = randomUserID.toString(),
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            val patchDeckRequest =
+                PatchDeckRequest(
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
+            val expectedDeck =
+                Deck(
+                    id = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
             // WHEN
-            val actualDeck: Deck = patchDeckRequest.toDeck(
-                deckId = randomDeckID.toString(),
-                userId = randomUserID.toString(),
-            )
+            val actualDeck: Deck =
+                patchDeckRequest.toDeck(
+                    deckId = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                )
 
             // THEN
             actualDeck shouldBe expectedDeck
@@ -93,28 +97,29 @@ class DeckDtoMapperTest {
     @DisplayName("Deck.toDto()")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class DeckToDeckDtoResponse {
-
         @Test
         fun `should map Deck to DeckDtoResponse`() {
-            //given
-            val deck = Deck(
-                id = randomDeckID.toString(),
-                userId = randomUserID.toString(),
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            // given
+            val deck =
+                Deck(
+                    id = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
-            val expectedDeckDtoResponse = DeckDtoResponse(
-                id = randomDeckID.toString(),
-                userId = randomUserID.toString(),
-                name = randomDeckName,
-                description = randomDeckDescription,
-            )
+            val expectedDeckDtoResponse =
+                DeckDtoResponse(
+                    id = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
 
-            //when
+            // when
             val actualDeckDtoResponse = deck.toDto()
 
-            //then
+            // then
 
             actualDeckDtoResponse shouldBe expectedDeckDtoResponse
         }

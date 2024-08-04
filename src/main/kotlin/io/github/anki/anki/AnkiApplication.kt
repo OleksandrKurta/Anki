@@ -7,6 +7,6 @@ import org.springframework.boot.runApplication
 class AnkiApplication
 
 fun main(args: Array<String>) {
-	@Suppress("SpreadOperator")
-	runApplication<AnkiApplication>(*args)
+    @Suppress("SpreadOperator")
+    runApplication<AnkiApplication>(*args)
 }

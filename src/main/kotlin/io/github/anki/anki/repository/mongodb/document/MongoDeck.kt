@@ -8,22 +8,16 @@ import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
-
 @Document(collection = MongoDeck.COLLECTION_NAME)
 data class MongoDeck(
     @Id
     val id: ObjectId? = null,
-
     @Indexed
     val userId: ObjectId,
-
     var name: String? = null,
-
     var description: String? = null,
-
     @CreatedDate
     val createdAt: Instant? = null,
-
     @LastModifiedDate
     val modifiedAt: Instant? = null,
 ) {
