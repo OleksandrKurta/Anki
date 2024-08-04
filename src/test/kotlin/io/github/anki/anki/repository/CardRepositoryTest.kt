@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository
+
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.CardsService
@@ -60,16 +61,15 @@ class CardRepositoryTest @Autowired constructor(
 
     @Test
     fun `should delete existing card by id`() {
-        //given
+        // given
         cardRepository.insert(newCard)
         cleanupModels.add(newCard)
 
-        //when
+        // when
         cardRepository.deleteById(newCard.id.toString())
 
-        //then
+        // then
         cardRepository.existsById(newCard.id) shouldBe false
-
     }
 
     companion object {
@@ -77,6 +77,7 @@ class CardRepositoryTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)
 
         @Container
+        @Suppress("PropertyName")
         val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
@@ -84,6 +85,5 @@ class CardRepositoryTest @Autowired constructor(
         fun setMongoUri(registry: DynamicPropertyRegistry) {
             registry.with(mongoDBContainer)
         }
-
     }
 }
