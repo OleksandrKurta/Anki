@@ -1,7 +1,6 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.controller.exceptions.CardDoesNotExistException
-import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
@@ -15,9 +14,11 @@ import org.springframework.stereotype.Service
 @Service
 class CardsService(
     private val cardRepository: CardRepository,
+    private val deckService: DeckService,
 ) {
 
-    fun createNewCard(card: Card): Card {
+    fun createNewCard(deckId: String, userId: String, card: Card): Card {
+        deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Creating new card: {}", card)
         return cardRepository.insert(
             card.toMongo()
@@ -26,15 +27,19 @@ class CardsService(
             .also { LOG.info("Successfully saved new card: {}", it) }
     }
 
-    fun getAllCardsFromDeck(deckId: String): List<Card> =
-        cardRepository.findByDeckId(ObjectId(deckId)).map { it.toCard() }
+    fun getAllCardsFromDeck(deckId: String, userId: String): List<Card> =
+        deckService.getDeckByIdAndUserId(deckId, userId)
+            .run { cardRepository.findByDeckId(ObjectId(deckId)).map { it.toCard() } }
 
-    fun updateCard(card: Card): Card {
-        val mongoCard = getCardById(card.id!!)
-        return cardRepository.save(getUpdatedMongoCard(mongoCard, card)).toCard()
-    }
+    fun updateCard(deckId: String, userId: String, card: Card): Card =
+        deckService.getDeckByIdAndUserId(deckId, userId)
+            .run { cardRepository
+                .save(getUpdatedMongoCard(getCardById(card.id!!), card))
+                .toCard()
+            }
 
-    fun deleteCard(cardId: String) {
+    fun deleteCard(deckId: String, userId:String, cardId: String) {
+        deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Deleting card with id: {}", cardId)
         cardRepository.deleteById(cardId)
         LOG.info("Successfully deleted card with id: {}", cardId)

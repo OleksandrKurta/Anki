@@ -6,8 +6,6 @@ import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.CardsService
-import io.github.anki.anki.service.DeckService
-import io.github.anki.anki.service.model.Card
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PathVariable
@@ -24,24 +22,25 @@ import org.springframework.web.bind.annotation.ResponseStatus
 @RequestMapping("/api/v1/decks/{deckId}/cards")
 class CardsController(
     private val cardService: CardsService,
-    private val deckService: DeckService,
 ) {
     private val requestUserId = "66a11305dc669eefd22b5f3a"
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createCard(@Valid @RequestBody request: NewCardRequest, @PathVariable deckId: String): CardDtoResponse {
-        deckService.getDeckByIdAndUserId(deckId, requestUserId)
-        val newCard: Card = cardService.createNewCard(request.toCard(deckId))
-        return newCard.toDto()
-    }
+    fun createCard(@Valid @RequestBody request: NewCardRequest, @PathVariable deckId: String): CardDtoResponse =
+        cardService.createNewCard(
+            deckId = deckId,
+            userId = requestUserId,
+            request.toCard(deckId),
+        ).toDto()
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> {
-        deckService.getDeckByIdAndUserId(deckId, requestUserId)
-        return cardService.getAllCardsFromDeck(deckId).map { it.toDto() }
-    }
+    fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
+        cardService.getAllCardsFromDeck(
+            deckId = deckId,
+            userId = requestUserId,
+        ).map { it.toDto() }
 
     @PatchMapping("/{cardId}")
     @ResponseStatus(HttpStatus.OK)
@@ -49,15 +48,20 @@ class CardsController(
         @PathVariable deckId: String,
         @PathVariable cardId: String,
         @RequestBody request: PatchCardRequest,
-    ): CardDtoResponse {
-        deckService.getDeckByIdAndUserId(deckId, requestUserId)
-        return cardService.updateCard(request.toCard(cardId, deckId)).toDto()
-    }
+    ): CardDtoResponse =
+        cardService.updateCard(
+            deckId = deckId,
+            userId = requestUserId,
+            request.toCard(cardId, deckId)
+        ).toDto()
 
     @DeleteMapping("/{cardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteCard(@PathVariable deckId: String, @PathVariable cardId: String) {
-        deckService.getDeckByIdAndUserId(deckId, requestUserId)
-        cardService.deleteCard(cardId)
+        cardService.deleteCard(
+            deckId = deckId,
+            userId = requestUserId,
+            cardId = cardId,
+        )
     }
 }

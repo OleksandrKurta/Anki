@@ -6,7 +6,6 @@ import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.DeckService
-import io.github.anki.anki.service.model.Deck
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.PostMapping
@@ -28,10 +27,8 @@ class DecksController (
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createDeck(@Valid @RequestBody request: NewDeckRequest): DeckDtoResponse {
-        val newDeck: Deck = service.createNewDeck(request.toDeck(requestUserId))
-        return newDeck.toDto()
-    }
+    fun createDeck(@Valid @RequestBody request: NewDeckRequest): DeckDtoResponse =
+        service.createNewDeck(request.toDeck(requestUserId)).toDto()
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
