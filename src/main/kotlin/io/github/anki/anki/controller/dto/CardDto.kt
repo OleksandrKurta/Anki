@@ -1,14 +1,14 @@
 package io.github.anki.anki.controller.dto
 
-data class NewCardRequest (
-    var collectionId: String,
+data class NewCardRequest(
+    var deckId: String,
     var cardKey: String,
     var cardValue: String,
 )
 
-data class CardDtoResponse (
+data class CardDtoResponse(
     var id: String?,
-    var collectionId: String?,
+    var deckId: String?,
     var cardKey: String?,
     var cardValue: String?,
 )

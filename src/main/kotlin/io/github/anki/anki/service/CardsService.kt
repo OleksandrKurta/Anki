@@ -1,4 +1,5 @@
 package io.github.anki.anki.service
+
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.mapper.toCard
@@ -10,10 +11,11 @@ import org.springframework.stereotype.Service
 class CardsService(
     private val cardRepository: CardRepository,
 ) {
+
     fun createNewCard(card: Card): Card {
         LOG.info("Creating new card: {}", card)
         return cardRepository.insert(
-            card.toMongo()
+            card.toMongo(),
         )
             .toCard()
             .also { LOG.info("Successfully saved new card: {}", it) }
