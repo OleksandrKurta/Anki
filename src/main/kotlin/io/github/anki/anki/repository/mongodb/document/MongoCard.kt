@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -11,22 +12,17 @@ import java.time.Instant
 data class MongoCard(
     @Id
     var id: ObjectId = ObjectId(),
-
     val cardKey: String? = null,
-
     val cardValue: String? = null,
-
     @Indexed
     val deckId: ObjectId? = null,
-
     @CreatedDate
     val createdAt: Instant? = null,
-
     @LastModifiedDate
     val modifiedAt: Instant? = null,
 ) {
 
-  companion object {
-      const val COLLECTION_NAME = "cards"
-  }
+    companion object {
+        const val COLLECTION_NAME = "cards"
+    }
 }

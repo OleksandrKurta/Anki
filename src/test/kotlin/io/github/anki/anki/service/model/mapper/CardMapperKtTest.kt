@@ -19,16 +19,18 @@ class CardMapperKtTest {
     fun `should map card to mongo when id is null`() {
         // GIVEN
         val randomID = getRandomID()
-        val card = Card(
-            deckId = randomID.toString(),
-            cardKey = "cardKey",
-            cardValue = "cardValue"
-        )
-        val expectedMongoCard = MongoCard(
-            deckId = randomID,
-            cardKey = "cardKey",
-            cardValue = "cardValue"
-        )
+        val card =
+            Card(
+                deckId = randomID.toString(),
+                cardKey = "cardKey",
+                cardValue = "cardValue",
+            )
+        val expectedMongoCard =
+            MongoCard(
+                deckId = randomID,
+                cardKey = "cardKey",
+                cardValue = "cardValue",
+            )
 
         // WHEN
         val actual: MongoCard = card.toMongo()
@@ -44,18 +46,20 @@ class CardMapperKtTest {
         // GIVEN
         val randomCardID = getRandomID()
         val randomDeckId = getRandomID()
-        val card = Card(
-            id = randomCardID.toString(),
-            deckId = randomDeckId.toString(),
-            cardKey = "cardKey",
-            cardValue = "cardValue"
-        )
-        val expectedMongoCard = MongoCard(
-            id = randomCardID,
-            deckId = randomDeckId,
-            cardKey = "cardKey",
-            cardValue = "cardValue"
-        )
+        val card =
+            Card(
+                id = randomCardID.toString(),
+                deckId = randomDeckId.toString(),
+                cardKey = "cardKey",
+                cardValue = "cardValue",
+            )
+        val expectedMongoCard =
+            MongoCard(
+                id = randomCardID,
+                deckId = randomDeckId,
+                cardKey = "cardKey",
+                cardValue = "cardValue",
+            )
 
         // WHEN
         val actual: MongoCard = card.toMongo()

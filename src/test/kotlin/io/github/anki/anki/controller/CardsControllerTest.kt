@@ -1,4 +1,5 @@
 package io.github.anki.anki.controller
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.mapper.toCard
@@ -21,12 +22,11 @@ import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import java.util.*
-
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 
@@ -36,8 +36,7 @@ class CardsControllerTest @Autowired constructor(
     val objectMapper: ObjectMapper,
     val cardRepository: CardRepository,
 ) {
-
-    val baseUrl = ("/api/v1/cards")
+    val baseUrl = "/api/v1/cards"
     private lateinit var cleanupModels: MutableList<MongoCard>
     private lateinit var newCard: CardDtoResponse
 
@@ -60,8 +59,8 @@ class CardsControllerTest @Autowired constructor(
             id = ObjectId().toString(),
             deckId = ObjectId().toString(),
             cardKey = UUID.randomUUID().toString(),
-            cardValue =UUID.randomUUID().toString(),
-            )
+            cardValue = UUID.randomUUID().toString(),
+        )
 
     @Nested
     @DisplayName("POST /api/v1/cards")
@@ -69,14 +68,16 @@ class CardsControllerTest @Autowired constructor(
     inner class PostCards {
         @Test
         fun `should post card`() {
-            val performPost = mockMvc.post(baseUrl) {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(newCard)
-            }
-            val createdCard = performPost.andReturn()
-                .response
-                .contentAsString
-                .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
+            val performPost =
+                mockMvc.post(baseUrl) {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(newCard)
+                }
+            val createdCard =
+                performPost.andReturn()
+                    .response
+                    .contentAsString
+                    .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
             // covered in repository test
             newCard.id = createdCard.id
             cleanupModels.add(createdCard.toCard().toMongo())
@@ -101,12 +102,12 @@ class CardsControllerTest @Autowired constructor(
         fun `should delete the card`() {
             // given
             val model = cardRepository.insert(newCard.toCard().toMongo())
-            val performDelete = mockMvc.delete("$baseUrl/${model.id.toString()}")
+            val performDelete = mockMvc.delete("$baseUrl/${model.id}")
             // when, then
             performDelete.andDo { print() }
                 .andExpect {
-                    status { (isNoContent()) }
-                    content { (objectMapper.writeValueAsString(model.id.toString())) }
+                    status { isNoContent() }
+                    content { objectMapper.writeValueAsString(model.id.toString()) }
                 }
         }
 
@@ -119,7 +120,6 @@ class CardsControllerTest @Autowired constructor(
                 .andDo { print() }
                 .andExpect { status { isNoContent() } }
         }
-
     }
 
     companion object {
@@ -127,6 +127,7 @@ class CardsControllerTest @Autowired constructor(
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)
 
         @Container
+        @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
         @DynamicPropertySource
