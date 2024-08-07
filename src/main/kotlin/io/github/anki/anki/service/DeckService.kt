@@ -26,21 +26,21 @@ class DeckService(
     }
 
     fun getDecks(userId: String): List<Deck> {
+        LOG.info("Getting decks by userId {}", userId)
         return deckRepository
-            .also { LOG.info("Getting decks by userId {}", userId) }
-            .run { findByUserId(ObjectId(userId)) }
+            .findByUserId(ObjectId(userId))
             .map { it.toDeck() }
             .also { LOG.info("Got {} decks", it.size) }
     }
 
     fun updateDeck(deck: Deck): Deck {
         val mongoDeck = getDeckByIdAndUserId(deck.id!!, deck.userId)
-        return deckRepository.save(getUpdatedMongoDeck(mongoDeck, deck)).toDeck()
+        return deckRepository.save(mongoDeck.update(deck)).toDeck()
     }
 
     fun deleteDeck(deckId: String) {
         LOG.info("Deleting deck with id: {}", deckId)
-        deckRepository.deleteById(deckId)
+        deckRepository.deleteById(ObjectId(deckId))
         LOG.info("Successfully deleted deck with id: {}", deckId)
         cardRepository.deleteByDeckId(ObjectId(deckId))
         LOG.info("Successfully deleted all cards with deckId: {}", deckId)
@@ -50,11 +50,11 @@ class DeckService(
         deckRepository.findByIdAndUserId(id = ObjectId(deckId), userId = ObjectId(userId))
             ?: throw DeckDoesNotExistException()
 
-    private fun getUpdatedMongoDeck(mongoDeck: MongoDeck, deck: Deck): MongoDeck =
-        mongoDeck.copy().apply {
-            deck.name?.takeIf { it != name }?.let { name = it }
-            deck.description?.takeIf { it != description }?.let { description = it }
-        }
+    private fun MongoDeck.update(deck: Deck): MongoDeck =
+        this.copy(
+            name = deck.name ?: this.name,
+            description = deck.description ?: this.description,
+        )
 
     companion object {
         private val LOG = LoggerFactory.getLogger(DeckService::class.java)

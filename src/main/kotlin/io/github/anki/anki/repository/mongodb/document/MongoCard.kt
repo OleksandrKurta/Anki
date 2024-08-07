@@ -20,8 +20,23 @@ data class MongoCard(
     val createdAt: Instant? = null,
     @LastModifiedDate
     val modifiedAt: Instant? = null,
+    val status: Status = Status.ACTIVE,
 ) {
+
+    enum class Status {
+        ACTIVE,
+        DELETED,
+    }
+
     companion object {
         const val COLLECTION_NAME = "cards"
+
+        const val ID = "id"
+        const val DECK_ID = "deckId"
+        const val CARD_KEY = "cardKey"
+        const val CARD_VALUE = "cardValue"
+        const val CREATED_AT = "createdAt"
+        const val MODIFIED_AT = "modifiedAt"
+        const val STATUS = "status"
     }
 }

@@ -19,6 +19,7 @@ import io.github.anki.testing.insertRandomDecks
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -30,7 +31,6 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -95,9 +95,11 @@ class CardsControllerTest @Autowired constructor(
                     }
                 }
 
-            val cardFromMongo = cardRepository.findByIdOrNull(ObjectId(createdCard.id))!!
+            val cardFromMongo = cardRepository.findById(ObjectId(createdCard.id))
 
-            createdCard shouldBe cardFromMongo.toCard().toDto()
+            cardFromMongo shouldNotBe null
+
+            createdCard shouldBe cardFromMongo!!.toCard().toDto()
         }
 
         @Test
@@ -226,7 +228,7 @@ class CardsControllerTest @Autowired constructor(
             actualCard.cardKey shouldBe patchCardRequest.cardKey
             actualCard.cardValue shouldBe patchCardRequest.cardValue
 
-            val cardFromMongo = cardRepository.findByIdOrNull(insertedCard.id)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo.cardKey shouldBe patchCardRequest.cardKey
 
@@ -249,7 +251,7 @@ class CardsControllerTest @Autowired constructor(
             // then
             actualCard shouldBe insertedCard.toCard().toDto()
 
-            val cardFromMongo = cardRepository.findByIdOrNull(insertedCard.id)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo shouldBe insertedCard
         }
@@ -270,7 +272,7 @@ class CardsControllerTest @Autowired constructor(
             // then
             actualCard shouldBe insertedCard.toCard().toDto()
 
-            val cardFromMongo = cardRepository.findByIdOrNull(insertedCard.id)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo shouldBe insertedCard
         }
@@ -292,7 +294,7 @@ class CardsControllerTest @Autowired constructor(
             actualCard.cardKey shouldBe patchCardRequest.cardKey
             actualCard.cardValue shouldBe insertedCard.cardValue
 
-            val cardFromMongo = cardRepository.findByIdOrNull(insertedCard.id)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo.cardKey shouldBe patchCardRequest.cardKey
 
@@ -316,7 +318,7 @@ class CardsControllerTest @Autowired constructor(
             actualCard.cardKey shouldBe insertedCard.cardKey
             actualCard.cardValue shouldBe patchCardRequest.cardValue
 
-            val cardFromMongo = cardRepository.findByIdOrNull(insertedCard.id)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo.cardKey shouldBe insertedCard.cardKey
 

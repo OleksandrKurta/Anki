@@ -1,5 +1,6 @@
 package io.github.anki.testing
 
+import org.junit.jupiter.api.Tag
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -8,6 +9,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Retention(AnnotationRetention.RUNTIME)
 @Testcontainers
 @SpringBootTest
+@Tag("integration")
 annotation class IntegrationTest
 
 @IntegrationTest

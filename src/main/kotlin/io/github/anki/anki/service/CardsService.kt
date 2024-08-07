@@ -8,7 +8,6 @@ import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
 import org.slf4j.LoggerFactory
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 
 @Service
@@ -19,9 +18,7 @@ class CardsService(
     fun createNewCard(deckId: String, userId: String, card: Card): Card {
         deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Creating new card: {}", card)
-        return cardRepository.insert(
-            card.toMongo(),
-        )
+        return cardRepository.insert(card.toMongo())
             .toCard()
             .also { LOG.info("Successfully saved new card: {}", it) }
     }
@@ -30,30 +27,27 @@ class CardsService(
         deckService.getDeckByIdAndUserId(deckId, userId)
             .run { cardRepository.findByDeckId(ObjectId(deckId)).map { it.toCard() } }
 
-    fun updateCard(deckId: String, userId: String, card: Card): Card =
+    fun updateCard(deckId: String, userId: String, card: Card): Card {
         deckService.getDeckByIdAndUserId(deckId, userId)
-            .run {
-                cardRepository
-                    .save(getUpdatedMongoCard(getCardById(card.id!!), card))
-                    .toCard()
-            }
+        return cardRepository.save(getCardById(card.id!!).update(card)).toCard()
+    }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
         deckService.getDeckByIdAndUserId(deckId, userId)
         LOG.info("Deleting card with id: {}", cardId)
-        cardRepository.deleteById(cardId)
+        cardRepository.deleteById(ObjectId(cardId))
         LOG.info("Successfully deleted card with id: {}", cardId)
     }
 
     private fun getCardById(cardId: String): MongoCard =
-        cardRepository.findByIdOrNull(ObjectId(cardId))
+        cardRepository.findById(ObjectId(cardId))
             ?: throw CardDoesNotExistException()
 
-    private fun getUpdatedMongoCard(mongoCard: MongoCard, card: Card): MongoCard =
-        mongoCard.copy().apply {
-            card.cardKey?.takeIf { it != cardKey }?.let { cardKey = it }
-            card.cardValue?.takeIf { it != cardValue }?.let { cardValue = it }
-        }
+    private fun MongoCard.update(card: Card): MongoCard =
+        this.copy(
+            cardKey = card.cardKey ?: this.cardKey,
+            cardValue = card.cardValue ?: this.cardValue,
+        )
 
     companion object {
         private val LOG = LoggerFactory.getLogger(CardsService::class.java)

@@ -52,7 +52,7 @@ class CardRepositoryTest @Autowired constructor(
         val cardFromMongo = cardRepository.insert(newCard)
 
         // when
-        cardRepository.deleteById(cardFromMongo.id.toString())
+        cardRepository.deleteById(cardFromMongo.id!!)
 
         // then
         cardRepository.existsById(cardFromMongo.id!!) shouldBe false

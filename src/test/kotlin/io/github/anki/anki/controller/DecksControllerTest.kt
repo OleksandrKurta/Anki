@@ -29,7 +29,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -91,7 +90,7 @@ class DecksControllerTest @Autowired constructor(
             createdDeck.name shouldBe newDeckRequest.name
             createdDeck.description shouldBe newDeckRequest.description
 
-            val deckFromMongo = deckRepository.findByIdOrNull(ObjectId(createdDeck.id))!!
+            val deckFromMongo = deckRepository.findById(ObjectId(createdDeck.id))!!
 
             createdDeck shouldBe deckFromMongo.toDeck().toDto()
         }
@@ -202,7 +201,7 @@ class DecksControllerTest @Autowired constructor(
             actualDeck.name shouldBe patchDeckRequest.name
             actualDeck.description shouldBe patchDeckRequest.description
 
-            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo.name shouldBe patchDeckRequest.name
 
@@ -222,7 +221,7 @@ class DecksControllerTest @Autowired constructor(
             // then
             actualDeck shouldBe insertedDeck.toDeck().toDto()
 
-            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo shouldBe insertedDeck
         }
@@ -240,7 +239,7 @@ class DecksControllerTest @Autowired constructor(
             // then
             actualDeck shouldBe insertedDeck.toDeck().toDto()
 
-            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo shouldBe insertedDeck
         }
@@ -259,7 +258,7 @@ class DecksControllerTest @Autowired constructor(
             actualDeck.name shouldBe patchDeckRequest.name
             actualDeck.description shouldBe insertedDeck.description
 
-            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo.name shouldBe patchDeckRequest.name
 
@@ -271,7 +270,7 @@ class DecksControllerTest @Autowired constructor(
             // given
             val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
 
-            val patchDeckRequest = PatchDeckRequest(description = getRandomString())
+            val patchDeckRequest = PatchDeckRequest(description = "new-description" + getRandomString())
 
             // when
             val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
@@ -280,7 +279,7 @@ class DecksControllerTest @Autowired constructor(
             actualDeck.name shouldBe insertedDeck.name
             actualDeck.description shouldBe patchDeckRequest.description
 
-            val deckFromMongo = deckRepository.findByIdOrNull(insertedDeck.id!!)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo.name shouldBe insertedDeck.name
 

@@ -52,7 +52,7 @@ class DeckRepositoryTest @Autowired constructor(
         val deckFromMongo = deckRepository.insert(newDeck)
 
         // when
-        deckRepository.deleteById(deckFromMongo.id.toString())
+        deckRepository.deleteById(deckFromMongo.id!!)
 
         // then
         deckRepository.existsById(deckFromMongo.id!!) shouldBe false
