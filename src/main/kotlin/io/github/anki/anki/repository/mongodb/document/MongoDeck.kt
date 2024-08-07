@@ -8,20 +8,34 @@ import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
-@Document(collation = MongoDeck.COLLECTION_NAME)
+@Document(collection = MongoDeck.COLLECTION_NAME)
 data class MongoDeck(
     @Id
-    var id: ObjectId? = ObjectId(),
+    val id: ObjectId? = null,
     @Indexed
-    var userId: ObjectId,
-    var name: String,
-    var description: String? = null,
+    val userId: ObjectId,
+    val name: String? = null,
+    val description: String? = null,
     @CreatedDate
     val createdAt: Instant? = null,
     @LastModifiedDate
     val modifiedAt: Instant? = null,
+    val status: Status = Status.ACTIVE,
 ) {
+    enum class Status {
+        ACTIVE,
+        DELETED,
+    }
+
     companion object {
         const val COLLECTION_NAME = "decks"
+
+        const val ID = "id"
+        const val USER_ID = "userId"
+        const val NAME = "name"
+        const val DESCRIPTION = "description"
+        const val CREATED_AT = "createdAt"
+        const val MODIFIED_AT = "modifiedAt"
+        const val STATUS = "status"
     }
 }

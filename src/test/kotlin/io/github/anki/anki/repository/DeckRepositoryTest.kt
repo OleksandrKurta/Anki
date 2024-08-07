@@ -1,7 +1,7 @@
 package io.github.anki.anki.repository
 
-import io.github.anki.anki.repository.mongodb.CardRepository
-import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -20,58 +20,58 @@ import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
 @IntegrationTest
-class CardRepositoryTest @Autowired constructor(
-    val cardRepository: CardRepository,
+class DeckRepositoryTest @Autowired constructor(
+    val deckRepository: DeckRepository,
 ) {
-    private lateinit var newCard: MongoCard
+    private lateinit var newDeck: MongoDeck
 
     @BeforeTest
     fun setUp() {
-        LOG.info("Initializing new MongoCard")
-        newCard =
-            MongoCard(
-                deckId = getRandomID(),
-                cardKey = getRandomString(),
-                cardValue = getRandomString(),
+        newDeck =
+            MongoDeck(
+                userId = getRandomID(),
+                name = getRandomString(),
+                description = getRandomString(),
             )
+        LOG.info("Initialized new {}", newDeck)
     }
 
     @Test
-    fun `should insert card`() {
+    fun `should insert deck`() {
         // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        val deckFromMongo = deckRepository.insert(newDeck)
 
         // when, then
-        cardFromMongo.id shouldNotBe null
-        Assert.isTrue(cardRepository.existsById(cardFromMongo.id!!), "Card appear in repository")
+        deckFromMongo.id shouldNotBe null
+        Assert.isTrue(deckRepository.existsById(deckFromMongo.id!!), "Deck appear in repository")
     }
 
     @Test
-    fun `should delete existing card by id`() {
+    fun `should delete existing deck by id`() {
         // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        val deckFromMongo = deckRepository.insert(newDeck)
 
         // when
-        cardRepository.deleteById(cardFromMongo.id!!)
+        deckRepository.deleteById(deckFromMongo.id!!)
 
         // then
-        cardRepository.existsById(cardFromMongo.id!!) shouldBe false
+        deckRepository.existsById(deckFromMongo.id!!) shouldBe false
     }
 
     @Test
-    fun `should delete NOT existing card by id`() {
+    fun `should delete NOT existing deck by id`() {
         // given
-        val notExistingCardId = getRandomID()
+        val notExistingDeckId = getRandomID()
 
         // when
-        cardRepository.deleteById(notExistingCardId)
+        deckRepository.deleteById(notExistingDeckId)
 
         // then
-        cardRepository.existsById(notExistingCardId) shouldBe false
+        deckRepository.existsById(notExistingDeckId) shouldBe false
     }
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardRepositoryTest::class.java)
+        private val LOG = LoggerFactory.getLogger(DeckRepositoryTest::class.java)
 
         @Container
         @Suppress("PropertyName")

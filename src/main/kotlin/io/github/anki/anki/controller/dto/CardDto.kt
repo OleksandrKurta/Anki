@@ -1,14 +1,22 @@
 package io.github.anki.anki.controller.dto
 
+import jakarta.validation.constraints.NotBlank
+
 data class NewCardRequest(
-    var deckId: String,
-    var cardKey: String,
-    var cardValue: String,
+    @field:NotBlank(message = "should not be blank")
+    val cardKey: String?,
+    @field:NotBlank(message = "should not be blank")
+    val cardValue: String?,
+)
+
+data class PatchCardRequest(
+    val cardKey: String? = null,
+    val cardValue: String? = null,
 )
 
 data class CardDtoResponse(
-    var id: String?,
-    var deckId: String?,
-    var cardKey: String?,
-    var cardValue: String?,
+    val id: String,
+    val deckId: String,
+    val cardKey: String,
+    val cardValue: String,
 )

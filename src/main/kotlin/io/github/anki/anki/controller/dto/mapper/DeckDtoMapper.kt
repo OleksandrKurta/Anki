@@ -2,19 +2,28 @@ package io.github.anki.anki.controller.dto.mapper
 
 import io.github.anki.anki.controller.dto.DeckDtoResponse
 import io.github.anki.anki.controller.dto.NewDeckRequest
+import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.service.model.Deck
 
-fun NewDeckRequest.toCollection(): Deck =
+fun NewDeckRequest.toDeck(userId: String): Deck =
     Deck(
-        userId = this.userId,
+        userId = userId,
+        name = this.name,
+        description = this.description,
+    )
+
+fun PatchDeckRequest.toDeck(deckId: String, userId: String): Deck =
+    Deck(
+        id = deckId,
+        userId = userId,
         name = this.name,
         description = this.description,
     )
 
 fun Deck.toDto(): DeckDtoResponse =
     DeckDtoResponse(
-        id = this.id,
+        id = this.id!!,
         userId = this.userId,
-        name = this.name,
+        name = this.name!!,
         description = this.description,
     )
