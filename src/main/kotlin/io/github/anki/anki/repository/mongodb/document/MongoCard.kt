@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -10,8 +11,7 @@ import java.time.Instant
 @Document(collection = MongoCard.COLLECTION_NAME)
 data class MongoCard(
     @Id
-    var id: ObjectId? = ObjectId(),
-
+    var id: ObjectId = ObjectId(),
     val cardKey: String? = null,
     val cardValue: String? = null,
     @Indexed

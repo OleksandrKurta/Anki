@@ -3,7 +3,6 @@ package io.github.anki.anki.repository.mongodb.document
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.Document
 
-
 @Document(collection = MongoRole.COLLECTION_NAME)
 class MongoRole {
     @Id
@@ -16,9 +15,7 @@ class MongoRole {
         this.name = name
     }
 
-    fun getName(): ERole? {
-        return name
-    }
+    fun getName(): ERole? = name
 
     fun setName(name: ERole?) {
         this.name = name
