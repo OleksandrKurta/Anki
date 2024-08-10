@@ -62,6 +62,8 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+
+// TODO: Make detekt validate testFixtures
 detekt {
     config.setFrom("$projectDir/config/detekt.yml")
     autoCorrect = true

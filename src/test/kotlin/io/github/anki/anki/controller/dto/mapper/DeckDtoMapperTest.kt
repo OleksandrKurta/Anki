@@ -7,11 +7,17 @@ import io.github.anki.anki.service.model.Deck
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.matchers.shouldBe
+import jakarta.validation.Validation
+import jakarta.validation.Validator
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -22,6 +28,8 @@ class DeckDtoMapperTest {
     private lateinit var randomDeckDescription: String
 
     private val mockUserId = "66a11305dc669eefd22b5f3a"
+
+    private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
 
     @BeforeTest
     fun setUp() {
@@ -54,10 +62,38 @@ class DeckDtoMapperTest {
             val actualDeck = newDeckRequest.toDeck(mockUserId)
 
             // then
-
             actualDeck shouldBe expectedDeck
 
             actualDeck.id shouldBe null
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidNewDeckRequestProvider")
+        fun `should be error if name is not valid`(nameValue: String?) {
+            // given
+            val newDeckRequest =
+                NewDeckRequest(
+                    name = nameValue,
+                    description = randomDeckDescription,
+                )
+
+            // when
+            val violations = validator.validate(newDeckRequest)
+
+            // then
+            violations.size shouldBe 1
+
+            violations.first().propertyPath.toString() shouldBe "name"
+
+            violations.first().messageTemplate shouldBe "should not be blank"
+        }
+
+        @Suppress("UnusedPrivateMember")
+        private fun invalidNewDeckRequestProvider(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(null),
+                Arguments.of(""),
+            )
         }
     }
 

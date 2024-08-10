@@ -17,7 +17,7 @@ class CardRepository(
     fun insert(mongoCard: MongoCard): MongoCard =
         mongoTemplate.insert(mongoCard)
 
-    fun insert(mongoCards: List<MongoCard>): List<MongoCard> =
+    fun insert(mongoCards: Iterable<MongoCard>): List<MongoCard> =
         mongoTemplate.insertAll(mongoCards.toMutableList()).toList()
 
     fun findByDeckId(deckId: ObjectId): List<MongoCard> =

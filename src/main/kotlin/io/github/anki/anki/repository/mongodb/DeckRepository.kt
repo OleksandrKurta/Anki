@@ -17,7 +17,7 @@ class DeckRepository(
     fun insert(mongoDeck: MongoDeck): MongoDeck =
         mongoTemplate.insert(mongoDeck)
 
-    fun insert(mongoDecks: List<MongoDeck>): List<MongoDeck> =
+    fun insert(mongoDecks: Iterable<MongoDeck>): List<MongoDeck> =
         mongoTemplate.insertAll(mongoDecks.toMutableList()).toList()
 
     fun save(mongoDeck: MongoDeck): MongoDeck =

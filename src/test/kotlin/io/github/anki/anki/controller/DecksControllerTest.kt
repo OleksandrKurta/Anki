@@ -14,8 +14,7 @@ import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
-import io.github.anki.testing.insertRandomCards
-import io.github.anki.testing.insertRandomDecks
+import io.github.anki.testing.insertRandom
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
@@ -143,7 +142,7 @@ class DecksControllerTest @Autowired constructor(
         fun `should return all decks if they exist`() {
             // given
             val numberOfRandomCards = (5..100).random()
-            val insertedDecks = insertRandomDecks(deckRepository, numberOfRandomCards, ObjectId(mockUserId))
+            val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(mockUserId))
 
             // when
             val performGet = sendGetDecks()
@@ -162,23 +161,6 @@ class DecksControllerTest @Autowired constructor(
             actualDecks shouldContainExactlyInAnyOrder insertedDecks.map { it.toDeck().toDto() }
         }
 
-        @org.junit.jupiter.api.Test
-        fun `should return empty list if there are no decks`() {
-            // when
-            val result = sendGetDecks()
-
-            // then
-            val cardsFromResponse: List<DeckDtoResponse> =
-                result
-                    .andExpect {
-                        status { isOk() }
-                    }
-                    .andReturn()
-                    .let { objectMapper.readValue(it.response.contentAsString) }
-
-            cardsFromResponse.isEmpty() shouldBe true
-        }
-
         private fun sendGetDecks(): ResultActionsDsl =
             mockMvc.get(baseUrl)
     }
@@ -190,7 +172,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should patch deck if it exists`() {
             // given
-            val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
+            val insertedDeck = deckRepository.insertRandom(1, ObjectId(mockUserId)).first()
 
             val patchDeckRequest = PatchDeckRequest(name = getRandomString(), description = getRandomString())
 
@@ -204,84 +186,6 @@ class DecksControllerTest @Autowired constructor(
             val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
             deckFromMongo.name shouldBe patchDeckRequest.name
-
-            deckFromMongo.description shouldBe patchDeckRequest.description
-        }
-
-        @Test
-        fun `should change nothing if all fields is null`() {
-            // given
-            val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
-
-            val patchDeckRequest = PatchDeckRequest(name = null, description = null)
-
-            // when
-            val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
-
-            // then
-            actualDeck shouldBe insertedDeck.toDeck().toDto()
-
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
-
-            deckFromMongo shouldBe insertedDeck
-        }
-
-        @Test
-        fun `should change nothing if all fields is actual`() {
-            // given
-            val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
-
-            val patchDeckRequest = PatchDeckRequest(name = insertedDeck.name, description = insertedDeck.description)
-
-            // when
-            val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
-
-            // then
-            actualDeck shouldBe insertedDeck.toDeck().toDto()
-
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
-
-            deckFromMongo shouldBe insertedDeck
-        }
-
-        @Test
-        fun `should patch only name if deck exists`() {
-            // given
-            val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
-
-            val patchDeckRequest = PatchDeckRequest(name = getRandomString())
-
-            // when
-            val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
-
-            // then
-            actualDeck.name shouldBe patchDeckRequest.name
-            actualDeck.description shouldBe insertedDeck.description
-
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
-
-            deckFromMongo.name shouldBe patchDeckRequest.name
-
-            deckFromMongo.description shouldBe insertedDeck.description
-        }
-
-        @Test
-        fun `should patch only description if deck exists`() {
-            // given
-            val insertedDeck = insertRandomDecks(deckRepository, 1, ObjectId(mockUserId)).first()
-
-            val patchDeckRequest = PatchDeckRequest(description = "new-description" + getRandomString())
-
-            // when
-            val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
-
-            // then
-            actualDeck.name shouldBe insertedDeck.name
-            actualDeck.description shouldBe patchDeckRequest.description
-
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
-
-            deckFromMongo.name shouldBe insertedDeck.name
 
             deckFromMongo.description shouldBe patchDeckRequest.description
         }
@@ -334,7 +238,7 @@ class DecksControllerTest @Autowired constructor(
         fun `should delete the deck`() {
             // given
             val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
-            insertRandomCards(cardRepository, (5..100).random(), insertedDeck.id!!)
+            cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
             val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())

@@ -14,8 +14,7 @@ import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
-import io.github.anki.testing.insertRandomCards
-import io.github.anki.testing.insertRandomDecks
+import io.github.anki.testing.insertRandom
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
@@ -67,7 +66,7 @@ class CardsControllerTest @Autowired constructor(
                 cardKey = getRandomString(),
                 cardValue = getRandomString(),
             )
-        insertedDeck = insertRandomDecks(deckRepository, 1, userId = ObjectId(mockUserId)).first()
+        insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
         LOG.info("Inserted new Deck {}", insertedDeck)
     }
 
@@ -158,7 +157,7 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should return all cards if they exist`() {
             // given
-            val mongoCards = insertRandomCards(cardRepository, (5..100).random(), insertedDeck.id!!)
+            val mongoCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
             val result = sendGetCards(insertedDeck.id!!.toString())
@@ -206,7 +205,7 @@ class CardsControllerTest @Autowired constructor(
 
         @BeforeTest
         fun createCard() {
-            insertedCard = insertRandomCards(cardRepository, 1, insertedDeck.id!!).first()
+            insertedCard = cardRepository.insertRandom(1, insertedDeck.id!!).first()
             LOG.info("Inserted new Card {}", insertedCard)
         }
 
@@ -400,7 +399,7 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should delete the card`() {
             // given
-            val model = insertRandomCards(cardRepository, 1, deckId = insertedDeck.id!!).first()
+            val model = cardRepository.insertRandom(1, deckId = insertedDeck.id!!).first()
 
             // when
             val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), model.id!!.toString())

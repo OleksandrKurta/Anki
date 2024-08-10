@@ -6,9 +6,9 @@ import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import org.bson.types.ObjectId
 
-fun insertRandomDecks(deckRepository: DeckRepository, numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
-    val listOfDecks: MutableList<MongoDeck> = mutableListOf()
-    while (listOfDecks.size != numberOfDecks) {
+fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
+    val listOfDecks: MutableCollection<MongoDeck> = mutableListOf()
+    repeat(numberOfDecks) {
         listOfDecks.add(
             MongoDeck(
                 userId = userId,
@@ -17,12 +17,12 @@ fun insertRandomDecks(deckRepository: DeckRepository, numberOfDecks: Int, userId
             )
         )
     }
-    return deckRepository.insert(listOfDecks)
+    return this.insert(listOfDecks)
 }
 
-fun insertRandomCards(cardRepository: CardRepository, numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
-    val listOfCards: MutableList<MongoCard> = mutableListOf()
-    while (listOfCards.size != numberOfCards) {
+fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
+    val listOfCards: MutableCollection<MongoCard> = mutableListOf()
+    repeat(numberOfCards) {
         listOfCards.add(
             MongoCard(
                 deckId = deckId,
@@ -31,6 +31,6 @@ fun insertRandomCards(cardRepository: CardRepository, numberOfCards: Int, deckId
             )
         )
     }
-    return cardRepository.insert(listOfCards)
+    return this.insert(listOfCards)
 }
 

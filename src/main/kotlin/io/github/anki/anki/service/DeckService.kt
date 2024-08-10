@@ -35,7 +35,12 @@ class DeckService(
 
     fun updateDeck(deck: Deck): Deck {
         val mongoDeck = getDeckByIdAndUserId(deck.id!!, deck.userId)
-        return deckRepository.save(mongoDeck.update(deck)).toDeck()
+        val updatedMongoDeck = mongoDeck.update(deck)
+        if (mongoDeck == updatedMongoDeck) {
+            return deck
+        }
+        LOG.info("Save updated mongoDeck {}", updatedMongoDeck)
+        return deckRepository.save(updatedMongoDeck).toDeck()
     }
 
     fun deleteDeck(deckId: String) {
