@@ -29,7 +29,12 @@ class CardsService(
 
     fun updateCard(deckId: String, userId: String, card: Card): Card {
         deckService.getDeckByIdAndUserId(deckId, userId)
-        return cardRepository.save(getCardById(card.id!!).update(card)).toCard()
+        val mongoCard = getCardById(card.id!!)
+        val updatedMongoCard = mongoCard.update(card)
+        if (mongoCard == updatedMongoCard) {
+            return mongoCard.toCard()
+        }
+        return cardRepository.save(updatedMongoCard).toCard()
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {

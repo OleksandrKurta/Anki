@@ -23,31 +23,35 @@ class DeckRepository(
     fun save(mongoDeck: MongoDeck): MongoDeck =
         mongoTemplate.save(mongoDeck)
 
-    fun findById(id: ObjectId): MongoDeck? =
+    fun findById(id: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): MongoDeck? =
         mongoTemplate.findOne(
             Query(
-                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(MongoDeck.Status.ACTIVE),
+                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(status),
             ),
             entityClass,
         )
 
-    fun existsById(id: ObjectId): Boolean =
+    fun existsById(id: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): Boolean =
         mongoTemplate.exists(
             Query(
-                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(MongoDeck.Status.ACTIVE),
+                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(status),
             ),
             entityClass,
         )
 
-    fun findByUserId(userId: ObjectId): List<MongoDeck> =
+    fun findByUserId(userId: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): List<MongoDeck> =
         mongoTemplate.find(
             Query(
-                Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDeck.STATUS).`is`(MongoDeck.Status.ACTIVE),
+                Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDeck.STATUS).`is`(status),
             ),
             entityClass,
         )
 
-    fun findByIdAndUserId(id: ObjectId, userId: ObjectId): MongoDeck? =
+    fun findByIdAndUserId(
+        id: ObjectId,
+        userId: ObjectId,
+        status: MongoDeck.Status = MongoDeck.Status.ACTIVE,
+    ): MongoDeck? =
         mongoTemplate.findOne(
             Query(
                 Criteria
@@ -56,15 +60,16 @@ class DeckRepository(
                     .and(MongoDeck.USER_ID)
                     .`is`(userId)
                     .and(MongoDeck.STATUS)
-                    .`is`(MongoDeck.Status.ACTIVE),
+                    .`is`(status),
             ),
             entityClass,
         )
 
-    fun deleteById(id: ObjectId) =
+    fun deleteById(id: ObjectId) {
         mongoTemplate.updateFirst(
             Query(Criteria.where(MongoDeck.ID).`is`(id)),
             Update().set(MongoDeck.STATUS, MongoDeck.Status.DELETED),
             entityClass,
         )
+    }
 }

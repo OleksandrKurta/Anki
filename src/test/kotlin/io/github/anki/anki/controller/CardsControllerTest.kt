@@ -25,9 +25,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
@@ -41,7 +38,6 @@ import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
-import java.util.stream.Stream
 import kotlin.test.BeforeTest
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -115,39 +111,11 @@ class CardsControllerTest @Autowired constructor(
             result.response.contentAsString shouldBe "Deck does not exist"
         }
 
-        @ParameterizedTest
-        @MethodSource("invalidNewRequestCardsProvider")
-        fun `should return 400 if any value is not valid`(fieldName: String, newCard: NewCardRequest) {
-            // when
-            val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
-
-            // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isBadRequest() }
-                    content {
-                        contentType(MediaType.APPLICATION_JSON)
-                        json("{\"$fieldName\": \"should not be blank\"}")
-                    }
-                }
-        }
-
         private fun postNewCard(newCard: NewCardRequest, deckId: String): ResultActionsDsl =
             mockMvc.post(String.format(baseUrl, deckId)) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(newCard)
             }
-
-        @Suppress("UnusedPrivateMember")
-        private fun invalidNewRequestCardsProvider(): Stream<Arguments> {
-            return Stream.of(
-                Arguments.of("cardKey", NewCardRequest(cardKey = null, cardValue = getRandomString())),
-                Arguments.of("cardKey", NewCardRequest(cardKey = "", cardValue = getRandomString())),
-                Arguments.of("cardValue", NewCardRequest(cardKey = getRandomString(), cardValue = null)),
-                Arguments.of("cardValue", NewCardRequest(cardKey = getRandomString(), cardValue = "")),
-            )
-        }
     }
 
     @Nested
@@ -213,7 +181,11 @@ class CardsControllerTest @Autowired constructor(
         fun `should patch card`() {
             // given
 
-            val patchCardRequest = PatchCardRequest(cardKey = getRandomString(), cardValue = getRandomString())
+            val patchCardRequest =
+                PatchCardRequest(
+                    cardKey = getRandomString("updated"),
+                    cardValue = getRandomString("updated"),
+                )
 
             // when
             val actualCard =

@@ -9,6 +9,8 @@ import io.github.anki.testing.getRandomString
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import jakarta.validation.Validation
+import jakarta.validation.Validator
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -16,6 +18,10 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
+import java.util.stream.Stream
 import kotlin.test.BeforeTest
 
 @Tag("unit")
@@ -24,6 +30,8 @@ class CardDtoMapperTest {
     private lateinit var randomDeckID: ObjectId
     private lateinit var randomCardKey: String
     private lateinit var randomCardValue: String
+
+    private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
 
     @BeforeTest
     fun setUp() {
@@ -59,6 +67,56 @@ class CardDtoMapperTest {
             actual.shouldBeEqualToIgnoringFields(expectedCard, Card::id)
 
             actual.id shouldBe null
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidNewCardRequestProvider")
+        fun `should be error if cardKey is not valid`(cardKeyValue: String?) {
+            // given
+            val newCardRequest =
+                NewCardRequest(
+                    cardKey = cardKeyValue,
+                    cardValue = randomCardValue,
+                )
+
+            // when
+            val violations = validator.validate(newCardRequest)
+
+            // then
+            violations.size shouldBe 1
+
+            violations.first().propertyPath.toString() shouldBe "cardKey"
+
+            violations.first().messageTemplate shouldBe "should not be blank"
+        }
+
+        @ParameterizedTest
+        @MethodSource("invalidNewCardRequestProvider")
+        fun `should be error if cardValue is not valid`(cardValueValue: String?) {
+            // given
+            val newCardRequest =
+                NewCardRequest(
+                    cardKey = randomCardKey,
+                    cardValue = cardValueValue,
+                )
+
+            // when
+            val violations = validator.validate(newCardRequest)
+
+            // then
+            violations.size shouldBe 1
+
+            violations.first().propertyPath.toString() shouldBe "cardValue"
+
+            violations.first().messageTemplate shouldBe "should not be blank"
+        }
+
+        @Suppress("UnusedPrivateMember")
+        private fun invalidNewCardRequestProvider(): Stream<Arguments> {
+            return Stream.of(
+                Arguments.of(null),
+                Arguments.of(""),
+            )
         }
     }
 

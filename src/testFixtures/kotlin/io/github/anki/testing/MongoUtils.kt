@@ -12,8 +12,8 @@ fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<Mong
         listOfDecks.add(
             MongoDeck(
                 userId = userId,
-                name = getRandomString(),
-                description = getRandomString(),
+                name = getRandomString("initial"),
+                description = getRandomString("initial"),
             )
         )
     }
@@ -26,8 +26,8 @@ fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<Mong
         listOfCards.add(
             MongoCard(
                 deckId = deckId,
-                cardKey = getRandomString(),
-                cardValue = getRandomString(),
+                cardKey = getRandomString("initial"),
+                cardValue = getRandomString("initial"),
             )
         )
     }

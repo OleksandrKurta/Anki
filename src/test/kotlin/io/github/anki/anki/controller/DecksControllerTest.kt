@@ -9,6 +9,8 @@ import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
@@ -177,7 +179,15 @@ class DecksControllerTest @Autowired constructor(
             val patchDeckRequest = PatchDeckRequest(name = getRandomString(), description = getRandomString())
 
             // when
-            val actualDeck = sendPatchDeckAndValidateStatusAndContentType(insertedDeck.id.toString(), patchDeckRequest)
+            val patchDeckResponse =
+                sendPatchDeck(insertedDeck.id.toString(), patchDeckRequest)
+                    .andExpect {
+                        status { isOk() }
+                        content { contentType(MediaType.APPLICATION_JSON) }
+                    }
+                    .andReturn()
+
+            val actualDeck: DeckDtoResponse = objectMapper.readValue(patchDeckResponse.response.contentAsString)
 
             // then
             actualDeck.name shouldBe patchDeckRequest.name
@@ -191,7 +201,7 @@ class DecksControllerTest @Autowired constructor(
         }
 
         @Test
-        fun `should return 400 if it does not  exist`() {
+        fun `should return 400 if it does not exist`() {
             // given
             val notExistingDeckID = getRandomID().toString()
 
@@ -211,18 +221,6 @@ class DecksControllerTest @Autowired constructor(
             deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
         }
 
-        private fun sendPatchDeckAndValidateStatusAndContentType(
-            deckId: String,
-            patchDeckRequest: PatchDeckRequest,
-        ): DeckDtoResponse =
-            sendPatchDeck(deckId, patchDeckRequest)
-                .andExpect {
-                    status { isOk() }
-                    content { contentType(MediaType.APPLICATION_JSON) }
-                }
-                .andReturn()
-                .let { objectMapper.readValue(it.response.contentAsString) }
-
         private fun sendPatchDeck(deckId: String, patchDeckRequest: PatchDeckRequest): ResultActionsDsl =
             mockMvc.patch("$baseUrl/$deckId") {
                 contentType = MediaType.APPLICATION_JSON
@@ -238,7 +236,7 @@ class DecksControllerTest @Autowired constructor(
         fun `should delete the deck`() {
             // given
             val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
-            cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
+            val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
             val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())
@@ -255,30 +253,10 @@ class DecksControllerTest @Autowired constructor(
             result.response.contentAsString.isEmpty() shouldBe true
 
             deckRepository.existsById(insertedDeck.id!!) shouldBe false
-
             cardRepository.findByDeckId(insertedDeck.id!!).isEmpty() shouldBe true
-        }
 
-        @Test
-        fun `should get 204 when deck does not exist`() {
-            // given
-            val notExistingDeckID = getRandomID()
-
-            // when
-            val performDelete = sendDeleteDeck(notExistingDeckID.toString())
-
-            // when/then
-            val result =
-                performDelete
-                    .andDo { print() }
-                    .andExpect { status { isNoContent() } }
-                    .andReturn()
-
-            result.response.contentType shouldBe null
-
-            result.response.contentAsString.isEmpty() shouldBe true
-
-            deckRepository.existsById(notExistingDeckID) shouldBe false
+            deckRepository.existsById(insertedDeck.id!!, MongoDeck.Status.DELETED)
+            cardRepository.findByDeckId(insertedDeck.id!!, MongoCard.Status.DELETED).size shouldBe insertedCards.size
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =

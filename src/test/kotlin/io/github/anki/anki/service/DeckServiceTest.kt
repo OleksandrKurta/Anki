@@ -193,13 +193,11 @@ class DeckServiceTest {
                 deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
-            val updatedDeck = initialDeck
-
             // when
-            val actualDeck = sut.updateDeck(updatedDeck)
+            val actualDeck = sut.updateDeck(initialDeck)
 
             // then
-            actualDeck shouldBe updatedDeck
+            actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
                 sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
@@ -236,7 +234,7 @@ class DeckServiceTest {
             val actualDeck = sut.updateDeck(updatedDeck)
 
             // then
-            actualDeck shouldBe updatedDeck
+            actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
                 sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
@@ -340,6 +338,27 @@ class DeckServiceTest {
             verify(exactly = 1) {
                 deckRepository.save(any())
             }
+        }
+    }
+
+    @Nested
+    @DisplayName("DeckService.deleteDeck()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class DeleteDeck {
+        @Test
+        fun `should delete the deck and all cards`() {
+            // given
+            val deckId = getRandomID()
+
+            every { deckRepository.deleteById(deckId) } returns Unit
+            every { cardRepository.deleteByDeckId(deckId) } returns Unit
+
+            // when
+            sut.deleteDeck(deckId.toString())
+
+            // then
+            verify(exactly = 1) { deckRepository.deleteById(deckId) }
+            verify(exactly = 1) { cardRepository.deleteByDeckId(deckId) }
         }
     }
 }
