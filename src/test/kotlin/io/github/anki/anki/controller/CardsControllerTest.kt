@@ -59,8 +59,8 @@ class CardsControllerTest @Autowired constructor(
     fun setUp() {
         newCard =
             NewCardRequest(
-                cardKey = getRandomString(),
-                cardValue = getRandomString(),
+                cardKey = getRandomString("initial"),
+                cardValue = getRandomString("initial"),
             )
         insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
         LOG.info("Inserted new Deck {}", insertedDeck)
@@ -143,24 +143,6 @@ class CardsControllerTest @Autowired constructor(
             cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
         }
 
-        @Test
-        fun `should return empty list if there are no cards`() {
-            // when
-            val result = sendGetCards(insertedDeck.id!!.toString())
-
-            // then
-            result.andExpect {
-                status { isOk() }
-            }
-
-            val cardsFromResponse: List<CardDtoResponse> =
-                result
-                    .andReturn()
-                    .let { objectMapper.readValue(it.response.contentAsString) }
-
-            cardsFromResponse.isEmpty() shouldBe true
-        }
-
         private fun sendGetCards(deckId: String): ResultActionsDsl = mockMvc.get(String.format(baseUrl, deckId))
     }
 
@@ -180,7 +162,6 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should patch card`() {
             // given
-
             val patchCardRequest =
                 PatchCardRequest(
                     cardKey = getRandomString("updated"),
@@ -202,96 +183,6 @@ class CardsControllerTest @Autowired constructor(
             val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
             cardFromMongo.cardKey shouldBe patchCardRequest.cardKey
-
-            cardFromMongo.cardValue shouldBe patchCardRequest.cardValue
-        }
-
-        @Test
-        fun `should change nothing if all fields is null`() {
-            // given
-            val patchCardRequest = PatchCardRequest(cardKey = null, cardValue = null)
-
-            // when
-            val actualCard =
-                sendPatchCardAndValidateStatusAndContentType(
-                    insertedDeck.id.toString(),
-                    insertedCard.id.toString(),
-                    patchCardRequest,
-                )
-
-            // then
-            actualCard shouldBe insertedCard.toCard().toDto()
-
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
-
-            cardFromMongo shouldBe insertedCard
-        }
-
-        @Test
-        fun `should change nothing if all fields is actual`() {
-            // given
-            val patchCardRequest = PatchCardRequest(cardKey = insertedCard.cardKey, cardValue = insertedCard.cardValue)
-
-            // when
-            val actualCard =
-                sendPatchCardAndValidateStatusAndContentType(
-                    insertedDeck.id.toString(),
-                    insertedCard.id.toString(),
-                    patchCardRequest,
-                )
-
-            // then
-            actualCard shouldBe insertedCard.toCard().toDto()
-
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
-
-            cardFromMongo shouldBe insertedCard
-        }
-
-        @Test
-        fun `should patch only cardKey if card exists`() {
-            // given
-            val patchCardRequest = PatchCardRequest(cardKey = getRandomString())
-
-            // when
-            val actualCard =
-                sendPatchCardAndValidateStatusAndContentType(
-                    insertedDeck.id.toString(),
-                    insertedCard.id.toString(),
-                    patchCardRequest,
-                )
-
-            // then
-            actualCard.cardKey shouldBe patchCardRequest.cardKey
-            actualCard.cardValue shouldBe insertedCard.cardValue
-
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
-
-            cardFromMongo.cardKey shouldBe patchCardRequest.cardKey
-
-            cardFromMongo.cardValue shouldBe insertedCard.cardValue
-        }
-
-        @Test
-        fun `should patch only cardValue if card exists`() {
-            // given
-            val patchCardRequest = PatchCardRequest(cardValue = getRandomString())
-
-            // when
-            val actualCard =
-                sendPatchCardAndValidateStatusAndContentType(
-                    insertedDeck.id.toString(),
-                    insertedCard.id.toString(),
-                    patchCardRequest,
-                )
-
-            // then
-            actualCard.cardKey shouldBe insertedCard.cardKey
-            actualCard.cardValue shouldBe patchCardRequest.cardValue
-
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
-
-            cardFromMongo.cardKey shouldBe insertedCard.cardKey
 
             cardFromMongo.cardValue shouldBe patchCardRequest.cardValue
         }

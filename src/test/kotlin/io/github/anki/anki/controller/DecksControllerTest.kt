@@ -60,8 +60,8 @@ class DecksControllerTest @Autowired constructor(
     fun setUp() {
         newDeckRequest =
             NewDeckRequest(
-                name = getRandomString(),
-                description = getRandomString(),
+                name = getRandomString("initial"),
+                description = getRandomString("initial"),
             )
     }
 
@@ -128,12 +128,11 @@ class DecksControllerTest @Autowired constructor(
             }
 
         @Suppress("UnusedPrivateMember")
-        private fun invalidNewDeckRequestProvider(): Stream<Arguments> {
-            return Stream.of(
+        private fun invalidNewDeckRequestProvider(): Stream<Arguments> =
+            Stream.of(
                 Arguments.of(null),
                 Arguments.of(""),
             )
-        }
     }
 
     @Nested
@@ -176,7 +175,11 @@ class DecksControllerTest @Autowired constructor(
             // given
             val insertedDeck = deckRepository.insertRandom(1, ObjectId(mockUserId)).first()
 
-            val patchDeckRequest = PatchDeckRequest(name = getRandomString(), description = getRandomString())
+            val patchDeckRequest =
+                PatchDeckRequest(
+                    name = getRandomString("updated"),
+                    description = getRandomString("updated"),
+                )
 
             // when
             val patchDeckResponse =

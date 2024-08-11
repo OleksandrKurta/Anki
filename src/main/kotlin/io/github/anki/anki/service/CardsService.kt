@@ -15,26 +15,34 @@ class CardsService(
     private val cardRepository: CardRepository,
     private val deckService: DeckService,
 ) {
-    fun createNewCard(deckId: String, userId: String, card: Card): Card {
-        deckService.getDeckByIdAndUserId(deckId, userId)
+    fun createNewCard(userId: String, card: Card): Card {
+        deckService.getDeckByIdAndUserId(card.deckId, userId)
         LOG.info("Creating new card: {}", card)
         return cardRepository.insert(card.toMongo())
             .toCard()
             .also { LOG.info("Successfully saved new card: {}", it) }
     }
 
-    fun getAllCardsFromDeck(deckId: String, userId: String): List<Card> =
+    fun getAllCardsFromDeck(deckId: String, userId: String): List<Card> {
         deckService.getDeckByIdAndUserId(deckId, userId)
-            .run { cardRepository.findByDeckId(ObjectId(deckId)).map { it.toCard() } }
+        LOG.info("Getting MongoCards by deckId = {}", deckId)
+        return cardRepository.findByDeckId(ObjectId(deckId))
+            .map { it.toCard() }
+            .also { LOG.info("Got MongoCards from DB {}", it) }
+    }
 
-    fun updateCard(deckId: String, userId: String, card: Card): Card {
-        deckService.getDeckByIdAndUserId(deckId, userId)
+    fun updateCard(userId: String, card: Card): Card {
+        deckService.getDeckByIdAndUserId(card.deckId, userId)
         val mongoCard = getCardById(card.id!!)
         val updatedMongoCard = mongoCard.update(card)
         if (mongoCard == updatedMongoCard) {
+            LOG.info("No changes. Nothing to update")
             return mongoCard.toCard()
         }
-        return cardRepository.save(updatedMongoCard).toCard()
+        LOG.info("Save updated MongoCard {}", updatedMongoCard)
+        return cardRepository.save(updatedMongoCard)
+            .also { LOG.info("Updated MongoCard is saved {}", it) }
+            .toCard()
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
@@ -44,9 +52,16 @@ class CardsService(
         LOG.info("Successfully deleted card with id: {}", cardId)
     }
 
-    private fun getCardById(cardId: String): MongoCard =
-        cardRepository.findById(ObjectId(cardId))
-            ?: throw CardDoesNotExistException()
+    private fun getCardById(cardId: String): MongoCard {
+        LOG.info("Getting MongoCard by id = {}", cardId)
+        val mongoCard = cardRepository.findById(ObjectId(cardId))
+        if (mongoCard != null) {
+            LOG.info("Got MongoCard from DB {}", mongoCard)
+            return mongoCard
+        }
+        LOG.info("MongoCard was not found with given id {}", cardId)
+        throw CardDoesNotExistException()
+    }
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(

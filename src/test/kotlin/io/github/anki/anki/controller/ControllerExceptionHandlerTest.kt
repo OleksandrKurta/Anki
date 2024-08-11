@@ -5,6 +5,8 @@ import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomString
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
@@ -18,6 +20,7 @@ import java.util.stream.Stream
 import kotlin.test.Test
 
 @MVCTest
+@TestInstance(Lifecycle.PER_CLASS)
 class ControllerExceptionHandlerTest {
     private val exceptionHandler = ControllerExceptionHandler()
 
@@ -96,6 +99,23 @@ class ControllerExceptionHandlerTest {
         responseEntity.body shouldBe "Card does not exist"
     }
 
+    @Suppress("UnusedPrivateMember")
+    private fun getExceptionTypes(): Stream<Arguments> {
+        return Stream.of(
+            Arguments.of(Exception()),
+            Arguments.of(NullPointerException()),
+            Arguments.of(RuntimeException()),
+            Arguments.of(IllegalStateException()),
+        )
+    }
+
+    @Suppress("UnusedPrivateMember")
+    private fun getMethodArgumentNotValidExceptionTestArguments(): Stream<Arguments> =
+        Stream.of(
+            Arguments.of("NewCardRequest", "deckId"),
+            Arguments.of("NewDeckRequest", "name"),
+        )
+
     private fun createMethodArgumentNotValidException(
         objectName: String,
         fieldName: String,
@@ -108,25 +128,5 @@ class ControllerExceptionHandlerTest {
         bindingResult.addError(fieldError)
 
         return MethodArgumentNotValidException(methodParameter, bindingResult)
-    }
-
-    companion object {
-        @JvmStatic
-        @Suppress("UnusedPrivateMember")
-        private fun getExceptionTypes(): Stream<Arguments> =
-            Stream.of(
-                Arguments.of(Exception()),
-                Arguments.of(NullPointerException()),
-                Arguments.of(RuntimeException()),
-                Arguments.of(IllegalStateException()),
-            )
-
-        @JvmStatic
-        @Suppress("UnusedPrivateMember")
-        private fun getMethodArgumentNotValidExceptionTestArguments(): Stream<Arguments> =
-            Stream.of(
-                Arguments.of("NewCardRequest", "deckId"),
-                Arguments.of("NewDeckRequest", "name"),
-            )
     }
 }

@@ -29,7 +29,6 @@ class CardsController(
     @ResponseStatus(HttpStatus.CREATED)
     fun createCard(@Valid @RequestBody request: NewCardRequest, @PathVariable deckId: String): CardDtoResponse =
         cardService.createNewCard(
-            deckId = deckId,
             userId = requestUserId,
             request.toCard(deckId),
         ).toDto()
@@ -50,7 +49,6 @@ class CardsController(
         @RequestBody request: PatchCardRequest,
     ): CardDtoResponse =
         cardService.updateCard(
-            deckId = deckId,
             userId = requestUserId,
             request.toCard(cardId, deckId),
         ).toDto()

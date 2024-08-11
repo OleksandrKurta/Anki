@@ -8,6 +8,7 @@ import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -22,6 +23,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import kotlin.test.Test
 
 @ExtendWith(MockKExtension::class)
@@ -34,7 +37,7 @@ class DeckServiceTest {
     lateinit var cardRepository: CardRepository
 
     @InjectMockKs
-    lateinit var sut: DeckService
+    lateinit var deckService: DeckService
 
     @AfterEach
     fun tearDown() {
@@ -47,7 +50,7 @@ class DeckServiceTest {
     inner class CreateNewDeck {
         @Test
         fun `should create new deck always`() {
-            // GIVEN
+            // given
             val userId = ObjectId()
             val deck =
                 Deck(
@@ -65,13 +68,12 @@ class DeckServiceTest {
             val expectedDeck = deck.copy(id = createdMongoDeck.id!!.toHexString())
             every { deckRepository.insert(mongoDeck) } returns createdMongoDeck
 
-            // WHEN
-            val actual: Deck = sut.createNewDeck(deck)
+            // when
+            val actual: Deck = deckService.createNewDeck(deck)
 
-            // THEN
+            // then
             actual shouldBe expectedDeck
 
-            // AND
             verify(exactly = 1) {
                 deckRepository.insert(mongoDeck)
             }
@@ -82,37 +84,24 @@ class DeckServiceTest {
     @DisplayName("DeckService.getDecks()")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class GetDecks {
-        @Test
-        fun `should return all decks if they exist`() {
+
+        @ParameterizedTest
+        @ValueSource(ints = [0, 1, 20, 100])
+        fun `should return all decks if they exist`(numberOfDecks: Int) {
             // given
             val userId = ObjectId()
 
-            val randomDecks = getRandomMongoDecks((1..100).random(), userId)
+            val randomDecks = getRandomMongoDecks(numberOfDecks, userId)
 
             every { deckRepository.findByUserId(userId) } returns randomDecks
             val expectedDecks = randomDecks.map { it.toDeck() }
 
             // when
-            val actualDecks = sut.getDecks(userId.toString())
+            val actualDecks = deckService.getDecks(userId.toString())
 
             // then
-            actualDecks shouldBe expectedDecks
-
-            verify(exactly = 1) { deckRepository.findByUserId(userId) }
-        }
-
-        @Test
-        fun `should return empty list if there is no decks`() {
-            // given
-            val userId = ObjectId()
-
-            every { deckRepository.findByUserId(userId) } returns emptyList()
-
-            // when
-            val actualDecks = sut.getDecks(userId.toString())
-
-            // then
-            actualDecks.isEmpty() shouldBe true
+            actualDecks.size shouldBe numberOfDecks
+            actualDecks shouldContainExactlyInAnyOrder expectedDecks
 
             verify(exactly = 1) { deckRepository.findByUserId(userId) }
         }
@@ -124,8 +113,8 @@ class DeckServiceTest {
                     MongoDeck(
                         id = ObjectId(),
                         userId = userId,
-                        name = getRandomString(),
-                        description = getRandomString(),
+                        name = getRandomString("initial"),
+                        description = getRandomString("initial"),
                     ),
                 )
             }
@@ -164,13 +153,13 @@ class DeckServiceTest {
             } returns updatedDeck.toMongo()
 
             // when
-            val actualDeck = sut.updateDeck(updatedDeck)
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe updatedDeck
 
             verify(exactly = 1) {
-                sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
+                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -194,13 +183,13 @@ class DeckServiceTest {
             } returns initialDeck.toMongo()
 
             // when
-            val actualDeck = sut.updateDeck(initialDeck)
+            val actualDeck = deckService.updateDeck(initialDeck)
 
             // then
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
+                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
@@ -231,13 +220,13 @@ class DeckServiceTest {
             } returns initialDeck.toMongo()
 
             // when
-            val actualDeck = sut.updateDeck(updatedDeck)
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
+                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
@@ -278,13 +267,13 @@ class DeckServiceTest {
             } returns expectedDeck.toMongo()
 
             // when
-            val actualDeck = sut.updateDeck(updatedDeck)
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
+                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -326,13 +315,13 @@ class DeckServiceTest {
             } returns expectedDeck.toMongo()
 
             // when
-            val actualDeck = sut.updateDeck(updatedDeck)
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                sut.getDeckByIdAndUserId(initialDeck.id!!, initialDeck.userId)
+                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -354,7 +343,7 @@ class DeckServiceTest {
             every { cardRepository.deleteByDeckId(deckId) } returns Unit
 
             // when
-            sut.deleteDeck(deckId.toString())
+            deckService.deleteDeck(deckId.toString())
 
             // then
             verify(exactly = 1) { deckRepository.deleteById(deckId) }
