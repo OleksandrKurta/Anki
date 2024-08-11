@@ -62,26 +62,33 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-
-// TODO: Make detekt validate testFixtures
 detekt {
     config.setFrom("$projectDir/config/detekt.yml")
     autoCorrect = true
+    source.setFrom(
+        files(
+            "$projectDir/src/main/kotlin",
+            "$projectDir/src/test/kotlin",
+            "$projectDir/src/testFixtures/kotlin",
+            "$projectDir/build.gradle.kts",
+        ),
+    )
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
     diffSource {
         git.compareWith("refs/remotes/origin/master")
     }
-    coverageBinaryFiles = allprojects.asSequence()
-        .map { subproject ->
-            subproject.fileTree(subproject.layout.buildDirectory) {
-                setIncludes(listOf("*/**/*.exec"))
+    coverageBinaryFiles =
+        allprojects.asSequence()
+            .map { subproject ->
+                subproject.fileTree(subproject.layout.buildDirectory) {
+                    setIncludes(listOf("*/**/*.exec"))
+                }
             }
-        }
-        .fold(files()) { all, files ->
-            all.from(files)
-        }
+            .fold(files()) { all, files ->
+                all.from(files)
+            }
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)

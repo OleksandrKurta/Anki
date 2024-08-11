@@ -8,13 +8,14 @@ import org.bson.types.ObjectId
 
 fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
     val listOfDecks: MutableCollection<MongoDeck> = mutableListOf()
+    val prefix = "initial"
     repeat(numberOfDecks) {
         listOfDecks.add(
             MongoDeck(
                 userId = userId,
-                name = getRandomString("initial"),
-                description = getRandomString("initial"),
-            )
+                name = getRandomString(prefix),
+                description = getRandomString(prefix),
+            ),
         )
     }
     return this.insert(listOfDecks)
@@ -22,15 +23,15 @@ fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<Mong
 
 fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
     val listOfCards: MutableCollection<MongoCard> = mutableListOf()
+    val prefix = "initial"
     repeat(numberOfCards) {
         listOfCards.add(
             MongoCard(
                 deckId = deckId,
-                cardKey = getRandomString("initial"),
-                cardValue = getRandomString("initial"),
-            )
+                cardKey = getRandomString(prefix),
+                cardValue = getRandomString(prefix),
+            ),
         )
     }
     return this.insert(listOfCards)
 }
-
