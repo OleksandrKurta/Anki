@@ -27,7 +27,12 @@ class CardsController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createCard(@Valid @RequestBody request: NewCardRequest, @PathVariable deckId: String): CardDtoResponse =
+    fun createCard(
+        @Valid
+        @RequestBody
+        request: NewCardRequest,
+        @PathVariable deckId: String,
+    ): CardDtoResponse =
         cardService.createNewCard(
             userId = requestUserId,
             request.toCard(deckId),
