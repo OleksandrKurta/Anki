@@ -28,8 +28,8 @@ fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<Mong
         listOfCards.add(
             MongoCard(
                 deckId = deckId,
-                cardKey = getRandomString(prefix),
-                cardValue = getRandomString(prefix),
+                key = getRandomString(prefix),
+                value = getRandomString(prefix),
             ),
         )
     }

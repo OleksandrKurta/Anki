@@ -41,7 +41,7 @@ class CardsController(
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
-        cardService.getAllCardsFromDeck(
+        cardService.findCardsByDeck(
             deckId = deckId,
             userId = requestUserId,
         ).map { it.toDto() }

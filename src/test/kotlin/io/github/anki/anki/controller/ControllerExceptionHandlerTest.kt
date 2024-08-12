@@ -1,9 +1,8 @@
 package io.github.anki.anki.controller
 
-import io.github.anki.anki.controller.exceptions.CardDoesNotExistException
-import io.github.anki.anki.controller.exceptions.DeckDoesNotExistException
+import io.github.anki.anki.service.exceptions.CardDoesNotExistException
+import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.testing.MVCTest
-import io.github.anki.testing.getRandomString
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
@@ -24,6 +23,8 @@ import kotlin.test.Test
 class ControllerExceptionHandlerTest {
     private val exceptionHandler = ControllerExceptionHandler()
 
+    private val notBlankDefaultMessage = "must not be blank"
+
     @ParameterizedTest
     @MethodSource("getExceptionTypes")
     fun `should catch exception and return 500`(exception: Exception) {
@@ -40,10 +41,7 @@ class ControllerExceptionHandlerTest {
         objectName: String,
         fieldName: String,
     ) {
-        // given
-        val defaultMessage = "should not be blank"
-
-        val exception = createMethodArgumentNotValidException(objectName, fieldName, defaultMessage)
+        val exception = createMethodArgumentNotValidException(objectName, fieldName)
 
         // when
         val responseEntity = exceptionHandler.handleValidationExceptions(exception)
@@ -51,25 +49,7 @@ class ControllerExceptionHandlerTest {
         // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
-        responseEntity.body shouldBe linkedMapOf(fieldName to defaultMessage)
-    }
-
-    @ParameterizedTest
-    @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
-    fun `should return right map from MethodArgumentNotValidException`(
-        objectName: String,
-        fieldName: String,
-    ) {
-        // given
-        val defaultMessage = getRandomString()
-
-        val exception = createMethodArgumentNotValidException(objectName, fieldName, defaultMessage)
-
-        // when
-        val responseBodyMap = exceptionHandler.getValidationException(exception)
-
-        // then
-        responseBodyMap shouldBe linkedMapOf(fieldName to defaultMessage)
+        responseEntity.body shouldBe mapOf(fieldName to notBlankDefaultMessage)
     }
 
     @Test
@@ -119,9 +99,8 @@ class ControllerExceptionHandlerTest {
     private fun createMethodArgumentNotValidException(
         objectName: String,
         fieldName: String,
-        defaultMessage: String,
     ): MethodArgumentNotValidException {
-        val fieldError = FieldError(objectName, fieldName, defaultMessage)
+        val fieldError = FieldError(objectName, fieldName, notBlankDefaultMessage)
         val methodParameter = mock(MethodParameter::class.java)
 
         val bindingResult = BeanPropertyBindingResult(null, objectName)

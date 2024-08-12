@@ -39,14 +39,14 @@ class CardMapperTest {
             val card =
                 Card(
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedMongoCard =
                 MongoCard(
                     deckId = randomDeckID,
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // WHEN
@@ -65,15 +65,15 @@ class CardMapperTest {
                 Card(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedMongoCard =
                 MongoCard(
                     id = randomCardID,
                     deckId = randomDeckID,
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // WHEN
@@ -94,14 +94,14 @@ class CardMapperTest {
             val mongoCard =
                 MongoCard(
                     deckId = randomDeckID,
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedCard =
                 Card(
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // when
@@ -120,15 +120,15 @@ class CardMapperTest {
                 MongoCard(
                     id = randomCardID,
                     deckId = randomDeckID,
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedCard =
                 Card(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // when

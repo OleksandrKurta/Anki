@@ -1,75 +1,51 @@
 package io.github.anki.anki.repository.mongodb
 
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
+import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
-import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 @Repository
-class DeckRepository(
-    private val mongoTemplate: MongoTemplate,
-) {
-    private val entityClass = MongoDeck::class.java
+class DeckRepository @Autowired constructor(
+    override val mongoTemplate: MongoTemplate,
+) : MongoRepository<MongoDeck>() {
 
-    fun insert(mongoDeck: MongoDeck): MongoDeck =
-        mongoTemplate.insert(mongoDeck)
+    override val entityClass = MongoDeck::class.java
+    override val log = LoggerFactory.getLogger(DeckRepository::class.java)
 
-    fun insert(mongoDecks: Iterable<MongoDeck>): List<MongoDeck> =
-        mongoTemplate.insertAll(mongoDecks.toMutableList()).toList()
-
-    fun save(mongoDeck: MongoDeck): MongoDeck =
-        mongoTemplate.save(mongoDeck)
-
-    fun findById(id: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): MongoDeck? =
-        mongoTemplate.findOne(
+    fun findByUserIdWithStatus(userId: ObjectId, status: DocumentStatus = DocumentStatus.ACTIVE): List<MongoDeck> {
+        log.info("Finding by userId = {} and status = {}", userId, status)
+        return mongoTemplate.find(
             Query(
-                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(status),
+                Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.STATUS).`is`(status),
             ),
             entityClass,
-        )
+        ).also { log.info("Found by userId = {} and status = {} {}", userId, status, it) }
+    }
 
-    fun existsById(id: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): Boolean =
-        mongoTemplate.exists(
-            Query(
-                Criteria.where(MongoDeck.ID).`is`(id).and(MongoDeck.STATUS).`is`(status),
-            ),
-            entityClass,
-        )
-
-    fun findByUserId(userId: ObjectId, status: MongoDeck.Status = MongoDeck.Status.ACTIVE): List<MongoDeck> =
-        mongoTemplate.find(
-            Query(
-                Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDeck.STATUS).`is`(status),
-            ),
-            entityClass,
-        )
-
-    fun findByIdAndUserId(
+    fun findByIdAndUserIdWithStatus(
         id: ObjectId,
         userId: ObjectId,
-        status: MongoDeck.Status = MongoDeck.Status.ACTIVE,
-    ): MongoDeck? =
-        mongoTemplate.findOne(
+        status: DocumentStatus = DocumentStatus.ACTIVE,
+    ): MongoDeck? {
+        log.info("Finding by id = {} userId = {} and status = {}", id, userId, status)
+        return mongoTemplate.findOne(
             Query(
                 Criteria
-                    .where(MongoDeck.ID)
+                    .where(MongoDocument.ID)
                     .`is`(id)
                     .and(MongoDeck.USER_ID)
                     .`is`(userId)
-                    .and(MongoDeck.STATUS)
+                    .and(MongoDocument.STATUS)
                     .`is`(status),
             ),
             entityClass,
-        )
-
-    fun deleteById(id: ObjectId) {
-        mongoTemplate.updateFirst(
-            Query(Criteria.where(MongoDeck.ID).`is`(id)),
-            Update().set(MongoDeck.STATUS, MongoDeck.Status.DELETED),
-            entityClass,
-        )
+        ).also { log.info("Found by id = {} and userId = {} and status = {} {}", id, userId, status, it) }
     }
 }

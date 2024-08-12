@@ -50,14 +50,14 @@ class CardDtoMapperTest {
             // GIVEN
             val newCardRequest =
                 NewCardRequest(
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedCard =
                 Card(
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // WHEN
@@ -75,8 +75,8 @@ class CardDtoMapperTest {
             // given
             val newCardRequest =
                 NewCardRequest(
-                    cardKey = cardKeyValue,
-                    cardValue = randomCardValue,
+                    key = cardKeyValue,
+                    value = randomCardValue,
                 )
 
             // when
@@ -85,9 +85,9 @@ class CardDtoMapperTest {
             // then
             violations.size shouldBe 1
 
-            violations.first().propertyPath.toString() shouldBe "cardKey"
+            violations.first().propertyPath.toString() shouldBe "key"
 
-            violations.first().messageTemplate shouldBe "should not be blank"
+            violations.first().message shouldBe "must not be blank"
         }
 
         @ParameterizedTest
@@ -96,8 +96,8 @@ class CardDtoMapperTest {
             // given
             val newCardRequest =
                 NewCardRequest(
-                    cardKey = randomCardKey,
-                    cardValue = cardValueValue,
+                    key = randomCardKey,
+                    value = cardValueValue,
                 )
 
             // when
@@ -106,9 +106,9 @@ class CardDtoMapperTest {
             // then
             violations.size shouldBe 1
 
-            violations.first().propertyPath.toString() shouldBe "cardValue"
+            violations.first().propertyPath.toString() shouldBe "value"
 
-            violations.first().messageTemplate shouldBe "should not be blank"
+            violations.first().message shouldBe "must not be blank"
         }
 
         @Suppress("UnusedPrivateMember")
@@ -129,15 +129,15 @@ class CardDtoMapperTest {
             // GIVEN
             val patchCardRequest =
                 PatchCardRequest(
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedCard =
                 Card(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // WHEN
@@ -163,15 +163,15 @@ class CardDtoMapperTest {
                 Card(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
             val expectedCard =
                 CardDtoResponse(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
-                    cardKey = randomCardKey,
-                    cardValue = randomCardValue,
+                    key = randomCardKey,
+                    value = randomCardValue,
                 )
 
             // when

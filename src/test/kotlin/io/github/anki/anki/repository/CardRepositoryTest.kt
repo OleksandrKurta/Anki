@@ -1,6 +1,7 @@
 package io.github.anki.anki.repository
 
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
@@ -31,8 +32,8 @@ class CardRepositoryTest @Autowired constructor(
         newCard =
             MongoCard(
                 deckId = getRandomID(),
-                cardKey = getRandomString(),
-                cardValue = getRandomString(),
+                key = getRandomString(),
+                value = getRandomString(),
             )
     }
 
@@ -47,15 +48,16 @@ class CardRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `should delete existing card by id`() {
+    fun `should soft delete existing card by id`() {
         // given
         val cardFromMongo = cardRepository.insert(newCard)
 
         // when
-        cardRepository.deleteById(cardFromMongo.id!!)
+        cardRepository.softDelete(cardFromMongo.id!!)
 
         // then
-        cardRepository.existsById(cardFromMongo.id!!) shouldBe false
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
     }
 
     @Test
@@ -64,7 +66,7 @@ class CardRepositoryTest @Autowired constructor(
         val notExistingCardId = getRandomID()
 
         // when
-        cardRepository.deleteById(notExistingCardId)
+        cardRepository.softDelete(notExistingCardId)
 
         // then
         cardRepository.existsById(notExistingCardId) shouldBe false

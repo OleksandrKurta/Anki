@@ -8,22 +8,22 @@ import io.github.anki.anki.service.model.Card
 fun NewCardRequest.toCard(deckId: String): Card =
     Card(
         deckId = deckId,
-        cardKey = this.cardKey!!,
-        cardValue = this.cardValue!!,
+        key = this.key!!,
+        value = this.value!!,
     )
 
 fun PatchCardRequest.toCard(cardId: String, deckId: String): Card =
     Card(
         id = cardId,
         deckId = deckId,
-        cardKey = this.cardKey,
-        cardValue = this.cardValue,
+        key = this.key,
+        value = this.value,
     )
 
 fun Card.toDto(): CardDtoResponse =
     CardDtoResponse(
         id = this.id!!,
         deckId = this.deckId!!,
-        cardKey = this.cardKey!!,
-        cardValue = this.cardValue!!,
+        key = this.key!!,
+        value = this.value!!,
     )

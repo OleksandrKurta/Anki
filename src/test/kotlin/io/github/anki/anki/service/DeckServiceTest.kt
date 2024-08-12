@@ -93,7 +93,7 @@ class DeckServiceTest {
 
             val randomDecks = getRandomMongoDecks(numberOfDecks, userId)
 
-            every { deckRepository.findByUserId(userId) } returns randomDecks
+            every { deckRepository.findByUserIdWithStatus(userId) } returns randomDecks
             val expectedDecks = randomDecks.map { it.toDeck() }
 
             // when
@@ -103,7 +103,7 @@ class DeckServiceTest {
             actualDecks.size shouldBe numberOfDecks
             actualDecks shouldContainExactlyInAnyOrder expectedDecks
 
-            verify(exactly = 1) { deckRepository.findByUserId(userId) }
+            verify(exactly = 1) { deckRepository.findByUserIdWithStatus(userId) }
         }
 
         private fun getRandomMongoDecks(number: Int, userId: ObjectId): List<MongoDeck> {
@@ -145,7 +145,7 @@ class DeckServiceTest {
                 )
 
             every {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
             every {
@@ -159,7 +159,7 @@ class DeckServiceTest {
             actualDeck shouldBe updatedDeck
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -179,7 +179,7 @@ class DeckServiceTest {
                 )
 
             every {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
             // when
@@ -189,7 +189,7 @@ class DeckServiceTest {
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
@@ -216,7 +216,7 @@ class DeckServiceTest {
                 )
 
             every {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
             // when
@@ -226,7 +226,7 @@ class DeckServiceTest {
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
@@ -259,7 +259,7 @@ class DeckServiceTest {
                     description = initialDeck.description,
                 )
             every {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
             every {
@@ -273,7 +273,7 @@ class DeckServiceTest {
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -307,7 +307,7 @@ class DeckServiceTest {
                 )
 
             every {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
             } returns initialDeck.toMongo()
 
             every {
@@ -321,7 +321,7 @@ class DeckServiceTest {
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserId(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
@@ -339,15 +339,15 @@ class DeckServiceTest {
             // given
             val deckId = getRandomID()
 
-            every { deckRepository.deleteById(deckId) } returns Unit
-            every { cardRepository.deleteByDeckId(deckId) } returns Unit
+            every { deckRepository.softDelete(deckId) } returns Unit
+            every { cardRepository.softDeleteByDeckId(deckId) } returns Unit
 
             // when
             deckService.deleteDeck(deckId.toString())
 
             // then
-            verify(exactly = 1) { deckRepository.deleteById(deckId) }
-            verify(exactly = 1) { cardRepository.deleteByDeckId(deckId) }
+            verify(exactly = 1) { deckRepository.softDelete(deckId) }
+            verify(exactly = 1) { cardRepository.softDeleteByDeckId(deckId) }
         }
     }
 }

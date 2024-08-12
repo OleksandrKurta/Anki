@@ -78,8 +78,8 @@ class CardsServiceTest {
                 MongoCard(
                     id = getRandomID(),
                     deckId = initialMongoCard.deckId,
-                    cardKey = initialCard.cardKey,
-                    cardValue = initialCard.cardValue,
+                    key = initialCard.key,
+                    value = initialCard.value,
                 )
 
             every {
@@ -111,11 +111,11 @@ class CardsServiceTest {
             val initialMongoCards = getRandomMongoCards(cardsAmount, deckId)
 
             every {
-                cardRepository.findByDeckId(deckId)
+                cardRepository.findByDeckIdWithStatus(deckId)
             } returns initialMongoCards
 
             // when
-            val actualDecks = cardService.getAllCardsFromDeck(deckId.toString(), mockUserId)
+            val actualDecks = cardService.findCardsByDeck(deckId.toString(), mockUserId)
 
             // then
             actualDecks.size shouldBe cardsAmount
@@ -123,7 +123,7 @@ class CardsServiceTest {
 
             validateGetDeckWasCalled()
             verify(exactly = 1) {
-                cardRepository.findByDeckId(deckId)
+                cardRepository.findByDeckIdWithStatus(deckId)
             }
         }
     }
@@ -145,15 +145,15 @@ class CardsServiceTest {
                 Card(
                     id = initialCard.id,
                     deckId = initialCard.deckId,
-                    cardKey = getRandomString("updated"),
-                    cardValue = getRandomString("updated"),
+                    key = getRandomString("updated"),
+                    value = getRandomString("updated"),
                 )
             val expectedMongoCard =
                 MongoCard(
                     id = initialMongoCard.id,
                     deckId = initialMongoCard.deckId,
-                    cardKey = updatedCard.cardKey,
-                    cardValue = updatedCard.cardValue,
+                    key = updatedCard.key,
+                    value = updatedCard.value,
                 )
 
             every { cardRepository.save(updatedCard.toMongo()) } returns expectedMongoCard
@@ -179,8 +179,8 @@ class CardsServiceTest {
                 Card(
                     id = initialCard.id,
                     deckId = deckId.toString(),
-                    cardKey = null,
-                    cardValue = null,
+                    key = null,
+                    value = null,
                 )
 
             // when
@@ -220,15 +220,15 @@ class CardsServiceTest {
                 Card(
                     id = initialCard.id,
                     deckId = initialCard.deckId,
-                    cardKey = getRandomString("updated"),
-                    cardValue = null,
+                    key = getRandomString("updated"),
+                    value = null,
                 )
             val expectedCard =
                 Card(
                     id = initialCard.id,
                     deckId = initialCard.deckId,
-                    cardKey = updatedCard.cardKey,
-                    cardValue = initialCard.cardValue,
+                    key = updatedCard.key,
+                    value = initialCard.value,
                 )
 
             every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
@@ -254,15 +254,15 @@ class CardsServiceTest {
                 Card(
                     id = initialCard.id,
                     deckId = initialCard.deckId,
-                    cardKey = null,
-                    cardValue = getRandomString("updated"),
+                    key = null,
+                    value = getRandomString("updated"),
                 )
             val expectedCard =
                 Card(
                     id = initialCard.id,
                     deckId = initialCard.deckId,
-                    cardKey = initialCard.cardKey,
-                    cardValue = updatedCard.cardValue,
+                    key = initialCard.key,
+                    value = updatedCard.value,
                 )
 
             every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
@@ -296,7 +296,7 @@ class CardsServiceTest {
         @Test
         fun `should delete the card`() {
             // given
-            every { cardRepository.deleteById(initialMongoCard.id!!) } returns Unit
+            every { cardRepository.softDelete(initialMongoCard.id!!) } returns Unit
 
             // when
             cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
@@ -305,7 +305,7 @@ class CardsServiceTest {
             validateGetDeckWasCalled()
 
             verify(exactly = 1) {
-                cardRepository.deleteById(initialMongoCard.id!!)
+                cardRepository.softDelete(initialMongoCard.id!!)
             }
         }
     }
@@ -323,8 +323,8 @@ class CardsServiceTest {
                 MongoCard(
                     id = getRandomID(),
                     deckId = deckId,
-                    cardKey = getRandomString("initial"),
-                    cardValue = getRandomString("initial"),
+                    key = getRandomString("initial"),
+                    value = getRandomString("initial"),
                 ),
             )
         }

@@ -6,36 +6,36 @@ import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
+import org.springframework.data.mongodb.core.mapping.Field
 import java.time.Instant
 
 @Document(collection = MongoDeck.COLLECTION_NAME)
 data class MongoDeck(
     @Id
-    val id: ObjectId? = null,
-    @Indexed
-    val userId: ObjectId,
-    val name: String? = null,
-    val description: String? = null,
+    @Field(MongoDocument.ID)
+    override val id: ObjectId? = null,
     @CreatedDate
-    val createdAt: Instant? = null,
+    @Field(MongoDocument.CREATED_AT)
+    override val createdAt: Instant? = null,
     @LastModifiedDate
-    val modifiedAt: Instant? = null,
-    val status: Status = Status.ACTIVE,
-) {
-    enum class Status {
-        ACTIVE,
-        DELETED,
-    }
+    @Field(MongoDocument.MODIFIED_AT)
+    override val modifiedAt: Instant? = null,
+    @Field(MongoDocument.STATUS)
+    override val status: DocumentStatus = DocumentStatus.ACTIVE,
+    @Indexed
+    @Field(USER_ID)
+    val userId: ObjectId,
+    @Field(NAME)
+    val name: String? = null,
+    @Field(DESCRIPTION)
+    val description: String? = null,
+) : MongoDocument {
 
     companion object {
         const val COLLECTION_NAME = "decks"
 
-        const val ID = "id"
         const val USER_ID = "userId"
         const val NAME = "name"
         const val DESCRIPTION = "description"
-        const val CREATED_AT = "createdAt"
-        const val MODIFIED_AT = "modifiedAt"
-        const val STATUS = "status"
     }
 }

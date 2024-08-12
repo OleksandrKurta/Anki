@@ -1,7 +1,11 @@
 package io.github.anki.anki.repository.mongodb
 
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
+import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -9,57 +13,30 @@ import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
 
 @Repository
-class CardRepository(
-    private val mongoTemplate: MongoTemplate,
-) {
-    private val entityClass = MongoCard::class.java
+class CardRepository @Autowired constructor(
+    override val mongoTemplate: MongoTemplate,
+) : MongoRepository<MongoCard>() {
 
-    fun insert(mongoCard: MongoCard): MongoCard =
-        mongoTemplate.insert(mongoCard)
+    override val entityClass = MongoCard::class.java
+    override val log = LoggerFactory.getLogger(CardRepository::class.java)
 
-    fun insert(mongoCards: Iterable<MongoCard>): List<MongoCard> =
-        mongoTemplate.insertAll(mongoCards.toMutableList()).toList()
-
-    fun save(mongoCard: MongoCard): MongoCard =
-        mongoTemplate.save(mongoCard)
-
-    fun findByDeckId(deckId: ObjectId, status: MongoCard.Status = MongoCard.Status.ACTIVE): List<MongoCard> =
-        mongoTemplate.find(
+    fun findByDeckIdWithStatus(deckId: ObjectId, status: DocumentStatus = DocumentStatus.ACTIVE): List<MongoCard> {
+        log.info("Finding by deckId = {} and status = {}", deckId, status)
+        return mongoTemplate.find(
             Query(
-                Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoCard.STATUS).`is`(status),
+                Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.STATUS).`is`(status),
             ),
             entityClass,
-        )
-
-    fun findById(id: ObjectId, status: MongoCard.Status = MongoCard.Status.ACTIVE): MongoCard? =
-        mongoTemplate.findOne(
-            Query(
-                Criteria.where(MongoCard.ID).`is`(id).and(MongoCard.STATUS).`is`(status),
-            ),
-            entityClass,
-        )
-
-    fun existsById(id: ObjectId, status: MongoCard.Status = MongoCard.Status.ACTIVE): Boolean =
-        mongoTemplate.exists(
-            Query(
-                Criteria.where(MongoCard.ID).`is`(id).and(MongoCard.STATUS).`is`(status),
-            ),
-            entityClass,
-        )
-
-    fun deleteById(id: ObjectId) {
-        mongoTemplate.updateFirst(
-            Query(Criteria.where(MongoCard.ID).`is`(id)),
-            Update().set(MongoCard.STATUS, MongoCard.Status.DELETED),
-            entityClass,
-        )
+        ).also { log.info("Found by deckId = {} and status = {} {}", deckId, status, it) }
     }
 
-    fun deleteByDeckId(deckId: ObjectId) {
+    fun softDeleteByDeckId(deckId: ObjectId) {
+        log.info("Soft deleting by deckId = {}", deckId)
         mongoTemplate.updateMulti(
             Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),
-            Update().set(MongoCard.STATUS, MongoCard.Status.DELETED),
+            Update().set(MongoDocument.STATUS, DocumentStatus.DELETED),
             entityClass,
         )
+        log.info("Soft deleted by deckId = {}", deckId)
     }
 }

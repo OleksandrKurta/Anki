@@ -9,8 +9,8 @@ import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
-import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.repository.mongodb.document.MongoDeck
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
+import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.MVCTest
@@ -116,7 +116,7 @@ class DecksControllerTest @Autowired constructor(
                     status { isBadRequest() }
                     content {
                         contentType(MediaType.APPLICATION_JSON)
-                        json("{\"name\": \"should not be blank\"}")
+                        json("{\"name\": \"must not be blank\"}")
                     }
                 }
         }
@@ -219,7 +219,8 @@ class DecksControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
-            result.response.contentAsString shouldBe "Deck does not exist"
+            result.response.contentAsString shouldBe
+                DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, mockUserId).message
 
             deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
         }
@@ -255,11 +256,14 @@ class DecksControllerTest @Autowired constructor(
 
             result.response.contentAsString.isEmpty() shouldBe true
 
-            deckRepository.existsById(insertedDeck.id!!) shouldBe false
-            cardRepository.findByDeckId(insertedDeck.id!!).isEmpty() shouldBe true
+            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE) shouldBe false
+            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED) shouldBe true
 
-            deckRepository.existsById(insertedDeck.id!!, MongoDeck.Status.DELETED)
-            cardRepository.findByDeckId(insertedDeck.id!!, MongoCard.Status.DELETED).size shouldBe insertedCards.size
+            cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).isEmpty() shouldBe true
+
+            cardRepository.findByDeckIdWithStatus(
+                insertedDeck.id!!, DocumentStatus.DELETED,
+            ).size shouldBe insertedCards.size
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =

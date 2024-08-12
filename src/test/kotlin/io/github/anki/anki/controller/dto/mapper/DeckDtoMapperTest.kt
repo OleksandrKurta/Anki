@@ -85,7 +85,7 @@ class DeckDtoMapperTest {
 
             violations.first().propertyPath.toString() shouldBe "name"
 
-            violations.first().messageTemplate shouldBe "should not be blank"
+            violations.first().message shouldBe "must not be blank"
         }
 
         @Suppress("UnusedPrivateMember")

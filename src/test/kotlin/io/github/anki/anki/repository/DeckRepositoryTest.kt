@@ -1,6 +1,7 @@
 package io.github.anki.anki.repository
 
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
@@ -52,10 +53,11 @@ class DeckRepositoryTest @Autowired constructor(
         val deckFromMongo = deckRepository.insert(newDeck)
 
         // when
-        deckRepository.deleteById(deckFromMongo.id!!)
+        deckRepository.softDelete(deckFromMongo.id!!)
 
         // then
-        deckRepository.existsById(deckFromMongo.id!!) shouldBe false
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
     }
 
     @Test
@@ -64,7 +66,7 @@ class DeckRepositoryTest @Autowired constructor(
         val notExistingDeckId = getRandomID()
 
         // when
-        deckRepository.deleteById(notExistingDeckId)
+        deckRepository.softDelete(notExistingDeckId)
 
         // then
         deckRepository.existsById(notExistingDeckId) shouldBe false

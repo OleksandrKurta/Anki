@@ -8,8 +8,11 @@ import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
+import io.github.anki.anki.service.exceptions.CardDoesNotExistException
+import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
@@ -59,8 +62,8 @@ class CardsControllerTest @Autowired constructor(
     fun setUp() {
         newCard =
             NewCardRequest(
-                cardKey = getRandomString("initial"),
-                cardValue = getRandomString("initial"),
+                key = getRandomString("initial"),
+                value = getRandomString("initial"),
             )
         insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
         LOG.info("Inserted new Deck {}", insertedDeck)
@@ -99,8 +102,11 @@ class CardsControllerTest @Autowired constructor(
 
         @Test
         fun `should return 400 if deck does not exist`() {
+            // given
+            val randomDeckId = getRandomID()
+
             // when
-            val performPost = postNewCard(newCard, getRandomID().toString())
+            val performPost = postNewCard(newCard, randomDeckId.toString())
             val result =
                 performPost
                     .andDo { print() }
@@ -108,7 +114,8 @@ class CardsControllerTest @Autowired constructor(
                     .andReturn()
             // then
 
-            result.response.contentAsString shouldBe "Deck does not exist"
+            result.response.contentAsString shouldBe
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
         }
 
         private fun postNewCard(newCard: NewCardRequest, deckId: String): ResultActionsDsl =
@@ -164,8 +171,8 @@ class CardsControllerTest @Autowired constructor(
             // given
             val patchCardRequest =
                 PatchCardRequest(
-                    cardKey = getRandomString("updated"),
-                    cardValue = getRandomString("updated"),
+                    key = getRandomString("updated"),
+                    value = getRandomString("updated"),
                 )
 
             // when
@@ -177,22 +184,25 @@ class CardsControllerTest @Autowired constructor(
                 )
 
             // then
-            actualCard.cardKey shouldBe patchCardRequest.cardKey
-            actualCard.cardValue shouldBe patchCardRequest.cardValue
+            actualCard.key shouldBe patchCardRequest.key
+            actualCard.value shouldBe patchCardRequest.value
 
             val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
-            cardFromMongo.cardKey shouldBe patchCardRequest.cardKey
+            cardFromMongo.key shouldBe patchCardRequest.key
 
-            cardFromMongo.cardValue shouldBe patchCardRequest.cardValue
+            cardFromMongo.value shouldBe patchCardRequest.value
         }
 
         @Test
         fun `should return 400 if deck does not exist`() {
+            // given
+            val randomDeckId = getRandomID()
+
             // when
             val performPatch =
                 sendPatchCard(
-                    getRandomID().toString(),
+                    randomDeckId.toString(),
                     cardId = insertedCard.id.toString(),
                     PatchCardRequest(),
                 )
@@ -205,16 +215,20 @@ class CardsControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
-            result.response.contentAsString shouldBe "Deck does not exist"
+            result.response.contentAsString shouldBe
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
         }
 
         @Test
         fun `should return 400 if card does not exist`() {
+            // given
+            val randomCardId = getRandomID()
+
             // when
             val performPatch =
                 sendPatchCard(
                     insertedDeck.id.toString(),
-                    cardId = getRandomID().toString(),
+                    cardId = randomCardId.toString(),
                     PatchCardRequest(),
                 )
 
@@ -226,7 +240,8 @@ class CardsControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
-            result.response.contentAsString shouldBe "Card does not exist"
+            result.response.contentAsString shouldBe
+                CardDoesNotExistException.fromCardId(randomCardId.toString()).message
         }
 
         private fun sendPatchCardAndValidateStatusAndContentType(
@@ -274,11 +289,11 @@ class CardsControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
-            assertNull(result.response.contentType)
+            result.response.contentType shouldBe null
+            result.response.contentAsString.isEmpty() shouldBe true
 
-            assertTrue(result.response.contentAsString.isEmpty())
-
-            assertFalse(cardRepository.existsById(model.id!!))
+            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.ACTIVE) shouldBe false
+            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.DELETED) shouldBe true
         }
 
         @Test
@@ -306,10 +321,10 @@ class CardsControllerTest @Autowired constructor(
         @Test
         fun `should get 400 when deck does not exists`() {
             // given
-            val notExistingCardID = ObjectId.get()
+            val randomDeckId = getRandomID()
 
             // when
-            val performDelete = sendDeleteCard(getRandomID().toString(), notExistingCardID.toString())
+            val performDelete = sendDeleteCard(randomDeckId.toString(), getRandomID().toString())
 
             // when/then
             val result =
@@ -318,7 +333,8 @@ class CardsControllerTest @Autowired constructor(
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
 
-            result.response.contentAsString shouldBe "Deck does not exist"
+            result.response.contentAsString shouldBe
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
         }
 
         private fun sendDeleteCard(deckId: String, cardId: String): ResultActionsDsl =
