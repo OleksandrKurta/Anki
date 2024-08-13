@@ -28,10 +28,11 @@ class DeckService(
     }
 
     fun updateDeck(deck: Deck): Deck {
-        val mongoDeck = getDeckByIdAndUserId(
-            deck.id ?: throw IllegalArgumentException("Deck id can not be null"),
-            deck.userId,
-        )
+        val mongoDeck =
+            getDeckByIdAndUserId(
+                deck.id ?: throw IllegalArgumentException("Deck id can not be null"),
+                deck.userId,
+            )
         val updatedMongoDeck = mongoDeck.update(deck)
         if (mongoDeck == updatedMongoDeck) {
             return mongoDeck.toDeck()

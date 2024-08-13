@@ -6,6 +6,7 @@ import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.service.model.Card
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -181,6 +182,57 @@ class CardDtoMapperTest {
             actual shouldBe expectedCard
 
             actual.id shouldNotBe null
+        }
+
+        @Test
+        fun `should be error if id is null`() {
+            // given
+            val card =
+                Card(
+                    id = null,
+                    deckId = randomDeckID.toString(),
+                    key = randomCardKey,
+                    value = randomCardValue,
+                )
+
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                card.toDto()
+            }
+        }
+
+        @Test
+        fun `should be error if key is null`() {
+            // given
+            val card =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    key = null,
+                    value = randomCardValue,
+                )
+
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                card.toDto()
+            }
+        }
+
+        @Test
+        fun `should be error if value is null`() {
+            // given
+            val card =
+                Card(
+                    id = randomCardID.toString(),
+                    deckId = randomDeckID.toString(),
+                    key = randomCardKey,
+                    value = null,
+                )
+
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                card.toDto()
+            }
         }
     }
 }

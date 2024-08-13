@@ -38,7 +38,7 @@ dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("io.kotest:kotest-assertions-core-jvm:5.0.0")
+    testImplementation("io.kotest:kotest-runner-junit5:5.0.0")
     testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0")
     testImplementation("org.mockito:mockito-core:5.12.0")

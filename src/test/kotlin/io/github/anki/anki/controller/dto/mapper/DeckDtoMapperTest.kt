@@ -6,6 +6,7 @@ import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.shouldBe
 import jakarta.validation.Validation
 import jakarta.validation.Validator
@@ -158,6 +159,40 @@ class DeckDtoMapperTest {
             // then
 
             actualDeckDtoResponse shouldBe expectedDeckDtoResponse
+        }
+
+        @Test
+        fun `should be error if id is null`() {
+            // given
+            val deck =
+                Deck(
+                    id = null,
+                    userId = randomUserID.toString(),
+                    name = randomDeckName,
+                    description = randomDeckDescription,
+                )
+
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                deck.toDto()
+            }
+        }
+
+        @Test
+        fun `should be error if name is null`() {
+            // given
+            val deck =
+                Deck(
+                    id = randomDeckID.toString(),
+                    userId = randomUserID.toString(),
+                    name = null,
+                    description = randomDeckDescription,
+                )
+
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                deck.toDto()
+            }
         }
     }
 }
