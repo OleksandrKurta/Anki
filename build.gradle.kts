@@ -67,10 +67,8 @@ detekt {
     autoCorrect = true
     source.setFrom(
         files(
-            "$projectDir/src/main/kotlin",
-            "$projectDir/src/test/kotlin",
-            "$projectDir/src/testFixtures/kotlin",
-            "$projectDir/build.gradle.kts",
+            project.sourceSets.map { it.kotlin },
+            buildscript.sourceFile,
         ),
     )
 }
