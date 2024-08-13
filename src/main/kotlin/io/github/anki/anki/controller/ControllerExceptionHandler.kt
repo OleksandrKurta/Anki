@@ -33,7 +33,7 @@ class ControllerExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
     }
 
-    fun MethodArgumentNotValidException.toMap(): Map<String, String> {
+    private fun MethodArgumentNotValidException.toMap(): Map<String, String> {
         return bindingResult.fieldErrors
             .associate { it.field to (it.defaultMessage ?: "Validation error") }
     }
