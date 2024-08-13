@@ -3,7 +3,7 @@ package io.github.anki.anki.controller.dto
 import jakarta.validation.constraints.NotBlank
 
 data class NewDeckRequest(
-    @field:NotBlank()
+    @field:NotBlank
     val name: String?,
     val description: String?,
 )

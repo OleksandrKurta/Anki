@@ -22,8 +22,8 @@ fun PatchDeckRequest.toDeck(deckId: String, userId: String): Deck =
 
 fun Deck.toDto(): DeckDtoResponse =
     DeckDtoResponse(
-        id = this.id!!,
+        id = this.id ?: throw IllegalArgumentException("Deck id can not be null"),
         userId = this.userId,
-        name = this.name!!,
+        name = this.name ?: throw IllegalArgumentException("Deck name can not be null"),
         description = this.description,
     )

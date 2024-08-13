@@ -30,7 +30,7 @@ class CardsService(
 
     fun updateCard(userId: String, card: Card): Card {
         deckService.getDeckByIdAndUserId(card.deckId, userId)
-        val mongoCard = getCardById(card.id!!)
+        val mongoCard = getCardById(card.id ?: throw IllegalArgumentException("Card Id can not be null"))
         val updatedMongoCard = mongoCard.update(card)
         if (mongoCard == updatedMongoCard) {
             return mongoCard.toCard()
