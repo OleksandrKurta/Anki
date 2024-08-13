@@ -31,7 +31,8 @@ class CardsController(
         @Valid
         @RequestBody
         request: NewCardRequest,
-        @PathVariable deckId: String,
+        @PathVariable 
+        deckId: String,
     ): CardDtoResponse =
         cardService.createNewCard(
             userId = requestUserId,
