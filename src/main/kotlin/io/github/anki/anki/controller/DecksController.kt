@@ -42,6 +42,6 @@ class DecksController(
     @DeleteMapping("/{deckId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteDeck(@PathVariable deckId: String) {
-        service.deleteDeck(deckId)
+        service.deleteDeck(deckId, requestUserId)
     }
 }

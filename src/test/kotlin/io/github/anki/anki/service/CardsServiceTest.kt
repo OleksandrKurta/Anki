@@ -2,12 +2,12 @@ package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
@@ -55,8 +55,8 @@ class CardsServiceTest {
     @BeforeEach
     fun baseMockPrecondition() {
         every {
-            deckService.getDeckByIdAndUserId(deckId.toString(), mockUserId)
-        } returns MongoDeck(userId = ObjectId())
+            deckService.validateUserHasPermissions(deckId.toString(), mockUserId)
+        } returns Unit
     }
 
     @BeforeEach
@@ -92,7 +92,6 @@ class CardsServiceTest {
             // then
             actualCard shouldBe expectedMongoCard.toCard()
 
-            validateGetDeckWasCalled()
             verify(exactly = 1) {
                 cardRepository.insert(initialMongoCard)
             }
@@ -121,7 +120,7 @@ class CardsServiceTest {
             actualDecks.size shouldBe cardsAmount
             actualDecks shouldContainExactlyInAnyOrder initialMongoCards.map { it.toCard() }
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
                 cardRepository.findByDeckIdWithStatus(deckId)
             }
@@ -164,11 +163,27 @@ class CardsServiceTest {
             // then
             actualCard shouldBe expectedMongoCard.toCard()
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 1) {
                 cardRepository.save(updatedCard.toMongo())
+            }
+        }
+
+        @Test
+        fun `should be error if card id is null`() {
+            // when/then
+            shouldThrowExactly<IllegalArgumentException> {
+                cardService.updateCard(
+                    mockUserId,
+                    Card(
+                        id = null,
+                        deckId = deckId.toString(),
+                        key = null,
+                        value = null,
+                    ),
+                )
             }
         }
 
@@ -189,7 +204,7 @@ class CardsServiceTest {
             // then
             actualCard shouldBe initialCard
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 0) {
@@ -205,7 +220,7 @@ class CardsServiceTest {
             // then
             actualCard shouldBe initialCard
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 0) {
@@ -239,7 +254,7 @@ class CardsServiceTest {
             // then
             actualCard shouldBe expectedCard
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 1) {
@@ -273,7 +288,7 @@ class CardsServiceTest {
             // then
             actualCard shouldBe expectedCard
 
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 1) {
@@ -302,7 +317,7 @@ class CardsServiceTest {
             cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
 
             // then
-            validateGetDeckWasCalled()
+            validateValidateUserHasPermissionsWasCalled()
 
             verify(exactly = 1) {
                 cardRepository.softDelete(initialMongoCard.id!!)
@@ -310,9 +325,9 @@ class CardsServiceTest {
         }
     }
 
-    private fun validateGetDeckWasCalled() {
+    private fun validateValidateUserHasPermissionsWasCalled() {
         verify(exactly = 1) {
-            deckService.getDeckByIdAndUserId(initialCard.deckId, mockUserId)
+            deckService.validateUserHasPermissions(initialCard.deckId, mockUserId)
         }
     }
 

@@ -16,19 +16,19 @@ abstract class MongoRepository<T : MongoDocument> {
 
     fun insert(obj: T): T {
         log.info("Inserting {}", obj)
-        return mongoTemplate.insert(obj).also { log.info("Inserted {}", it) }
+        return mongoTemplate.insert(obj).also { log.info("Inserted object = {}", it) }
     }
 
     fun insert(objects: Iterable<T>): List<T> {
         log.info("Inserting {}", objects)
         return mongoTemplate.insertAll(objects.toList())
             .toList()
-            .also { log.info("Inserted {}", it) }
+            .also { log.info("Inserted object = {}", it) }
     }
 
     fun save(obj: T): T {
         log.info("Saving {}", obj)
-        return mongoTemplate.save(obj).also { log.info("Saved {}", it) }
+        return mongoTemplate.save(obj).also { log.info("Saved object = {}", it) }
     }
 
     fun softDelete(id: ObjectId) {
@@ -54,7 +54,7 @@ abstract class MongoRepository<T : MongoDocument> {
         return mongoTemplate.findOne(
             Query(Criteria.where(MongoDocument.ID).`is`(id)),
             entityClass,
-        ).also { log.info("Found by id = {} {}", id, it) }
+        ).also { log.info("Found by id = {} object = {}", id, it) }
     }
 
     fun findByIdWithStatus(id: ObjectId, status: DocumentStatus): T? {
@@ -64,7 +64,7 @@ abstract class MongoRepository<T : MongoDocument> {
                 Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.STATUS).`is`(status),
             ),
             entityClass,
-        ).also { log.info("Found by id = {} and status {} {}", id, status, it) }
+        ).also { log.info("Found by id = {} and status {} object = {}", id, status, it) }
     }
 
     fun existsById(id: ObjectId): Boolean {
@@ -72,7 +72,7 @@ abstract class MongoRepository<T : MongoDocument> {
         return mongoTemplate.exists(
             Query(Criteria.where(MongoDocument.ID).`is`(id)),
             entityClass,
-        ).also { log.info("Does exist by id = {} {}", id, it) }
+        ).also { log.info("Does exist by id = {} object = {}", id, it) }
     }
 
     fun existsByIdWithStatus(id: ObjectId, status: DocumentStatus): Boolean {
@@ -82,6 +82,6 @@ abstract class MongoRepository<T : MongoDocument> {
                 Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.STATUS).`is`(status),
             ),
             entityClass,
-        ).also { log.info("Does exist by id = {} and status = {} {}", id, status, it) }
+        ).also { log.info("Does exist by id = {} and status = {} object = {}", id, status, it) }
     }
 }

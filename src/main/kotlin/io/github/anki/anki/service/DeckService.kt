@@ -2,6 +2,7 @@ package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.Deck
@@ -28,11 +29,14 @@ class DeckService(
     }
 
     fun updateDeck(deck: Deck): Deck {
+        val deckId = deck.id ?: throw IllegalArgumentException("Deck id can not be null")
+        validateUserHasPermissions(deckId, deck.userId)
         val mongoDeck =
-            getDeckByIdAndUserId(
-                deck.id ?: throw IllegalArgumentException("Deck id can not be null"),
-                deck.userId,
-            )
+            deckRepository.findByIdAndUserIdWithStatus(
+                id = ObjectId(deckId),
+                userId = ObjectId(deck.userId),
+                status = DocumentStatus.ACTIVE,
+            ) ?: throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, deck.userId)
         val updatedMongoDeck = mongoDeck.update(deck)
         if (mongoDeck == updatedMongoDeck) {
             return mongoDeck.toDeck()
@@ -42,18 +46,24 @@ class DeckService(
             .toDeck()
     }
 
-    fun deleteDeck(deckId: String) {
+    fun deleteDeck(deckId: String, userId: String) {
+        validateUserHasPermissions(deckId, userId)
         deckRepository.softDelete(ObjectId(deckId))
         cardRepository.softDeleteByDeckId(ObjectId(deckId))
     }
 
-    fun getDeckByIdAndUserId(deckId: String, userId: String): MongoDeck {
-        val mongoDeck = deckRepository.findByIdAndUserIdWithStatus(id = ObjectId(deckId), userId = ObjectId(userId))
-        if (mongoDeck != null) {
-            return mongoDeck
+    fun validateUserHasPermissions(deckId: String, userId: String) {
+        if (!hasPermissions(deckId, userId)) {
+            throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)
         }
-        throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)
     }
+
+    private fun hasPermissions(deckId: String, userId: String): Boolean =
+        deckRepository.existsByIdAndUserIdWithStatus(
+            id = ObjectId(deckId),
+            userId = ObjectId(userId),
+            status = DocumentStatus.ACTIVE,
+        )
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =
         this.copy(

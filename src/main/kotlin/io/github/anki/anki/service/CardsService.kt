@@ -15,23 +15,23 @@ class CardsService(
     private val deckService: DeckService,
 ) {
     fun createNewCard(userId: String, card: Card): Card {
-        deckService.getDeckByIdAndUserId(card.deckId, userId)
+        deckService.validateUserHasPermissions(card.deckId, userId)
         return cardRepository
             .insert(card.toMongo())
             .toCard()
     }
 
     fun findCardsByDeck(deckId: String, userId: String): List<Card> {
-        deckService.getDeckByIdAndUserId(deckId, userId)
+        deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
             .findByDeckIdWithStatus(ObjectId(deckId))
             .map { it.toCard() }
     }
 
     fun updateCard(userId: String, card: Card): Card {
-        deckService.getDeckByIdAndUserId(card.deckId, userId)
-        val mongoCard = getCardById(card.id ?: throw IllegalArgumentException("Card Id can not be null"))
-        val updatedMongoCard = mongoCard.update(card)
+        deckService.validateUserHasPermissions(card.deckId, userId)
+        val mongoCard: MongoCard = getCardById(card.id ?: throw IllegalArgumentException("Card Id can not be null"))
+        val updatedMongoCard: MongoCard = mongoCard.update(card)
         if (mongoCard == updatedMongoCard) {
             return mongoCard.toCard()
         }
@@ -39,17 +39,12 @@ class CardsService(
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
-        deckService.getDeckByIdAndUserId(deckId, userId)
+        deckService.validateUserHasPermissions(deckId, userId)
         cardRepository.softDelete(ObjectId(cardId))
     }
 
-    private fun getCardById(cardId: String): MongoCard {
-        val mongoCard = cardRepository.findById(ObjectId(cardId))
-        if (mongoCard != null) {
-            return mongoCard
-        }
-        throw CardDoesNotExistException.fromCardId(cardId)
-    }
+    private fun getCardById(cardId: String): MongoCard =
+        cardRepository.findById(ObjectId(cardId)) ?: throw CardDoesNotExistException.fromCardId(cardId)
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(
