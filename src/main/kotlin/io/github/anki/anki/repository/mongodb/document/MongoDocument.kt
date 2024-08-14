@@ -4,13 +4,9 @@ import org.bson.types.ObjectId
 import java.time.Instant
 
 interface MongoDocument {
-
     val id: ObjectId?
-
     val createdAt: Instant?
-
     val modifiedAt: Instant?
-
     val status: DocumentStatus
 
     companion object {
