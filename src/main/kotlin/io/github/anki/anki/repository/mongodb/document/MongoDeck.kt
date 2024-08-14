@@ -33,7 +33,6 @@ data class MongoDeck(
 
     companion object {
         const val COLLECTION_NAME = "decks"
-
         const val USER_ID = "userId"
         const val NAME = "name"
         const val DESCRIPTION = "description"
