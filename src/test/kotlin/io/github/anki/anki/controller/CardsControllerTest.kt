@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -42,9 +41,6 @@ import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
-import kotlin.test.assertFalse
-import kotlin.test.assertNull
-import kotlin.test.assertTrue
 
 @MVCTest
 class CardsControllerTest @Autowired constructor(
@@ -66,7 +62,6 @@ class CardsControllerTest @Autowired constructor(
                 value = getRandomString("initial"),
             )
         insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
-        LOG.info("Inserted new Deck {}", insertedDeck)
     }
 
     @Nested
@@ -74,7 +69,8 @@ class CardsControllerTest @Autowired constructor(
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PostCard {
         @Test
-        fun `should create new Card`() {
+        fun `should create new Card always`() {
+            // when
             val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
 
             val createdCard =
@@ -83,6 +79,7 @@ class CardsControllerTest @Autowired constructor(
                     .contentAsString
                     .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
 
+            // then
             performPost
                 .andDo { print() }
                 .andExpect {
@@ -163,7 +160,6 @@ class CardsControllerTest @Autowired constructor(
         @BeforeTest
         fun createCard() {
             insertedCard = cardRepository.insertRandom(1, insertedDeck.id!!).first()
-            LOG.info("Inserted new Card {}", insertedCard)
         }
 
         @Test
@@ -311,11 +307,10 @@ class CardsControllerTest @Autowired constructor(
                     .andExpect { status { isNoContent() } }
                     .andReturn()
 
-            assertNull(result.response.contentType)
+            result.response.contentType shouldBe null
+            result.response.contentAsString.isEmpty() shouldBe true
 
-            assertTrue(result.response.contentAsString.isEmpty())
-
-            assertFalse(cardRepository.existsById(notExistingCardID))
+            cardRepository.existsByIdWithStatus(notExistingCardID, DocumentStatus.ACTIVE) shouldBe false
         }
 
         @Test
@@ -342,8 +337,6 @@ class CardsControllerTest @Autowired constructor(
     }
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardsControllerTest::class.java)
-
         @Container
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()

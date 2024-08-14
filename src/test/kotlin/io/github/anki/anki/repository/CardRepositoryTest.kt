@@ -11,11 +11,9 @@ import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.util.Assert
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
@@ -28,7 +26,6 @@ class CardRepositoryTest @Autowired constructor(
 
     @BeforeTest
     fun setUp() {
-        LOG.info("Initializing new MongoCard")
         newCard =
             MongoCard(
                 deckId = getRandomID(),
@@ -39,12 +36,12 @@ class CardRepositoryTest @Autowired constructor(
 
     @Test
     fun `should insert card`() {
-        // given
+        // when
         val cardFromMongo = cardRepository.insert(newCard)
 
-        // when, then
+        // then
         cardFromMongo.id shouldNotBe null
-        Assert.isTrue(cardRepository.existsById(cardFromMongo.id!!), "Card appear in repository")
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
     }
 
     @Test
@@ -73,8 +70,6 @@ class CardRepositoryTest @Autowired constructor(
     }
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(CardRepositoryTest::class.java)
-
         @Container
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()

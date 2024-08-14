@@ -12,7 +12,6 @@ import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.ints.exactly
 import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every

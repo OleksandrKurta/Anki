@@ -271,7 +271,6 @@ class DecksControllerTest @Autowired constructor(
     }
 
     companion object {
-
         @Container
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()

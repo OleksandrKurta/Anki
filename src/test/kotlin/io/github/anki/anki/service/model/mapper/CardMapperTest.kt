@@ -35,7 +35,7 @@ class CardMapperTest {
     inner class CardToMongo {
         @Test
         fun `should map card to mongo when id is null`() {
-            // GIVEN
+            // given
             val card =
                 Card(
                     deckId = randomDeckID.toString(),
@@ -49,10 +49,10 @@ class CardMapperTest {
                     value = randomCardValue,
                 )
 
-            // WHEN
+            // when
             val actual: MongoCard = card.toMongo()
 
-            // THEN
+            // then
             actual.shouldBeEqualToIgnoringFields(expectedMongoCard, MongoCard::id)
 
             actual.id shouldBe null
@@ -60,7 +60,7 @@ class CardMapperTest {
 
         @Test
         fun `should map card to mongo when id is not null`() {
-            // GIVEN
+            // given
             val card =
                 Card(
                     id = randomCardID.toString(),
@@ -76,10 +76,10 @@ class CardMapperTest {
                     value = randomCardValue,
                 )
 
-            // WHEN
+            // when
             val actual: MongoCard = card.toMongo()
 
-            // THEN
+            // then
             actual shouldBe expectedMongoCard
         }
     }

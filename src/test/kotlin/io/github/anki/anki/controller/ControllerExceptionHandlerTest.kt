@@ -28,8 +28,10 @@ class ControllerExceptionHandlerTest {
     @ParameterizedTest
     @MethodSource("getExceptionTypes")
     fun `should catch exception and return 500`(exception: Exception) {
+        // when
         val responseEntity = exceptionHandler.globalExceptionHandler(exception)
 
+        // then
         responseEntity.statusCode shouldBe HttpStatus.INTERNAL_SERVER_ERROR
 
         responseEntity.body shouldBe "Internal Server Error"
@@ -41,6 +43,7 @@ class ControllerExceptionHandlerTest {
         objectName: String,
         fieldName: String,
     ) {
+        // given
         val exception = createMethodArgumentNotValidException(objectName, fieldName)
 
         // when
@@ -54,8 +57,10 @@ class ControllerExceptionHandlerTest {
 
     @Test
     fun `should return 404 if method or path not found`() {
+        // when
         val responseEntity = exceptionHandler.methodNotSupportedHandler()
 
+        // then
         responseEntity.statusCode shouldBe HttpStatus.NOT_FOUND
 
         responseEntity.body shouldBe "Not Found"
@@ -63,8 +68,10 @@ class ControllerExceptionHandlerTest {
 
     @Test
     fun `should return 400 if user does not have such deck`() {
+        // when
         val responseEntity = exceptionHandler.doesNotExistHandler(DeckDoesNotExistException())
 
+        // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
         responseEntity.body shouldBe "Deck does not exist"
@@ -72,8 +79,10 @@ class ControllerExceptionHandlerTest {
 
     @Test
     fun `should return 400 if user does not have such card`() {
+        // when
         val responseEntity = exceptionHandler.doesNotExistHandler(CardDoesNotExistException())
 
+        // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
         responseEntity.body shouldBe "Card does not exist"

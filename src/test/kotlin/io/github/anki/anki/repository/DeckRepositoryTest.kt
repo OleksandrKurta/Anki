@@ -11,11 +11,9 @@ import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.util.Assert
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
@@ -34,7 +32,6 @@ class DeckRepositoryTest @Autowired constructor(
                 name = getRandomString(),
                 description = getRandomString(),
             )
-        LOG.info("Initialized new {}", newDeck)
     }
 
     @Test
@@ -44,7 +41,8 @@ class DeckRepositoryTest @Autowired constructor(
 
         // when, then
         deckFromMongo.id shouldNotBe null
-        Assert.isTrue(deckRepository.existsById(deckFromMongo.id!!), "Deck appear in repository")
+
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
     }
 
     @Test
@@ -73,8 +71,6 @@ class DeckRepositoryTest @Autowired constructor(
     }
 
     companion object {
-        private val LOG = LoggerFactory.getLogger(DeckRepositoryTest::class.java)
-
         @Container
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
