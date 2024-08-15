@@ -1,11 +1,11 @@
 package io.github.anki.anki.repository.mongodb.document
-
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.springframework.data.annotation.Id
 import org.springframework.data.mongodb.core.mapping.DBRef
 import org.springframework.data.mongodb.core.mapping.Document
+
 
 @Document(collection = MongoUser.COLLECTION_NAME)
 class MongoUser {
@@ -35,15 +35,6 @@ class MongoUser {
         this.email = email
         this.password = password
     }
-
-    constructor(id: String?, username: String?, email: String?, password: String?, roles: Set<MongoRole?>) {
-        this.id = id
-        this.email = email
-        this.username = username
-        this.password = password
-        this.roles = roles
-    }
-
     companion object {
         const val COLLECTION_NAME = "user"
     }

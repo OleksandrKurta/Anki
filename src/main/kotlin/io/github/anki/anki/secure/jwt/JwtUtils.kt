@@ -1,11 +1,7 @@
 package io.github.anki.anki.secure.jwt
 
-import io.github.anki.anki.service.model.User
-import io.jsonwebtoken.ExpiredJwtException
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.MalformedJwtException
-import io.jsonwebtoken.SignatureAlgorithm
-import io.jsonwebtoken.UnsupportedJwtException
+import io.github.anki.anki.service.UserDetailsImpl
+import io.jsonwebtoken.*
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
 import org.slf4j.Logger
@@ -14,7 +10,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
 import java.security.Key
-import java.util.Date
+import java.util.*
 
 @Component
 class JwtUtils {
@@ -25,41 +21,43 @@ class JwtUtils {
     private val jwtExpirationMs = 0
 
     fun generateJwtToken(authentication: Authentication): String {
-        val userPrincipal: User = authentication.principal as User
+        val userPrincipal: UserDetailsImpl = authentication.principal as UserDetailsImpl
 
         return Jwts.builder()
-            .setSubject(userPrincipal.username)
+            .setSubject((userPrincipal.getUsername()))
             .setIssuedAt(Date())
             .setExpiration(Date(Date().time + jwtExpirationMs))
             .signWith(key(), SignatureAlgorithm.HS256)
             .compact()
     }
 
-    private fun key(): Key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret))
+    private fun key(): Key {
+        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret))
+    }
 
-    fun getUserNameFromJwtToken(token: String?): String =
-        Jwts.parserBuilder().setSigningKey(
-            key(),
-        ).build().parseClaimsJws(token).body.subject
+    fun getUserNameFromJwtToken(token: String?): String {
+        return Jwts.parserBuilder().setSigningKey(key()).build()
+            .parseClaimsJws(token).body.subject
+    }
 
     fun validateJwtToken(authToken: String?): Boolean {
         try {
             Jwts.parserBuilder().setSigningKey(key()).build().parse(authToken)
             return true
         } catch (e: MalformedJwtException) {
-            LOGGER.error("Invalid JWT token: {}", e.message)
+            logger.error("Invalid JWT token: {}", e.message)
         } catch (e: ExpiredJwtException) {
-            LOGGER.error("JWT token is expired: {}", e.message)
+            logger.error("JWT token is expired: {}", e.message)
         } catch (e: UnsupportedJwtException) {
-            LOGGER.error("JWT token is unsupported: {}", e.message)
+            logger.error("JWT token is unsupported: {}", e.message)
         } catch (e: IllegalArgumentException) {
-            LOGGER.error("JWT claims string is empty: {}", e.message)
+            logger.error("JWT claims string is empty: {}", e.message)
         }
 
         return false
     }
 
     companion object {
-        private val LOGGER: Logger = LoggerFactory.getLogger(JwtUtils::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(JwtUtils::class.java)
     }
 }

@@ -1,6 +1,6 @@
 package io.github.anki.anki.secure.jwt
 
-import io.github.anki.anki.service.UserService
+import io.github.anki.anki.service.UserDetailsServiceImpl
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest
@@ -21,32 +21,30 @@ class AuthTokenFilter : OncePerRequestFilter() {
     private val jwtUtils: JwtUtils? = null
 
     @Autowired
-    private val userService: UserService? = null
+    private val userDetailsService: UserDetailsServiceImpl? = null
 
     @Throws(ServletException::class, IOException::class)
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain,
+        filterChain: FilterChain
     ) {
         try {
             val jwt = parseJwt(request)
             if (jwt != null && jwtUtils!!.validateJwtToken(jwt)) {
                 val username: String = jwtUtils.getUserNameFromJwtToken(jwt)
 
-                val userDetails: UserDetails = userService!!.loadUserByUsername(username)
-                val authentication =
-                    UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.authorities,
-                    )
+                val userDetails: UserDetails = userDetailsService!!.loadUserByUsername(username)
+                val authentication = UsernamePasswordAuthenticationToken(
+                    userDetails, null,
+                    userDetails.authorities
+                )
                 authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
 
                 SecurityContextHolder.getContext().authentication = authentication
             }
         } catch (e: Exception) {
-            Companion.LOGGER.error("Cannot set user authentication: ", e)
+            Companion.logger.error("Cannot set user authentication: {}", e)
         }
 
         filterChain.doFilter(request, response)
@@ -54,15 +52,15 @@ class AuthTokenFilter : OncePerRequestFilter() {
 
     private fun parseJwt(request: HttpServletRequest): String? {
         val headerAuth = request.getHeader("Authorization")
-        val tokenPrefix = "Bearer "
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(tokenPrefix)) {
-            return headerAuth.substring(tokenPrefix.length, headerAuth.length)
+
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
+            return headerAuth.substring(7, headerAuth.length)
         }
 
         return null
     }
 
     companion object {
-        private val LOGGER: Logger = LoggerFactory.getLogger(AuthTokenFilter::class.java)
+        private val logger: Logger = LoggerFactory.getLogger(AuthTokenFilter::class.java)
     }
 }
