@@ -10,6 +10,7 @@ import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -36,37 +37,43 @@ class CardRepositoryTest @Autowired constructor(
 
     @Test
     fun `should insert card`() {
-        // when
-        val cardFromMongo = cardRepository.insert(newCard)
+        runBlocking {
+            // when
+            val cardFromMongo = cardRepository.insert(newCard)
 
-        // then
-        cardFromMongo.id shouldNotBe null
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+            // then
+            cardFromMongo.id shouldNotBe null
+            cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        }
     }
 
     @Test
     fun `should soft delete existing card by id`() {
-        // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        runBlocking {
+            // given
+            val cardFromMongo = cardRepository.insert(newCard)
 
-        // when
-        cardRepository.softDelete(cardFromMongo.id!!)
+            // when
+            cardRepository.softDelete(cardFromMongo.id!!)
 
-        // then
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+            // then
+            cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
+            cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        }
     }
 
     @Test
     fun `should delete NOT existing card by id`() {
-        // given
-        val notExistingCardId = getRandomID()
+        runBlocking {
+            // given
+            val notExistingCardId = getRandomID()
 
-        // when
-        cardRepository.softDelete(notExistingCardId)
+            // when
+            cardRepository.softDelete(notExistingCardId)
 
-        // then
-        cardRepository.existsById(notExistingCardId) shouldBe false
+            // then
+            cardRepository.existsById(notExistingCardId) shouldBe false
+        }
     }
 
     companion object {

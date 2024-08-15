@@ -10,6 +10,7 @@ import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -36,38 +37,44 @@ class DeckRepositoryTest @Autowired constructor(
 
     @Test
     fun `should insert deck`() {
-        // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        runBlocking {
+            // given
+            val deckFromMongo = deckRepository.insert(newDeck)
 
-        // when, then
-        deckFromMongo.id shouldNotBe null
+            // when, then
+            deckFromMongo.id shouldNotBe null
 
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+            deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        }
     }
 
     @Test
     fun `should delete existing deck by id`() {
-        // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        runBlocking {
+            // given
+            val deckFromMongo = deckRepository.insert(newDeck)
 
-        // when
-        deckRepository.softDelete(deckFromMongo.id!!)
+            // when
+            deckRepository.softDelete(deckFromMongo.id!!)
 
-        // then
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+            // then
+            deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
+            deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        }
     }
 
     @Test
     fun `should delete NOT existing deck by id`() {
-        // given
-        val notExistingDeckId = getRandomID()
+        runBlocking {
+            // given
+            val notExistingDeckId = getRandomID()
 
-        // when
-        deckRepository.softDelete(notExistingDeckId)
+            // when
+            deckRepository.softDelete(notExistingDeckId)
 
-        // then
-        deckRepository.existsById(notExistingDeckId) shouldBe false
+            // then
+            deckRepository.existsById(notExistingDeckId) shouldBe false
+        }
     }
 
     companion object {

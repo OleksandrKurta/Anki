@@ -22,6 +22,8 @@ import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -61,7 +63,10 @@ class CardsControllerTest @Autowired constructor(
                 key = getRandomString("initial"),
                 value = getRandomString("initial"),
             )
-        insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
+        insertedDeck =
+            runBlocking {
+                deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
+            }
     }
 
     @Nested
@@ -69,33 +74,34 @@ class CardsControllerTest @Autowired constructor(
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PostCard {
         @Test
-        fun `should create new Card always`() {
-            // when
-            val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
+        fun `should create new Card always`() =
+            runBlocking {
+                // when
+                val performPost = postNewCard(newCard, insertedDeck.id!!.toString())
 
-            val createdCard =
-                performPost.andReturn()
-                    .response
-                    .contentAsString
-                    .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
+                val createdCard =
+                    performPost.andReturn()
+                        .response
+                        .contentAsString
+                        .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
 
-            // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isCreated() }
-                    content {
-                        contentType(MediaType.APPLICATION_JSON)
-                        json(objectMapper.writeValueAsString(createdCard))
+                // then
+                performPost
+                    .andDo { print() }
+                    .andExpect {
+                        status { isCreated() }
+                        content {
+                            contentType(MediaType.APPLICATION_JSON)
+                            json(objectMapper.writeValueAsString(createdCard))
+                        }
                     }
-                }
 
-            val cardFromMongo = cardRepository.findById(ObjectId(createdCard.id))
+                val cardFromMongo = cardRepository.findById(ObjectId(createdCard.id))
 
-            cardFromMongo shouldNotBe null
+                cardFromMongo shouldNotBe null
 
-            createdCard shouldBe cardFromMongo!!.toCard().toDto()
-        }
+                createdCard shouldBe cardFromMongo!!.toCard().toDto()
+            }
 
         @Test
         fun `should return 400 if deck does not exist`() {
@@ -109,8 +115,8 @@ class CardsControllerTest @Autowired constructor(
                     .andDo { print() }
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
-            // then
 
+            // then
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
         }
@@ -119,7 +125,7 @@ class CardsControllerTest @Autowired constructor(
             mockMvc.post(String.format(baseUrl, deckId)) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(newCard)
-            }
+            }.asyncDispatch()
     }
 
     @Nested
@@ -127,27 +133,29 @@ class CardsControllerTest @Autowired constructor(
     @TestInstance(Lifecycle.PER_CLASS)
     inner class GetCards {
         @Test
-        fun `should return all cards if they exist`() {
-            // given
-            val mongoCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
+        fun `should return all cards if they exist`() =
+            runBlocking {
+                // given
+                val mongoCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
-            // when
-            val result = sendGetCards(insertedDeck.id!!.toString())
+                // when
+                val result = sendGetCards(insertedDeck.id!!.toString())
 
-            // then
-            result.andExpect {
-                status { isOk() }
+                // then
+                result.andExpect {
+                    status { isOk() }
+                }
+
+                val cardsFromResponse: List<CardDtoResponse> =
+                    result
+                        .andReturn()
+                        .let { objectMapper.readValue(it.response.contentAsString) }
+
+                cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
             }
 
-            val cardsFromResponse: List<CardDtoResponse> =
-                result
-                    .andReturn()
-                    .let { objectMapper.readValue(it.response.contentAsString) }
-
-            cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
-        }
-
-        private fun sendGetCards(deckId: String): ResultActionsDsl = mockMvc.get(String.format(baseUrl, deckId))
+        private fun sendGetCards(deckId: String): ResultActionsDsl =
+            mockMvc.get(String.format(baseUrl, deckId)).asyncDispatch()
     }
 
     @Nested
@@ -159,36 +167,40 @@ class CardsControllerTest @Autowired constructor(
 
         @BeforeTest
         fun createCard() {
-            insertedCard = cardRepository.insertRandom(1, insertedDeck.id!!).first()
+            insertedCard =
+                runBlocking {
+                    cardRepository.insertRandom(1, insertedDeck.id!!).first()
+                }
         }
 
         @Test
-        fun `should patch card`() {
-            // given
-            val patchCardRequest =
-                PatchCardRequest(
-                    key = getRandomString("updated"),
-                    value = getRandomString("updated"),
-                )
+        fun `should patch card`() =
+            runBlocking {
+                // given
+                val patchCardRequest =
+                    PatchCardRequest(
+                        key = getRandomString("updated"),
+                        value = getRandomString("updated"),
+                    )
 
-            // when
-            val actualCard =
-                sendPatchCardAndValidateStatusAndContentType(
-                    insertedDeck.id.toString(),
-                    insertedCard.id.toString(),
-                    patchCardRequest,
-                )
+                // when
+                val actualCard =
+                    sendPatchCardAndValidateStatusAndContentType(
+                        insertedDeck.id.toString(),
+                        insertedCard.id.toString(),
+                        patchCardRequest,
+                    )
 
-            // then
-            actualCard.key shouldBe patchCardRequest.key
-            actualCard.value shouldBe patchCardRequest.value
+                // then
+                actualCard.key shouldBe patchCardRequest.key
+                actualCard.value shouldBe patchCardRequest.value
 
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
+                val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
 
-            cardFromMongo.key shouldBe patchCardRequest.key
+                cardFromMongo.key shouldBe patchCardRequest.key
 
-            cardFromMongo.value shouldBe patchCardRequest.value
-        }
+                cardFromMongo.value shouldBe patchCardRequest.value
+            }
 
         @Test
         fun `should return 400 if deck does not exist`() {
@@ -225,7 +237,10 @@ class CardsControllerTest @Autowired constructor(
                 sendPatchCard(
                     insertedDeck.id.toString(),
                     cardId = randomCardId.toString(),
-                    PatchCardRequest(),
+                    PatchCardRequest(
+                        key = getRandomString(),
+                        value = getRandomString(),
+                    ),
                 )
 
             // then
@@ -261,7 +276,7 @@ class CardsControllerTest @Autowired constructor(
             mockMvc.patch(String.format(patchBaseUrl, deckId, cardId)) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(patchCardRequest)
-            }
+            }.asyncDispatch()
     }
 
     @Nested
@@ -271,47 +286,52 @@ class CardsControllerTest @Autowired constructor(
         private val deleteBaseUrl = "/api/v1/decks/%s/cards/%s"
 
         @Test
-        fun `should delete the card`() {
-            // given
-            val model = cardRepository.insertRandom(1, deckId = insertedDeck.id!!).first()
+        fun `should delete the card`() =
+            runBlocking {
+                // given
+                val model = cardRepository.insertRandom(1, deckId = insertedDeck.id!!).first()
 
-            // when
-            val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), model.id!!.toString())
-            // then
-            val result =
-                performDelete
-                    .andExpect {
-                        status { isNoContent() }
-                    }
-                    .andReturn()
+                // when
+                val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), model.id!!.toString())
+                // then
+                val result =
+                    performDelete
+                        .andExpect {
+                            status { isNoContent() }
+                        }
+                        .andReturn()
 
-            result.response.contentType shouldBe null
-            result.response.contentAsString.isEmpty() shouldBe true
+                result.response.contentType shouldBe null
+                result.response.contentAsString.isEmpty() shouldBe true
 
-            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.ACTIVE) shouldBe false
-            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.DELETED) shouldBe true
-        }
+                val isCardActive = async { cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.ACTIVE) }
+                val isCardDeleted = async { cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.DELETED) }
+
+                isCardActive.await() shouldBe false
+                isCardDeleted.await() shouldBe true
+            }
 
         @Test
-        fun `should get 204 when no card exists`() {
-            // given
-            val notExistingCardID = ObjectId.get()
+        fun `should get 204 when no card exists`() =
+            runBlocking {
+                // given
+                val notExistingCardID = ObjectId.get()
 
-            // when
-            val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), notExistingCardID.toString())
+                // when
+                val performDelete = sendDeleteCard(insertedDeck.id!!.toString(), notExistingCardID.toString())
 
-            // when/then
-            val result =
-                performDelete
-                    .andDo { print() }
-                    .andExpect { status { isNoContent() } }
-                    .andReturn()
+                // when/then
+                val result =
+                    performDelete
+                        .andDo { print() }
+                        .andExpect { status { isNoContent() } }
+                        .andReturn()
 
-            result.response.contentType shouldBe null
-            result.response.contentAsString.isEmpty() shouldBe true
+                result.response.contentType shouldBe null
+                result.response.contentAsString.isEmpty() shouldBe true
 
-            cardRepository.existsByIdWithStatus(notExistingCardID, DocumentStatus.ACTIVE) shouldBe false
-        }
+                cardRepository.existsByIdWithStatus(notExistingCardID, DocumentStatus.ACTIVE) shouldBe false
+            }
 
         @Test
         fun `should get 400 when deck does not exists`() {
@@ -333,7 +353,7 @@ class CardsControllerTest @Autowired constructor(
         }
 
         private fun sendDeleteCard(deckId: String, cardId: String): ResultActionsDsl =
-            mockMvc.delete(String.format(deleteBaseUrl, deckId, cardId))
+            mockMvc.delete(String.format(deleteBaseUrl, deckId, cardId)).asyncDispatch()
     }
 
     companion object {

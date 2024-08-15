@@ -21,6 +21,8 @@ import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import kotlinx.coroutines.async
+import kotlinx.coroutines.runBlocking
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -70,62 +72,64 @@ class DecksControllerTest @Autowired constructor(
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PostDeck {
         @Test
-        fun `should create new Deck`() {
-            // when
-            val performPost = postNewDeck(newDeckRequest)
+        fun `should create new Deck`() =
+            runBlocking {
+                // when
+                val performPost = postNewDeck(newDeckRequest)
 
-            val createdDeck =
-                performPost.andReturn()
-                    .response
-                    .contentAsString
-                    .let { objectMapper.readValue(it, DeckDtoResponse::class.java) }
+                val createdDeck =
+                    performPost.andReturn()
+                        .response
+                        .contentAsString
+                        .let { objectMapper.readValue(it, DeckDtoResponse::class.java) }
 
-            // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isCreated() }
-                    content { contentType(MediaType.APPLICATION_JSON) }
-                }
+                // then
+                performPost
+                    .andDo { print() }
+                    .andExpect {
+                        status { isCreated() }
+                        content { contentType(MediaType.APPLICATION_JSON) }
+                    }
 
-            createdDeck.name shouldBe newDeckRequest.name
-            createdDeck.description shouldBe newDeckRequest.description
+                createdDeck.name shouldBe newDeckRequest.name
+                createdDeck.description shouldBe newDeckRequest.description
 
-            val deckFromMongo = deckRepository.findById(ObjectId(createdDeck.id))!!
+                val deckFromMongo = deckRepository.findById(ObjectId(createdDeck.id))!!
 
-            createdDeck shouldBe deckFromMongo.toDeck().toDto()
-        }
+                createdDeck shouldBe deckFromMongo.toDeck().toDto()
+            }
 
         @ParameterizedTest
         @MethodSource("invalidNewDeckRequestProvider")
-        fun `should be error if deck name is not valid`(nameValue: String?) {
-            // given
-            newDeckRequest =
-                NewDeckRequest(
-                    name = nameValue,
-                    description = getRandomString(),
-                )
+        fun `should be error if deck name is not valid`(nameValue: String?) =
+            runBlocking {
+                // given
+                newDeckRequest =
+                    NewDeckRequest(
+                        name = nameValue,
+                        description = getRandomString(),
+                    )
 
-            // when
-            val performPost = postNewDeck(newDeckRequest)
+                // when
+                val performPost = postNewDeck(newDeckRequest)
 
-            // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isBadRequest() }
-                    content {
-                        contentType(MediaType.APPLICATION_JSON)
-                        json("{\"name\": \"must not be blank\"}")
+                // then
+                performPost
+                    .andDo { print() }
+                    .andExpect {
+                        status { isBadRequest() }
+                        content {
+                            contentType(MediaType.APPLICATION_JSON)
+                            json("{\"name\": \"must not be blank\"}")
+                        }
                     }
-                }
-        }
+            }
 
         private fun postNewDeck(newDeck: NewDeckRequest): ResultActionsDsl =
             mockMvc.post(baseUrl) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(newDeck)
-            }
+            }.asyncDispatch()
 
         @Suppress("UnusedPrivateMember")
         private fun invalidNewDeckRequestProvider(): Stream<Arguments> =
@@ -141,29 +145,31 @@ class DecksControllerTest @Autowired constructor(
     inner class GetDecks {
         @Test
         fun `should return all decks if they exist`() {
-            // given
-            val numberOfRandomCards = (5..100).random()
-            val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(mockUserId))
+            runBlocking {
+                // given
+                val numberOfRandomCards = (5..100).random()
+                val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(mockUserId))
 
-            // when
-            val performGet = sendGetDecks()
+                // when
+                val performGet = sendGetDecks()
 
-            // then
-            val result =
-                performGet
-                    .andExpect {
-                        status { isOk() }
-                        content { contentType(MediaType.APPLICATION_JSON) }
-                    }
-                    .andReturn()
+                // then
+                val result =
+                    performGet
+                        .andExpect {
+                            status { isOk() }
+                            content { contentType(MediaType.APPLICATION_JSON) }
+                        }
+                        .andReturn()
 
-            val actualDecks: List<DeckDtoResponse> = objectMapper.readValue(result.response.contentAsString)
+                val actualDecks: List<DeckDtoResponse> = objectMapper.readValue(result.response.contentAsString)
 
-            actualDecks shouldContainExactlyInAnyOrder insertedDecks.map { it.toDeck().toDto() }
+                actualDecks shouldContainExactlyInAnyOrder insertedDecks.map { it.toDeck().toDto() }
+            }
         }
 
         private fun sendGetDecks(): ResultActionsDsl =
-            mockMvc.get(baseUrl)
+            mockMvc.get(baseUrl).asyncDispatch()
     }
 
     @Nested
@@ -171,65 +177,67 @@ class DecksControllerTest @Autowired constructor(
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PatchDeck {
         @Test
-        fun `should patch deck if it exists`() {
-            // given
-            val insertedDeck = deckRepository.insertRandom(1, ObjectId(mockUserId)).first()
+        fun `should patch deck if it exists`() =
+            runBlocking {
+                // given
+                val insertedDeck = deckRepository.insertRandom(1, ObjectId(mockUserId)).first()
 
-            val patchDeckRequest =
-                PatchDeckRequest(
-                    name = getRandomString("updated"),
-                    description = getRandomString("updated"),
-                )
+                val patchDeckRequest =
+                    PatchDeckRequest(
+                        name = getRandomString("updated"),
+                        description = getRandomString("updated"),
+                    )
 
-            // when
-            val patchDeckResponse =
-                sendPatchDeck(insertedDeck.id.toString(), patchDeckRequest)
-                    .andExpect {
-                        status { isOk() }
-                        content { contentType(MediaType.APPLICATION_JSON) }
-                    }
-                    .andReturn()
+                // when
+                val patchDeckResponse =
+                    sendPatchDeck(insertedDeck.id.toString(), patchDeckRequest)
+                        .andExpect {
+                            status { isOk() }
+                            content { contentType(MediaType.APPLICATION_JSON) }
+                        }
+                        .andReturn()
 
-            val actualDeck: DeckDtoResponse = objectMapper.readValue(patchDeckResponse.response.contentAsString)
+                val actualDeck: DeckDtoResponse = objectMapper.readValue(patchDeckResponse.response.contentAsString)
 
-            // then
-            actualDeck.name shouldBe patchDeckRequest.name
-            actualDeck.description shouldBe patchDeckRequest.description
+                // then
+                actualDeck.name shouldBe patchDeckRequest.name
+                actualDeck.description shouldBe patchDeckRequest.description
 
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
+                val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
 
-            deckFromMongo.name shouldBe patchDeckRequest.name
+                deckFromMongo.name shouldBe patchDeckRequest.name
 
-            deckFromMongo.description shouldBe patchDeckRequest.description
-        }
+                deckFromMongo.description shouldBe patchDeckRequest.description
+            }
 
         @Test
-        fun `should return 400 if it does not exist`() {
-            // given
-            val notExistingDeckID = getRandomID().toString()
+        fun `should return 400 if it does not exist`() =
+            runBlocking {
+                // given
+                val notExistingDeckID = getRandomID().toString()
 
-            // when
-            val performPatch = sendPatchDeck(notExistingDeckID, PatchDeckRequest())
+                // when
+                val performPatch = sendPatchDeck(notExistingDeckID, PatchDeckRequest())
 
-            // then
-            val result =
-                performPatch
-                    .andExpect {
-                        status { isBadRequest() }
-                    }
-                    .andReturn()
+                // then
+                val result =
+                    performPatch
+                        .andExpect {
+                            status { isBadRequest() }
+                        }
+                        .andReturn()
 
-            result.response.contentAsString shouldBe
-                DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, mockUserId).message
+                result.response.contentAsString shouldBe
+                    DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, mockUserId).message
 
-            deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
-        }
+                deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
+            }
 
         private fun sendPatchDeck(deckId: String, patchDeckRequest: PatchDeckRequest): ResultActionsDsl =
             mockMvc.patch("$baseUrl/$deckId") {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(patchDeckRequest)
-            }
+            }.asyncDispatch()
     }
 
     @Nested
@@ -238,36 +246,42 @@ class DecksControllerTest @Autowired constructor(
     inner class DeleteDeck {
         @Test
         fun `should delete the deck`() {
-            // given
-            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
-            val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
+            runBlocking {
+                // given
+                val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
+                val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
-            // when
-            val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())
-            // then
-            val result =
-                performDelete
-                    .andExpect {
-                        status { isNoContent() }
+                // when
+                val performDelete = sendDeleteDeck(insertedDeck.id!!.toString())
+                // then
+                val result =
+                    performDelete
+                        .andExpect {
+                            status { isNoContent() }
+                        }
+                        .andReturn()
+
+                result.response.contentType shouldBe null
+
+                result.response.contentAsString.isEmpty() shouldBe true
+
+                val existsWithStatusActive =
+                    async {
+                        deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE)
                     }
-                    .andReturn()
 
-            result.response.contentType shouldBe null
+                val findWithStatusDeleted =
+                    async {
+                        cardRepository.findByDeckIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED)
+                    }
 
-            result.response.contentAsString.isEmpty() shouldBe true
-
-            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE) shouldBe false
-            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED) shouldBe true
-
-            cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).isEmpty() shouldBe true
-
-            cardRepository.findByDeckIdWithStatus(
-                insertedDeck.id!!, DocumentStatus.DELETED,
-            ).size shouldBe insertedCards.size
+                existsWithStatusActive.await() shouldBe false
+                findWithStatusDeleted.await().size shouldBe insertedCards.size
+            }
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =
-            mockMvc.delete("$baseUrl/$deckId")
+            mockMvc.delete("$baseUrl/$deckId").asyncDispatch()
     }
 
     companion object {

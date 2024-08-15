@@ -8,6 +8,8 @@ import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
 
@@ -16,19 +18,19 @@ class DeckService(
     private val deckRepository: DeckRepository,
     private val cardRepository: CardRepository,
 ) {
-    fun createNewDeck(deck: Deck): Deck {
+    suspend fun createNewDeck(deck: Deck): Deck {
         return deckRepository
             .insert(deck.toMongo())
             .toDeck()
     }
 
-    fun getDecks(userId: String): List<Deck> {
+    suspend fun getDecks(userId: String): List<Deck> {
         return deckRepository
             .findByUserIdWithStatus(ObjectId(userId))
             .map { it.toDeck() }
     }
 
-    fun updateDeck(deck: Deck): Deck {
+    suspend fun updateDeck(deck: Deck): Deck {
         val deckId = deck.id ?: throw IllegalArgumentException("Deck id can not be null")
         validateUserHasPermissions(deckId, deck.userId)
         val mongoDeck =
@@ -46,19 +48,29 @@ class DeckService(
             .toDeck()
     }
 
-    fun deleteDeck(deckId: String, userId: String) {
+    suspend fun deleteDeck(deckId: String, userId: String) {
         validateUserHasPermissions(deckId, userId)
-        deckRepository.softDelete(ObjectId(deckId))
-        cardRepository.softDeleteByDeckId(ObjectId(deckId))
+        coroutineScope {
+            val softDeleteDeckDef =
+                async {
+                    deckRepository.softDelete(ObjectId(deckId))
+                }
+            val softDeleteCardsDef =
+                async {
+                    cardRepository.softDeleteByDeckId(ObjectId(deckId))
+                }
+            softDeleteDeckDef.await()
+            softDeleteCardsDef.await()
+        }
     }
 
-    fun validateUserHasPermissions(deckId: String, userId: String) {
+    suspend fun validateUserHasPermissions(deckId: String, userId: String) {
         if (!hasPermissions(deckId, userId)) {
             throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)
         }
     }
 
-    private fun hasPermissions(deckId: String, userId: String): Boolean =
+    private suspend fun hasPermissions(deckId: String, userId: String): Boolean =
         deckRepository.existsByIdAndUserIdWithStatus(
             id = ObjectId(deckId),
             userId = ObjectId(userId),
