@@ -38,12 +38,14 @@ dependencies {
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
-    testImplementation("io.kotest:kotest-assertions-core-jvm:5.0.0")
+    testImplementation("io.kotest:kotest-runner-junit5:5.0.0")
     testImplementation("io.mockk:mockk:1.13.12")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.10.0")
+    testImplementation("org.mockito:mockito-core:5.12.0")
     testImplementation("org.testcontainers:testcontainers:1.20.0")
     testImplementation("org.testcontainers:junit-jupiter:1.20.0")
     testImplementation("org.testcontainers:mongodb:1.20.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
     testFixturesImplementation("org.testcontainers:testcontainers:1.20.0")
     testFixturesImplementation("org.testcontainers:junit-jupiter:1.20.0")
@@ -63,21 +65,28 @@ tasks.withType<Test> {
 detekt {
     config.setFrom("$projectDir/config/detekt.yml")
     autoCorrect = true
+    source.setFrom(
+        files(
+            project.sourceSets.map { it.kotlin },
+            buildscript.sourceFile,
+        ),
+    )
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
     diffSource {
         git.compareWith("refs/remotes/origin/master")
     }
-    coverageBinaryFiles = allprojects.asSequence()
-        .map { subproject ->
-            subproject.fileTree(subproject.layout.buildDirectory) {
-                setIncludes(listOf("*/**/*.exec"))
+    coverageBinaryFiles =
+        allprojects.asSequence()
+            .map { subproject ->
+                subproject.fileTree(subproject.layout.buildDirectory) {
+                    setIncludes(listOf("*/**/*.exec"))
+                }
             }
-        }
-        .fold(files()) { all, files ->
-            all.from(files)
-        }
+            .fold(files()) { all, files ->
+                all.from(files)
+            }
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)

@@ -1,8 +1,8 @@
 package io.github.anki.anki.repository
 
-import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
-import io.github.anki.anki.repository.mongodb.document.MongoCard
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -19,54 +19,55 @@ import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
 @IntegrationTest
-class CardRepositoryTest @Autowired constructor(
-    val cardRepository: CardRepository,
+class DeckRepositoryTest @Autowired constructor(
+    val deckRepository: DeckRepository,
 ) {
-    private lateinit var newCard: MongoCard
+    private lateinit var newDeck: MongoDeck
 
     @BeforeTest
     fun setUp() {
-        newCard =
-            MongoCard(
-                deckId = getRandomID(),
-                key = getRandomString(),
-                value = getRandomString(),
+        newDeck =
+            MongoDeck(
+                userId = getRandomID(),
+                name = getRandomString(),
+                description = getRandomString(),
             )
     }
 
     @Test
-    fun `should insert card`() {
-        // when
-        val cardFromMongo = cardRepository.insert(newCard)
+    fun `should insert deck`() {
+        // given
+        val deckFromMongo = deckRepository.insert(newDeck)
 
-        // then
-        cardFromMongo.id shouldNotBe null
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        // when, then
+        deckFromMongo.id shouldNotBe null
+
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
     }
 
     @Test
-    fun `should soft delete existing card by id`() {
+    fun `should delete existing deck by id`() {
         // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        val deckFromMongo = deckRepository.insert(newDeck)
 
         // when
-        cardRepository.softDelete(cardFromMongo.id!!)
+        deckRepository.softDelete(deckFromMongo.id!!)
 
         // then
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
     }
 
     @Test
-    fun `should delete NOT existing card by id`() {
+    fun `should delete NOT existing deck by id`() {
         // given
-        val notExistingCardId = getRandomID()
+        val notExistingDeckId = getRandomID()
 
         // when
-        cardRepository.softDelete(notExistingCardId)
+        deckRepository.softDelete(notExistingDeckId)
 
         // then
-        cardRepository.existsById(notExistingCardId) shouldBe false
+        deckRepository.existsById(notExistingDeckId) shouldBe false
     }
 
     companion object {
