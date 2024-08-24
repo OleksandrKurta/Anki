@@ -32,7 +32,7 @@ class AuthTokenFilter : OncePerRequestFilter() {
     ) {
         try {
             val jwt = parseJwt(request)
-            if (jwt != null && jwtUtils!!.validateJwtToken(jwt)) {
+            if (jwt != null && jwtUtils?.validateJwtToken(jwt) ?: throw RuntimeException("No jwtUtils initialized")) {
                 val userName: String = jwtUtils.getUserNameFromJwtToken(jwt)
 
                 val userDetails: UserDetails = userDetailsService!!.loadUserByUsername(userName)

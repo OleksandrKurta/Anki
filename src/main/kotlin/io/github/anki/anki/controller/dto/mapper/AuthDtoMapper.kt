@@ -20,12 +20,12 @@ fun SignUpRequestDto.toUser(encodedPassword: String?): User {
         userName = this.userName,
         password = encodedPassword,
         authorities =
-        this.roles!!.stream().map { role ->
+        this.roles?.stream()?.map { role ->
             GrantedAuthority {
                 Role.valueOf(
                     role,
                 ).name
             }
-        }.collect(Collectors.toList()),
+        }?.collect(Collectors.toList()),
     )
 }

@@ -26,13 +26,13 @@ class UserService : UserDetailsService {
     @Throws(UsernameNotFoundException::class)
     override fun loadUserByUsername(userName: String): UserDetails {
         val user: MongoUser =
-            userRepository!!.findByUserName(userName)
+            userRepository?.findByUserName(userName)
                 ?: throw UsernameNotFoundException("User Not Found with username: $userName")
         return user.toUser()
     }
 
     fun signIn(user: User): User {
-        if (!userRepository!!.existsByUserName(user.userName)) {
+        if (!userRepository?.existsByUserName(user.userName)!!) {
             throw UserDoesNotExistException.fromUserName(user.userName)
         }
         return user
@@ -40,7 +40,7 @@ class UserService : UserDetailsService {
 
     fun signUp(user: User): User? {
         try {
-            return userRepository!!.insert(user.toMongoUser()).toUser()
+            return userRepository?.insert(user.toMongoUser())?.toUser()
         } catch (ex: DuplicateKeyException) {
             LOG.error(ex.toString())
             if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {

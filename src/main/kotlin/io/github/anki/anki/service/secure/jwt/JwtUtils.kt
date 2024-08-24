@@ -70,7 +70,7 @@ class JwtUtils {
 
     fun getUserIdFromAuthHeader(header: HttpHeaders): String {
         val headerAuth = header[AUTH_HEADER_NAME.lowercase()]?.get(0)
-        val token = headerAuth!!.substring(TOKEN_PREFIX.length, headerAuth.length)
+        val token = headerAuth?.substring(TOKEN_PREFIX.length, headerAuth.length)
         return getUserIdFromJwtToken(token)
     }
 
