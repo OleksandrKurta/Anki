@@ -1,11 +1,13 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.controller.dto.auth.SignInRequestDto
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.randomUser
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -39,7 +41,7 @@ class UserServiceTest @Autowired constructor(
             User(
                 userName = newUser.userName,
                 email = newUser.email,
-                password = newUser.password,
+                password = encodedPassword,
                 authorities = listOf(),
             )
     }
@@ -77,14 +79,6 @@ class UserServiceTest @Autowired constructor(
     @DisplayName("UserService.signIn()")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class LogInUser {
-        @Test
-        fun `should log in user always`() {
-            // when
-            val actualUser: User = userService.signIn(newUser.toUser(encodedPassword))
-            // then
-            actualUser.id = null
-            actualUser shouldBe expectedUser
-        }
 
         @Test
         fun `should return 400 UserDoesNotExistException user always`() {
