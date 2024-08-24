@@ -16,7 +16,6 @@ import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
-import kotlinx.coroutines.runBlocking
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -56,7 +55,7 @@ class CardsServiceTest {
     @BeforeEach
     fun baseMockPrecondition() {
         every {
-            runBlocking { deckService.validateUserHasPermissions(deckId.toString(), mockUserId) }
+            deckService.validateUserHasPermissions(deckId.toString(), mockUserId)
         } returns Unit
     }
 
@@ -84,17 +83,17 @@ class CardsServiceTest {
                 )
 
             every {
-                runBlocking { cardRepository.insert(initialMongoCard) }
+                cardRepository.insert(initialMongoCard)
             } returns expectedMongoCard
 
             // when
-            val actualCard = runBlocking { cardService.createNewCard(mockUserId, initialCard) }
+            val actualCard = cardService.createNewCard(mockUserId, initialCard)
 
             // then
             actualCard shouldBe expectedMongoCard.toCard()
 
             verify(exactly = 1) {
-                runBlocking { cardRepository.insert(initialMongoCard) }
+                cardRepository.insert(initialMongoCard)
             }
         }
     }
@@ -111,11 +110,11 @@ class CardsServiceTest {
             val initialMongoCards = getRandomMongoCards(cardsAmount, deckId)
 
             every {
-                runBlocking { cardRepository.findByDeckIdWithStatus(deckId) }
+                cardRepository.findByDeckIdWithStatus(deckId)
             } returns initialMongoCards
 
             // when
-            val actualDecks = runBlocking { cardService.findCardsByDeck(deckId.toString(), mockUserId) }
+            val actualDecks = cardService.findCardsByDeck(deckId.toString(), mockUserId)
 
             // then
             actualDecks.size shouldBe cardsAmount
@@ -123,7 +122,7 @@ class CardsServiceTest {
 
             validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
-                runBlocking { cardRepository.findByDeckIdWithStatus(deckId) }
+                cardRepository.findByDeckIdWithStatus(deckId)
             }
         }
     }
@@ -135,9 +134,7 @@ class CardsServiceTest {
 
         @BeforeEach
         fun baseUpdatePrecondition() {
-            every {
-                runBlocking { cardRepository.findById(ObjectId(initialCard.id)) }
-            } returns initialMongoCard
+            every { cardRepository.findById(ObjectId(initialCard.id)) } returns initialMongoCard
         }
 
         @Test
@@ -158,12 +155,10 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every {
-                runBlocking { cardRepository.save(updatedCard.toMongo()) }
-            } returns expectedMongoCard
+            every { cardRepository.save(updatedCard.toMongo()) } returns expectedMongoCard
 
             // when
-            val actualCard = runBlocking { cardService.updateCard(mockUserId, updatedCard) }
+            val actualCard = cardService.updateCard(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe expectedMongoCard.toCard()
@@ -172,7 +167,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                runBlocking { cardRepository.save(updatedCard.toMongo()) }
+                cardRepository.save(updatedCard.toMongo())
             }
         }
 
@@ -180,17 +175,15 @@ class CardsServiceTest {
         fun `should be error if card id is null`() {
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                runBlocking {
-                    cardService.updateCard(
-                        mockUserId,
-                        Card(
-                            id = null,
-                            deckId = deckId.toString(),
-                            key = null,
-                            value = null,
-                        ),
-                    )
-                }
+                cardService.updateCard(
+                    mockUserId,
+                    Card(
+                        id = null,
+                        deckId = deckId.toString(),
+                        key = null,
+                        value = null,
+                    ),
+                )
             }
         }
 
@@ -206,7 +199,7 @@ class CardsServiceTest {
                 )
 
             // when
-            val actualCard = runBlocking { cardService.updateCard(mockUserId, updatedCard) }
+            val actualCard = cardService.updateCard(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe initialCard
@@ -215,14 +208,14 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 0) {
-                runBlocking { cardRepository.save(any()) }
+                cardRepository.save(any())
             }
         }
 
         @Test
         fun `should change nothing if all fields is actual`() {
             // when
-            val actualCard = runBlocking { cardService.updateCard(mockUserId, initialCard) }
+            val actualCard = cardService.updateCard(mockUserId, initialCard)
 
             // then
             actualCard shouldBe initialCard
@@ -231,7 +224,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 0) {
-                runBlocking { cardRepository.save(any()) }
+                cardRepository.save(any())
             }
         }
 
@@ -253,12 +246,10 @@ class CardsServiceTest {
                     value = initialCard.value,
                 )
 
-            every {
-                runBlocking { cardRepository.save(expectedCard.toMongo()) }
-            } returns expectedCard.toMongo()
+            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
 
             // when
-            val actualCard = runBlocking { cardService.updateCard(mockUserId, updatedCard) }
+            val actualCard = cardService.updateCard(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe expectedCard
@@ -267,7 +258,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                runBlocking { cardRepository.save(expectedCard.toMongo()) }
+                cardRepository.save(expectedCard.toMongo())
             }
         }
 
@@ -289,12 +280,10 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every {
-                runBlocking { cardRepository.save(expectedCard.toMongo()) }
-            } returns expectedCard.toMongo()
+            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
 
             // when
-            val actualCard = runBlocking { cardService.updateCard(mockUserId, updatedCard) }
+            val actualCard = cardService.updateCard(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe expectedCard
@@ -303,13 +292,13 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                runBlocking { cardRepository.save(expectedCard.toMongo()) }
+                cardRepository.save(expectedCard.toMongo())
             }
         }
 
         private fun baseUpdateValidation() {
             verify(exactly = 1) {
-                runBlocking { cardRepository.findById(initialMongoCard.id!!) }
+                cardRepository.findById(initialMongoCard.id!!)
             }
         }
     }
@@ -322,27 +311,23 @@ class CardsServiceTest {
         @Test
         fun `should delete the card`() {
             // given
-            every {
-                runBlocking { cardRepository.softDelete(initialMongoCard.id!!) }
-            } returns Unit
+            every { cardRepository.softDelete(initialMongoCard.id!!) } returns Unit
 
             // when
-            runBlocking { cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!) }
+            cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
 
             // then
             validateValidateUserHasPermissionsWasCalled()
 
-            runBlocking {
-                verify(exactly = 1) {
-                    runBlocking { cardRepository.softDelete(initialMongoCard.id!!) }
-                }
+            verify(exactly = 1) {
+                cardRepository.softDelete(initialMongoCard.id!!)
             }
         }
     }
 
     private fun validateValidateUserHasPermissionsWasCalled() {
         verify(exactly = 1) {
-            runBlocking { deckService.validateUserHasPermissions(initialCard.deckId, mockUserId) }
+            deckService.validateUserHasPermissions(initialCard.deckId, mockUserId)
         }
     }
 

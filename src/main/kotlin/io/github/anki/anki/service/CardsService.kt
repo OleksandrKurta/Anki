@@ -14,21 +14,21 @@ class CardsService(
     private val cardRepository: CardRepository,
     private val deckService: DeckService,
 ) {
-    suspend fun createNewCard(userId: String, card: Card): Card {
+    fun createNewCard(userId: String, card: Card): Card {
         deckService.validateUserHasPermissions(card.deckId, userId)
         return cardRepository
             .insert(card.toMongo())
             .toCard()
     }
 
-    suspend fun findCardsByDeck(deckId: String, userId: String): List<Card> {
+    fun findCardsByDeck(deckId: String, userId: String): List<Card> {
         deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
             .findByDeckIdWithStatus(ObjectId(deckId))
             .map { it.toCard() }
     }
 
-    suspend fun updateCard(userId: String, card: Card): Card {
+    fun updateCard(userId: String, card: Card): Card {
         deckService.validateUserHasPermissions(card.deckId, userId)
         val mongoCard: MongoCard = getCardById(card.id ?: throw IllegalArgumentException("Card Id can not be null"))
         val updatedMongoCard: MongoCard = mongoCard.update(card)
@@ -38,12 +38,12 @@ class CardsService(
         return cardRepository.save(updatedMongoCard).toCard()
     }
 
-    suspend fun deleteCard(deckId: String, userId: String, cardId: String) {
+    fun deleteCard(deckId: String, userId: String, cardId: String) {
         deckService.validateUserHasPermissions(deckId, userId)
         cardRepository.softDelete(ObjectId(cardId))
     }
 
-    private suspend fun getCardById(cardId: String): MongoCard =
+    private fun getCardById(cardId: String): MongoCard =
         cardRepository.findById(ObjectId(cardId)) ?: throw CardDoesNotExistException.fromCardId(cardId)
 
     private fun MongoCard.update(card: Card): MongoCard =

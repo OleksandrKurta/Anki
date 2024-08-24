@@ -6,7 +6,7 @@ import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import org.bson.types.ObjectId
 
-suspend fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
+fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<MongoDeck> {
     val listOfDecks: MutableCollection<MongoDeck> = mutableListOf()
     val prefix = "initial"
     repeat(numberOfDecks) {
@@ -21,7 +21,7 @@ suspend fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): L
     return this.insert(listOfDecks)
 }
 
-suspend fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
+fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
     val listOfCards: MutableCollection<MongoCard> = mutableListOf()
     val prefix = "initial"
     repeat(numberOfCards) {

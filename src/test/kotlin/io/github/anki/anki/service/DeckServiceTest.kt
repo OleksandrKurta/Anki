@@ -19,7 +19,6 @@ import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
-import kotlinx.coroutines.runBlocking
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
@@ -70,16 +69,16 @@ class DeckServiceTest {
                 )
             val createdMongoDeck = mongoDeck.copy(id = ObjectId())
             val expectedDeck = deck.copy(id = createdMongoDeck.id!!.toHexString())
-            every { runBlocking { deckRepository.insert(mongoDeck) } } returns createdMongoDeck
+            every { deckRepository.insert(mongoDeck) } returns createdMongoDeck
 
             // when
-            val actual: Deck = runBlocking { deckService.createNewDeck(deck) }
+            val actual: Deck = deckService.createNewDeck(deck)
 
             // then
             actual shouldBe expectedDeck
 
             verify(exactly = 1) {
-                runBlocking { deckRepository.insert(mongoDeck) }
+                deckRepository.insert(mongoDeck)
             }
         }
     }
@@ -97,21 +96,17 @@ class DeckServiceTest {
 
             val randomDecks = getRandomMongoDecks(numberOfDecks, userId)
 
-            every {
-                runBlocking { deckRepository.findByUserIdWithStatus(userId) }
-            } returns randomDecks
+            every { deckRepository.findByUserIdWithStatus(userId) } returns randomDecks
             val expectedDecks = randomDecks.map { it.toDeck() }
 
             // when
-            val actualDecks = runBlocking { deckService.getDecks(userId.toString()) }
+            val actualDecks = deckService.getDecks(userId.toString())
 
             // then
             actualDecks.size shouldBe numberOfDecks
             actualDecks shouldContainExactlyInAnyOrder expectedDecks
 
-            verify(exactly = 1) {
-                runBlocking { deckRepository.findByUserIdWithStatus(userId) }
-            }
+            verify(exactly = 1) { deckRepository.findByUserIdWithStatus(userId) }
         }
 
         private fun getRandomMongoDecks(number: Int, userId: ObjectId): List<MongoDeck> {
@@ -153,45 +148,41 @@ class DeckServiceTest {
                 )
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
-            mockFindByIdAndUserIdWithStatus(initialDeck.id!!, initialDeck.userId, initialDeck.toMongo())
+            every {
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+            } returns initialDeck.toMongo()
 
             every {
-                runBlocking { deckRepository.save(updatedDeck.toMongo()) }
+                deckRepository.save(updatedDeck.toMongo())
             } returns updatedDeck.toMongo()
 
             // when
-            val actualDeck = runBlocking { deckService.updateDeck(updatedDeck) }
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe updatedDeck
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
-                }
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
-                runBlocking { deckRepository.save(updatedDeck.toMongo()) }
+                deckRepository.save(updatedDeck.toMongo())
             }
         }
 
@@ -199,31 +190,27 @@ class DeckServiceTest {
         fun `should be error if deck was not found`() {
             // given
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        any(),
-                        any(),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    any(),
+                    any(),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
             every {
-                runBlocking { deckRepository.findByIdAndUserIdWithStatus(any(), any()) }
+                deckRepository.findByIdAndUserIdWithStatus(any(), any())
             } returns null
 
             // when/then
             shouldThrowExactly<DeckDoesNotExistException> {
-                runBlocking {
-                    deckService.updateDeck(
-                        Deck(
-                            id = getRandomID().toString(),
-                            userId = getRandomID().toString(),
-                            name = getRandomString(),
-                            description = getRandomString(),
-                        ),
-                    )
-                }
+                deckService.updateDeck(
+                    Deck(
+                        id = getRandomID().toString(),
+                        userId = getRandomID().toString(),
+                        name = getRandomString(),
+                        description = getRandomString(),
+                    ),
+                )
             }
         }
 
@@ -231,16 +218,14 @@ class DeckServiceTest {
         fun `should be error if deckId is null`() {
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                runBlocking {
-                    deckService.updateDeck(
-                        Deck(
-                            id = null,
-                            userId = getRandomID().toString(),
-                            name = getRandomString(),
-                            description = getRandomString(),
-                        ),
-                    )
-                }
+                deckService.updateDeck(
+                    Deck(
+                        id = null,
+                        userId = getRandomID().toString(),
+                        name = getRandomString(),
+                        description = getRandomString(),
+                    ),
+                )
             }
         }
 
@@ -256,41 +241,37 @@ class DeckServiceTest {
                 )
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        any(),
-                        any(),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    any(),
+                    any(),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
-            mockFindByIdAndUserIdWithStatus(initialDeck.id!!, initialDeck.userId, initialDeck.toMongo())
+            every {
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+            } returns initialDeck.toMongo()
 
             // when
-            val actualDeck = runBlocking { deckService.updateDeck(initialDeck) }
+            val actualDeck = deckService.updateDeck(initialDeck)
 
             // then
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
-                }
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
-                runBlocking { deckRepository.save(any()) }
+                deckRepository.save(any())
             }
         }
 
@@ -313,46 +294,37 @@ class DeckServiceTest {
                 )
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
-            mockFindByIdAndUserIdWithStatus(initialDeck.id!!, initialDeck.userId, initialDeck.toMongo())
+            every {
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+            } returns initialDeck.toMongo()
 
             // when
-            val actualDeck =
-                runBlocking {
-                    deckService.updateDeck(updatedDeck)
-                }
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe initialDeck
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
-                }
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 0) {
-                runBlocking {
-                    deckRepository.save(any())
-                }
+                deckRepository.save(any())
             }
         }
 
@@ -382,48 +354,40 @@ class DeckServiceTest {
                 )
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
-            mockFindByIdAndUserIdWithStatus(initialDeck.id!!, initialDeck.userId, initialDeck.toMongo())
+            every {
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+            } returns initialDeck.toMongo()
 
             every {
-                runBlocking {
-                    deckRepository.save(any())
-                }
+                deckRepository.save(any())
             } returns expectedDeck.toMongo()
 
             // when
-            val actualDeck = runBlocking { deckService.updateDeck(updatedDeck) }
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
-                }
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.save(any())
-                }
+                deckRepository.save(any())
             }
         }
 
@@ -453,57 +417,42 @@ class DeckServiceTest {
                 )
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
-            mockFindByIdAndUserIdWithStatus(initialDeck.id!!, initialDeck.userId, initialDeck.toMongo())
+            every {
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
+            } returns initialDeck.toMongo()
 
             every {
-                runBlocking {
-                    deckRepository.save(any())
-                }
+                deckRepository.save(any())
             } returns expectedDeck.toMongo()
 
             // when
-            val actualDeck = runBlocking { deckService.updateDeck(updatedDeck) }
+            val actualDeck = deckService.updateDeck(updatedDeck)
 
             // then
             actualDeck shouldBe expectedDeck
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        ObjectId(initialDeck.id),
-                        ObjectId(initialDeck.userId),
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
+                    DocumentStatus.ACTIVE,
+                )
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
-                }
+                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
             }
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.save(any())
-                }
+                deckRepository.save(any())
             }
-        }
-        private fun mockFindByIdAndUserIdWithStatus(deckId: String, userId: String, mongoDeck: MongoDeck) {
-            every {
-                runBlocking {
-                    deckRepository.findByIdAndUserIdWithStatus(ObjectId(deckId), ObjectId(userId))
-                }
-            } returns mongoDeck
         }
     }
 
@@ -518,52 +467,30 @@ class DeckServiceTest {
             val userId = getRandomID()
 
             every {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        deckId,
-                        userId,
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    deckId,
+                    userId,
+                    DocumentStatus.ACTIVE,
+                )
             } returns true
 
-            every {
-                runBlocking {
-                    deckRepository.softDelete(deckId)
-                }
-            } returns Unit
-            every {
-                runBlocking {
-                    cardRepository.softDeleteByDeckId(deckId)
-                }
-            } returns Unit
+            every { deckRepository.softDelete(deckId) } returns Unit
+            every { cardRepository.softDeleteByDeckId(deckId) } returns Unit
 
             // when
-            runBlocking {
-                deckService.deleteDeck(deckId.toString(), userId.toString())
-            }
+            deckService.deleteDeck(deckId.toString(), userId.toString())
 
             // then
 
             verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.existsByIdAndUserIdWithStatus(
-                        deckId,
-                        userId,
-                        DocumentStatus.ACTIVE,
-                    )
-                }
+                deckRepository.existsByIdAndUserIdWithStatus(
+                    deckId,
+                    userId,
+                    DocumentStatus.ACTIVE,
+                )
             }
-            verify(exactly = 1) {
-                runBlocking {
-                    deckRepository.softDelete(deckId)
-                }
-            }
-            verify(exactly = 1) {
-                runBlocking {
-                    cardRepository.softDeleteByDeckId(deckId)
-                }
-            }
+            verify(exactly = 1) { deckRepository.softDelete(deckId) }
+            verify(exactly = 1) { cardRepository.softDeleteByDeckId(deckId) }
         }
     }
 }

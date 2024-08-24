@@ -27,7 +27,7 @@ class CardsController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    suspend fun createCard(
+    fun createCard(
         @Valid
         @RequestBody
         request: NewCardRequest,
@@ -41,7 +41,7 @@ class CardsController(
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    suspend fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
+    fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
         cardService.findCardsByDeck(
             deckId = deckId,
             userId = requestUserId,
@@ -49,7 +49,7 @@ class CardsController(
 
     @PatchMapping("/{cardId}")
     @ResponseStatus(HttpStatus.OK)
-    suspend fun patchCard(
+    fun patchCard(
         @PathVariable deckId: String,
         @PathVariable cardId: String,
         @RequestBody request: PatchCardRequest,
@@ -61,7 +61,7 @@ class CardsController(
 
     @DeleteMapping("/{cardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    suspend fun deleteCard(@PathVariable deckId: String, @PathVariable cardId: String) {
+    fun deleteCard(@PathVariable deckId: String, @PathVariable cardId: String) {
         cardService.deleteCard(
             deckId = deckId,
             userId = requestUserId,

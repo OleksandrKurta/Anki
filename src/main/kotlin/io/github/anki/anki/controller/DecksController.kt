@@ -27,27 +27,21 @@ class DecksController(
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    suspend fun createDeck(@Valid @RequestBody request: NewDeckRequest): DeckDtoResponse =
+    fun createDeck(@Valid @RequestBody request: NewDeckRequest): DeckDtoResponse =
         service.createNewDeck(request.toDeck(requestUserId)).toDto()
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    suspend fun getDecks(): List<DeckDtoResponse> = service.getDecks(requestUserId).map { it.toDto() }
+    fun getDecks(): List<DeckDtoResponse> = service.getDecks(requestUserId).map { it.toDto() }
 
     @PatchMapping("/{deckId}")
     @ResponseStatus(HttpStatus.OK)
-    suspend fun patchDeck(
-        @Valid
-        @RequestBody
-        request: PatchDeckRequest,
-        @PathVariable
-        deckId: String,
-    ): DeckDtoResponse =
+    fun patchDeck(@Valid @RequestBody request: PatchDeckRequest, @PathVariable deckId: String): DeckDtoResponse =
         service.updateDeck(request.toDeck(deckId = deckId, userId = requestUserId)).toDto()
 
     @DeleteMapping("/{deckId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    suspend fun deleteDeck(@PathVariable deckId: String) {
+    fun deleteDeck(@PathVariable deckId: String) {
         service.deleteDeck(deckId, requestUserId)
     }
 }
