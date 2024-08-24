@@ -1,6 +1,10 @@
 package io.github.anki.anki.controller
 
-import io.github.anki.anki.service.exceptions.*
+import io.github.anki.anki.service.exceptions.BaseBadRequestException
+import io.github.anki.anki.service.exceptions.CardDoesNotExistException
+import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
+import io.github.anki.anki.service.exceptions.UserAlreadyExistException
+import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

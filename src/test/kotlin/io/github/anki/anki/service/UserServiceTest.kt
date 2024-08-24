@@ -1,13 +1,11 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.controller.dto.auth.SignInRequestDto
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
-import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.randomUser
 import io.kotest.assertions.throwables.shouldThrowExactly
