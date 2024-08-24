@@ -69,7 +69,7 @@ class ControllerExceptionHandlerTest {
     @Test
     fun `should return 400 if user does not have such deck`() {
         // when
-        val responseEntity = exceptionHandler.doesNotExistHandler(DeckDoesNotExistException())
+        val responseEntity = exceptionHandler.deckDoesNotExistHandler(DeckDoesNotExistException())
 
         // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
@@ -80,7 +80,7 @@ class ControllerExceptionHandlerTest {
     @Test
     fun `should return 400 if user does not have such card`() {
         // when
-        val responseEntity = exceptionHandler.doesNotExistHandler(CardDoesNotExistException())
+        val responseEntity = exceptionHandler.cardDoesNotExistHandler(CardDoesNotExistException())
 
         // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST

@@ -1,133 +1,69 @@
 package io.github.anki.anki.controller
 
-
-import io.github.anki.anki.controller.dto.auth.JwtResponse
-import io.github.anki.anki.controller.dto.auth.LoginRequest
-import io.github.anki.anki.controller.dto.auth.MessageResponse
-import io.github.anki.anki.controller.dto.auth.SignupRequest
-import io.github.anki.anki.repository.mongodb.RoleRepository
-import io.github.anki.anki.repository.mongodb.UserRepository
-import io.github.anki.anki.repository.mongodb.document.ERole
-import io.github.anki.anki.repository.mongodb.document.MongoRole
-import io.github.anki.anki.repository.mongodb.document.MongoUser
-import io.github.anki.anki.secure.jwt.AuthEntryPointJwt
-import io.github.anki.anki.secure.jwt.JwtUtils
-import io.github.anki.anki.service.UserDetailsImpl
+import io.github.anki.anki.controller.dto.auth.JwtResponseDto
+import io.github.anki.anki.controller.dto.auth.MessageResponseDto
+import io.github.anki.anki.controller.dto.auth.SignInRequestDto
+import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
+import io.github.anki.anki.controller.dto.mapper.toUser
+import io.github.anki.anki.service.UserService
+import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.model.mapper.toJwtDto
+import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.CrossOrigin
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 
-import org.springframework.web.bind.annotation.*
-import java.util.function.Consumer
-import java.util.stream.Collectors
-
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.Authentication
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
-
-@CrossOrigin(origins = ["*"], maxAge = 3600)
+@CrossOrigin(
+    origins = ["*"],
+    maxAge = AuthController.MAX_AGE.toLong(),
+)
 @RestController
-@RequestMapping("/api/auth/v1")
-class AuthController {
-    @Autowired
-    var authenticationManager: AuthenticationManager? = null
+@RequestMapping(AuthController.BASE_URL)
+class AuthController @Autowired constructor(
+    val userService: UserService,
+    val secureService: SecurityService,
+) {
 
-    @Autowired
-    var userRepository: UserRepository? = null
-
-    @Autowired
-    var roleRepository: RoleRepository? = null
-
-    @Autowired
-    var encoder: PasswordEncoder? = null
-
-    @Autowired
-    var jwtUtils: JwtUtils? = null
-
-    @PostMapping("/signin")
-    fun authenticateUser(@RequestBody loginRequest: @Valid LoginRequest?): ResponseEntity<*> {
-        val authentication: Authentication = authenticationManager!!.authenticate(
-            UsernamePasswordAuthenticationToken(loginRequest!!.username, loginRequest.password)
+    @PostMapping(SIGN_IN)
+    @ResponseStatus(HttpStatus.OK)
+    fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto?): JwtResponseDto {
+        LOG.info(
+            "IN: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with userName${signInRequestDto!!.userName}",
         )
 
-        SecurityContextHolder.getContext().setAuthentication(authentication)
-        val jwt: String = jwtUtils!!.generateJwtToken(authentication)
+        userService.signIn(signInRequestDto.toUser())
+        val authentication = secureService.authUser(signInRequestDto)
+        val authUser = authentication.principal as User
 
-        val userDetails: UserDetailsImpl = authentication.getPrincipal() as UserDetailsImpl
-        val roles: List<String> = userDetails.getAuthorities().stream()
-            .map { it -> it.getAuthority() }
-            .collect(Collectors.toList())
-
-        return ResponseEntity.ok<Any>(
-            JwtResponse(
-                jwt,
-                userDetails.id,
-                userDetails.getUsername(),
-                userDetails.email,
-                roles
-            )
-        )
+        LOG.info("OUT: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
+        return authUser.toJwtDto(secureService.jwtUtils.generateJwtToken(authentication))
     }
 
-    @PostMapping("/signup")
-    fun registerUser(@RequestBody signUpRequest: @Valid SignupRequest?): ResponseEntity<*> {
-        if (userRepository!!.existsByUsername(signUpRequest!!.username) == true) {
-            return ResponseEntity
-                .badRequest()
-                .body<Any>(MessageResponse("Error: Username is already taken!"))
-        }
+    @PostMapping(SIGN_UP)
+    @ResponseStatus(HttpStatus.CREATED)
+    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto?): MessageResponseDto {
+        LOG.info("IN: ${Companion::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
 
-        if (userRepository!!.existsByEmail(signUpRequest.email) == true) {
-            return ResponseEntity
-                .badRequest()
-                .body<Any>(MessageResponse("Error: Email is already in use!"))
-        }
+        userService.signUp(signUpRequestDto!!.toUser(secureService.encoder.encode(signUpRequestDto.password)))
 
-        // Create new user's account
-        val user: MongoUser = MongoUser(
-            signUpRequest.username,
-            signUpRequest.email,
-            encoder!!.encode(signUpRequest.password)
-        )
-
-        val strRoles: Set<String>? = signUpRequest.roles
-        val roles: MutableSet<MongoRole?> = HashSet<MongoRole?>()
-
-        if (strRoles == null) {
-            val userRole: MongoRole? = roleRepository!!.findByName(ERole.ROLE_USER)
-                ?.orElseThrow { RuntimeException("Error: Role is not found.") }
-            roles.add(userRole)
-        } else {
-            strRoles.forEach(Consumer<String> { role: String? ->
-                when (role) {
-                    "admin" -> {
-                        val adminRole: MongoRole? = roleRepository
-                            ?.findByName(ERole.ROLE_ADMIN)
-                            ?.orElseThrow { RuntimeException("Error: Role is not found.") }
-                        roles.add(adminRole)
-                    }
-                    else -> {
-                        val userRole: MongoRole? = roleRepository
-                            ?.findByName(ERole.ROLE_USER)
-                            ?.orElseThrow { RuntimeException("Error: Role is not found.") }
-                        roles.add(userRole)
-                    }
-                }
-            })
-        }
-
-        user.roles = roles
-        userRepository!!.save(user)
-
-        return ResponseEntity.ok<Any>(MessageResponse("User registered successfully!"))
-
-
+        LOG.info("OUT: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
+        return MessageResponseDto(CREATED_USER_MESSAGE)
     }
+
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AuthEntryPointJwt::class.java)
+        private val LOG: Logger = LoggerFactory.getLogger(AuthController::class.java)
+        const val BASE_URL = "/api/auth/v1"
+        const val SIGN_IN = "/signin"
+        const val SIGN_UP = "/signup"
+        const val MAX_AGE = 3600
+        const val CREATED_USER_MESSAGE = "User registered successfully!"
     }
 }

@@ -1,4 +1,5 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
@@ -19,7 +20,7 @@ data class MongoCard(
     @LastModifiedDate
     @Field(MongoDocument.MODIFIED_AT)
     override val modifiedAt: Instant? = null,
-    @Field(MongoDocument.STATUS)
+    @Field(MongoDocument.DOCUMENT_STATUS)
     override val status: DocumentStatus = DocumentStatus.ACTIVE,
     @Field(DECK_ID)
     @Indexed

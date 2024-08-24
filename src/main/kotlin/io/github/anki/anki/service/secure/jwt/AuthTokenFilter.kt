@@ -1,6 +1,6 @@
-package io.github.anki.anki.secure.jwt
+package io.github.anki.anki.service.secure.jwt
 
-import io.github.anki.anki.service.UserDetailsServiceImpl
+import io.github.anki.anki.service.UserService
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest
@@ -21,46 +21,50 @@ class AuthTokenFilter : OncePerRequestFilter() {
     private val jwtUtils: JwtUtils? = null
 
     @Autowired
-    private val userDetailsService: UserDetailsServiceImpl? = null
+    private val userDetailsService: UserService? = null
 
     @Throws(ServletException::class, IOException::class)
+    @Suppress("Detekt.TooGenericExceptionCaught")
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
-        filterChain: FilterChain
+        filterChain: FilterChain,
     ) {
         try {
             val jwt = parseJwt(request)
             if (jwt != null && jwtUtils!!.validateJwtToken(jwt)) {
-                val username: String = jwtUtils.getUserNameFromJwtToken(jwt)
+                val userName: String = jwtUtils.getUserNameFromJwtToken(jwt)
 
-                val userDetails: UserDetails = userDetailsService!!.loadUserByUsername(username)
-                val authentication = UsernamePasswordAuthenticationToken(
-                    userDetails, null,
-                    userDetails.authorities
-                )
+                val userDetails: UserDetails = userDetailsService!!.loadUserByUsername(userName)
+                val authentication =
+                    UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.authorities,
+                    )
                 authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
 
                 SecurityContextHolder.getContext().authentication = authentication
             }
         } catch (e: Exception) {
-            Companion.logger.error("Cannot set user authentication: {}", e)
+            Companion.LOG.error("Cannot set user authentication: {}", e)
         }
 
         filterChain.doFilter(request, response)
     }
 
     private fun parseJwt(request: HttpServletRequest): String? {
-        val headerAuth = request.getHeader("Authorization")
-
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
-            return headerAuth.substring(7, headerAuth.length)
+        val headerAuth = request.getHeader(AUTH_HEADER_NAME)
+        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(TOKEN_PREFIX)) {
+            return headerAuth.substring(TOKEN_PREFIX.length, headerAuth.length)
         }
 
         return null
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AuthTokenFilter::class.java)
+        private val LOG: Logger = LoggerFactory.getLogger(AuthTokenFilter::class.java)
+        const val AUTH_HEADER_NAME: String = "Authorization"
+        const val TOKEN_PREFIX: String = "Bearer "
     }
 }

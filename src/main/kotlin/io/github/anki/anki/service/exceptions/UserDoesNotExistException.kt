@@ -1,0 +1,11 @@
+package io.github.anki.anki.service.exceptions
+
+class UserDoesNotExistException(
+    override val message: String = "User does not exist",
+    override val cause: Throwable? = null,
+) : BaseBadRequestException, RuntimeException(message, cause) {
+    companion object {
+        fun fromUserName(userName: String?) =
+            UserDoesNotExistException("User with id = $userName does not exist")
+    }
+}

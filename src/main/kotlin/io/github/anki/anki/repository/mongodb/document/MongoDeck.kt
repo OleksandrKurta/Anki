@@ -13,18 +13,18 @@ import java.time.Instant
 data class MongoDeck(
     @Id
     @Field(MongoDocument.ID)
-    override val id: ObjectId? = null,
+    override var id: ObjectId? = null,
     @CreatedDate
     @Field(MongoDocument.CREATED_AT)
     override val createdAt: Instant? = null,
     @LastModifiedDate
     @Field(MongoDocument.MODIFIED_AT)
     override val modifiedAt: Instant? = null,
-    @Field(MongoDocument.STATUS)
+    @Field(MongoDocument.DOCUMENT_STATUS)
     override val status: DocumentStatus = DocumentStatus.ACTIVE,
     @Indexed
     @Field(USER_ID)
-    val userId: ObjectId,
+    var userId: ObjectId,
     @Field(NAME)
     val name: String? = null,
     @Field(DESCRIPTION)

@@ -88,7 +88,7 @@ class CardDtoMapperTest {
 
             violations.first().propertyPath.toString() shouldBe "key"
 
-            violations.first().message shouldBe "must not be blank"
+            violations.first().message shouldBe "не може бути пустим"
         }
 
         @ParameterizedTest
@@ -109,7 +109,7 @@ class CardDtoMapperTest {
 
             violations.first().propertyPath.toString() shouldBe "value"
 
-            violations.first().message shouldBe "must not be blank"
+            violations.first().message shouldBe "не може бути пустим"
         }
 
         @Suppress("UnusedPrivateMember")

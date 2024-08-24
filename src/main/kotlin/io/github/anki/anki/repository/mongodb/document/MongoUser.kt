@@ -1,41 +1,57 @@
 package io.github.anki.anki.repository.mongodb.document
+
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
+import org.bson.types.ObjectId
+import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.DBRef
 import org.springframework.data.mongodb.core.mapping.Document
-
+import org.springframework.data.mongodb.core.mapping.Field
+import java.time.Instant
 
 @Document(collection = MongoUser.COLLECTION_NAME)
-class MongoUser {
+data class MongoUser(
     @Id
-    var id: String? = null
-
+    @Field(MongoDocument.ID)
+    override var id: ObjectId? = null,
     @NotBlank
+    @Field(USER_NAME)
     @Size(max = 20)
-    var username: String? = null
-
+    @Indexed(unique = true)
+    var userName: String? = null,
     @NotBlank
     @Size(max = 50)
     @Email
-    var email: String? = null
-
+    @Field(EMAIL)
+    @Indexed(unique = true)
+    var email: String? = null,
     @NotBlank
     @Size(max = 120)
-    var password: String? = null
-
+    @Field(PASSWORD)
+    var password: String? = null,
     @DBRef
-    var roles: Set<MongoRole?> = HashSet<MongoRole?>()
+    @Field(ROLES)
+    var roles: Set<MongoRole?> = HashSet(),
+    @Field(MongoDocument.CREATED_AT)
+    @CreatedDate
+    override val createdAt: Instant? = null,
+    @Field(MongoDocument.MODIFIED_AT)
+    @LastModifiedDate
+    override val modifiedAt: Instant? = null,
+    @Field(MongoDocument.DOCUMENT_STATUS)
+    override val status: DocumentStatus = DocumentStatus.ACTIVE,
+) : MongoDocument {
 
-    constructor()
-
-    constructor(username: String?, email: String?, password: String?) {
-        this.username = username
-        this.email = email
-        this.password = password
-    }
     companion object {
         const val COLLECTION_NAME = "user"
+
+        const val USER_NAME = "userName"
+        const val EMAIL = "email"
+        const val PASSWORD = "password"
+        const val ROLES = "roles"
     }
 }

@@ -1,4 +1,4 @@
-package io.github.anki.anki.secure.jwt
+package io.github.anki.anki.service.secure.jwt
 
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest
@@ -10,19 +10,19 @@ import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.stereotype.Component
 import java.io.IOException
 
-
 @Component
 class AuthEntryPointJwt : AuthenticationEntryPoint {
     @Throws(IOException::class, ServletException::class)
     override fun commence(
-        request: HttpServletRequest, response: HttpServletResponse,
-        authException: AuthenticationException
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        authException: AuthenticationException,
     ) {
-        logger.error("Unauthorized error: {}", authException.message)
+        LOG.error("Unauthorized error: {}", authException.message)
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error: Unauthorized")
     }
 
     companion object {
-        private val logger: Logger = LoggerFactory.getLogger(AuthEntryPointJwt::class.java)
+        private val LOG: Logger = LoggerFactory.getLogger(AuthEntryPointJwt::class.java)
     }
 }
