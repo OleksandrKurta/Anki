@@ -9,15 +9,12 @@ import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Service
-import java.util.concurrent.Future
 
 @Service
 class DeckService(
     private val deckRepository: DeckRepository,
     private val cardRepository: CardRepository,
-    private var threadPool: ThreadPoolTaskExecutor,
 ) {
     fun createNewDeck(deck: Deck): Deck {
         return deckRepository
@@ -51,10 +48,8 @@ class DeckService(
 
     fun deleteDeck(deckId: String, userId: String) {
         validateUserHasPermissions(deckId, userId)
-        val deleteDeckFuture: Future<*> = threadPool.submit { deckRepository.softDelete(ObjectId(deckId)) }
-        val deleteCardsFuture: Future<*> = threadPool.submit { cardRepository.softDeleteByDeckId(ObjectId(deckId)) }
-        deleteDeckFuture.get()
-        deleteCardsFuture.get()
+        deckRepository.softDelete(ObjectId(deckId))
+        cardRepository.softDeleteByDeckId(ObjectId(deckId))
     }
 
     fun validateUserHasPermissions(deckId: String, userId: String) {

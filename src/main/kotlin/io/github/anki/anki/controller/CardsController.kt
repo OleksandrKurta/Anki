@@ -8,7 +8,6 @@ import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.CardsService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -18,14 +17,11 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import java.util.concurrent.ExecutionException
-import java.util.concurrent.Future
 
 @RestController
 @RequestMapping("/api/v1/decks/{deckId}/cards")
 class CardsController(
     private val cardService: CardsService,
-    private var threadPool: ThreadPoolTaskExecutor,
 ) {
     private val requestUserId = "66a11305dc669eefd22b5f3a"
 
@@ -38,22 +34,18 @@ class CardsController(
         @PathVariable
         deckId: String,
     ): CardDtoResponse =
-        runInThreadPoolAndThrowCause {
-            cardService.createNewCard(
-                userId = requestUserId,
-                request.toCard(deckId),
-            ).toDto()
-        }
+        cardService.createNewCard(
+            userId = requestUserId,
+            request.toCard(deckId),
+        ).toDto()
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
-        runInThreadPoolAndThrowCause {
-            cardService.findCardsByDeck(
-                deckId = deckId,
-                userId = requestUserId,
-            ).map { it.toDto() }
-        }
+        cardService.findCardsByDeck(
+            deckId = deckId,
+            userId = requestUserId,
+        ).map { it.toDto() }
 
     @PatchMapping("/{cardId}")
     @ResponseStatus(HttpStatus.OK)
@@ -62,31 +54,18 @@ class CardsController(
         @PathVariable cardId: String,
         @RequestBody request: PatchCardRequest,
     ): CardDtoResponse =
-        runInThreadPoolAndThrowCause {
-            cardService.updateCard(
-                userId = requestUserId,
-                request.toCard(cardId, deckId),
-            ).toDto()
-        }
+        cardService.updateCard(
+            userId = requestUserId,
+            request.toCard(cardId, deckId),
+        ).toDto()
 
     @DeleteMapping("/{cardId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteCard(@PathVariable deckId: String, @PathVariable cardId: String) {
-        runInThreadPoolAndThrowCause {
-            cardService.deleteCard(
-                deckId = deckId,
-                userId = requestUserId,
-                cardId = cardId,
-            )
-        }
-    }
-
-    private fun <T> runInThreadPoolAndThrowCause(task: () -> T): T {
-        try {
-            val future: Future<T> = threadPool.submit(task)
-            return future.get()
-        } catch (e: ExecutionException) {
-            throw e.cause!!
-        }
+        cardService.deleteCard(
+            deckId = deckId,
+            userId = requestUserId,
+            cardId = cardId,
+        )
     }
 }

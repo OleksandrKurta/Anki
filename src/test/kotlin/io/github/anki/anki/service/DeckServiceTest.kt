@@ -1,6 +1,5 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.configuration.ThreadPoolConfiguration
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -14,12 +13,14 @@ import io.github.anki.testing.getRandomString
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.shouldBe
+import io.mockk.clearAllMocks
 import io.mockk.every
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
-import io.mockk.mockk
 import io.mockk.verify
 import org.bson.types.ObjectId
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
@@ -27,25 +28,23 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import kotlin.test.Test
 
 @ExtendWith(MockKExtension::class)
 class DeckServiceTest {
 
+    @MockK
     lateinit var deckRepository: DeckRepository
 
+    @MockK
     lateinit var cardRepository: CardRepository
 
+    @InjectMockKs
     lateinit var deckService: DeckService
 
-    private var threadPool: ThreadPoolTaskExecutor = ThreadPoolConfiguration().taskExecutor()
-
-    @BeforeEach
-    fun setUpMock() {
-        deckRepository = mockk()
-        cardRepository = mockk()
-        deckService = DeckService(deckRepository, cardRepository, threadPool)
+    @AfterEach
+    fun tearDown() {
+        clearAllMocks()
     }
 
     @Nested
@@ -482,6 +481,7 @@ class DeckServiceTest {
             deckService.deleteDeck(deckId.toString(), userId.toString())
 
             // then
+
             verify(exactly = 1) {
                 deckRepository.existsByIdAndUserIdWithStatus(
                     deckId,
