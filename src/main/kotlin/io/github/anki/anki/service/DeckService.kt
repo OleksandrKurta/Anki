@@ -10,6 +10,7 @@ import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
+import java.util.concurrent.Future
 
 @Service
 class DeckService(
@@ -19,12 +20,14 @@ class DeckService(
     fun createNewDeck(deck: Deck): Deck {
         return deckRepository
             .insert(deck.toMongo())
+            .get()
             .toDeck()
     }
 
     fun getDecks(userId: String): List<Deck> {
         return deckRepository
             .findByUserIdWithStatus(ObjectId(userId))
+            .get()
             .map { it.toDeck() }
     }
 
@@ -36,20 +39,23 @@ class DeckService(
                 id = ObjectId(deckId),
                 userId = ObjectId(deck.userId),
                 status = DocumentStatus.ACTIVE,
-            ) ?: throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, deck.userId)
+            ).get() ?: throw DeckDoesNotExistException.fromDeckIdAndUserId(deckId, deck.userId)
         val updatedMongoDeck = mongoDeck.update(deck)
         if (mongoDeck == updatedMongoDeck) {
             return mongoDeck.toDeck()
         }
         return deckRepository
             .save(updatedMongoDeck)
+            .get()
             .toDeck()
     }
 
     fun deleteDeck(deckId: String, userId: String) {
         validateUserHasPermissions(deckId, userId)
-        deckRepository.softDelete(ObjectId(deckId))
-        cardRepository.softDeleteByDeckId(ObjectId(deckId))
+        val deleteDeckFuture: Future<*> = deckRepository.softDelete(ObjectId(deckId))
+        val deleteCardsFuture: Future<*> = cardRepository.softDeleteByDeckId(ObjectId(deckId))
+        deleteDeckFuture.get()
+        deleteCardsFuture.get()
     }
 
     fun validateUserHasPermissions(deckId: String, userId: String) {
@@ -63,7 +69,7 @@ class DeckService(
             id = ObjectId(deckId),
             userId = ObjectId(userId),
             status = DocumentStatus.ACTIVE,
-        )
+        ).get()
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =
         this.copy(

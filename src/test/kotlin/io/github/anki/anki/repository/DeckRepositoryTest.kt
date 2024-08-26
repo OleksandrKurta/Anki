@@ -37,25 +37,25 @@ class DeckRepositoryTest @Autowired constructor(
     @Test
     fun `should insert deck`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
 
         // when, then
         deckFromMongo.id shouldNotBe null
 
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
     }
 
     @Test
     fun `should delete existing deck by id`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
 
         // when
-        deckRepository.softDelete(deckFromMongo.id!!)
+        deckRepository.softDelete(deckFromMongo.id!!).get()
 
         // then
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe false
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED).get() shouldBe true
     }
 
     @Test
@@ -64,10 +64,10 @@ class DeckRepositoryTest @Autowired constructor(
         val notExistingDeckId = getRandomID()
 
         // when
-        deckRepository.softDelete(notExistingDeckId)
+        deckRepository.softDelete(notExistingDeckId).get()
 
         // then
-        deckRepository.existsById(notExistingDeckId) shouldBe false
+        deckRepository.existsById(notExistingDeckId).get() shouldBe false
     }
 
     companion object {

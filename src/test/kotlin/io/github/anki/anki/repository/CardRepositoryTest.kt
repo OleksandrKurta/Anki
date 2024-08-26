@@ -37,24 +37,24 @@ class CardRepositoryTest @Autowired constructor(
     @Test
     fun `should insert card`() {
         // when
-        val cardFromMongo = cardRepository.insert(newCard)
+        val cardFromMongo = cardRepository.insert(newCard).get()
 
         // then
         cardFromMongo.id shouldNotBe null
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
     }
 
     @Test
     fun `should soft delete existing card by id`() {
         // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        val cardFromMongo = cardRepository.insert(newCard).get()
 
         // when
-        cardRepository.softDelete(cardFromMongo.id!!)
+        cardRepository.softDelete(cardFromMongo.id!!).get()
 
         // then
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe false
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED).get() shouldBe true
     }
 
     @Test
@@ -63,10 +63,10 @@ class CardRepositoryTest @Autowired constructor(
         val notExistingCardId = getRandomID()
 
         // when
-        cardRepository.softDelete(notExistingCardId)
+        cardRepository.softDelete(notExistingCardId).get()
 
         // then
-        cardRepository.existsById(notExistingCardId) shouldBe false
+        cardRepository.existsById(notExistingCardId).get() shouldBe false
     }
 
     companion object {

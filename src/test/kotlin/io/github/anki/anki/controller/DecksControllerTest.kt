@@ -91,7 +91,7 @@ class DecksControllerTest @Autowired constructor(
             createdDeck.name shouldBe newDeckRequest.name
             createdDeck.description shouldBe newDeckRequest.description
 
-            val deckFromMongo = deckRepository.findById(ObjectId(createdDeck.id))!!
+            val deckFromMongo = deckRepository.findById(ObjectId(createdDeck.id)).get()!!
 
             createdDeck shouldBe deckFromMongo.toDeck().toDto()
         }
@@ -196,7 +196,7 @@ class DecksControllerTest @Autowired constructor(
             actualDeck.name shouldBe patchDeckRequest.name
             actualDeck.description shouldBe patchDeckRequest.description
 
-            val deckFromMongo = deckRepository.findById(insertedDeck.id!!)!!
+            val deckFromMongo = deckRepository.findById(insertedDeck.id!!).get()!!
 
             deckFromMongo.name shouldBe patchDeckRequest.name
 
@@ -222,7 +222,7 @@ class DecksControllerTest @Autowired constructor(
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, mockUserId).message
 
-            deckRepository.existsById(ObjectId(notExistingDeckID)) shouldBe false
+            deckRepository.existsById(ObjectId(notExistingDeckID)).get() shouldBe false
         }
 
         private fun sendPatchDeck(deckId: String, patchDeckRequest: PatchDeckRequest): ResultActionsDsl =
@@ -239,7 +239,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo())
+            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo()).get()
             val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
@@ -256,14 +256,14 @@ class DecksControllerTest @Autowired constructor(
 
             result.response.contentAsString.isEmpty() shouldBe true
 
-            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE) shouldBe false
-            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED) shouldBe true
+            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE).get()shouldBe false
+            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED).get() shouldBe true
 
-            cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).isEmpty() shouldBe true
+            cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).get().isEmpty() shouldBe true
 
             cardRepository.findByDeckIdWithStatus(
                 insertedDeck.id!!, DocumentStatus.DELETED,
-            ).size shouldBe insertedCards.size
+            ).get().size shouldBe insertedCards.size
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =

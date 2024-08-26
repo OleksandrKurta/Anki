@@ -18,6 +18,7 @@ class CardsService(
         deckService.validateUserHasPermissions(card.deckId, userId)
         return cardRepository
             .insert(card.toMongo())
+            .get()
             .toCard()
     }
 
@@ -25,6 +26,7 @@ class CardsService(
         deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
             .findByDeckIdWithStatus(ObjectId(deckId))
+            .get()
             .map { it.toCard() }
     }
 
@@ -35,16 +37,16 @@ class CardsService(
         if (mongoCard == updatedMongoCard) {
             return mongoCard.toCard()
         }
-        return cardRepository.save(updatedMongoCard).toCard()
+        return cardRepository.save(updatedMongoCard).get().toCard()
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
         deckService.validateUserHasPermissions(deckId, userId)
-        cardRepository.softDelete(ObjectId(cardId))
+        cardRepository.softDelete(ObjectId(cardId)).get()
     }
 
     private fun getCardById(cardId: String): MongoCard =
-        cardRepository.findById(ObjectId(cardId)) ?: throw CardDoesNotExistException.fromCardId(cardId)
+        cardRepository.findById(ObjectId(cardId)).get() ?: throw CardDoesNotExistException.fromCardId(cardId)
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(

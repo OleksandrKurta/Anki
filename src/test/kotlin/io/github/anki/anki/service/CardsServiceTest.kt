@@ -83,7 +83,7 @@ class CardsServiceTest {
                 )
 
             every {
-                cardRepository.insert(initialMongoCard)
+                cardRepository.insert(initialMongoCard).get()
             } returns expectedMongoCard
 
             // when
@@ -93,7 +93,7 @@ class CardsServiceTest {
             actualCard shouldBe expectedMongoCard.toCard()
 
             verify(exactly = 1) {
-                cardRepository.insert(initialMongoCard)
+                cardRepository.insert(initialMongoCard).get()
             }
         }
     }
@@ -110,7 +110,7 @@ class CardsServiceTest {
             val initialMongoCards = getRandomMongoCards(cardsAmount, deckId)
 
             every {
-                cardRepository.findByDeckIdWithStatus(deckId)
+                cardRepository.findByDeckIdWithStatus(deckId).get()
             } returns initialMongoCards
 
             // when
@@ -122,7 +122,7 @@ class CardsServiceTest {
 
             validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
-                cardRepository.findByDeckIdWithStatus(deckId)
+                cardRepository.findByDeckIdWithStatus(deckId).get()
             }
         }
     }
@@ -134,7 +134,7 @@ class CardsServiceTest {
 
         @BeforeEach
         fun baseUpdatePrecondition() {
-            every { cardRepository.findById(ObjectId(initialCard.id)) } returns initialMongoCard
+            every { cardRepository.findById(ObjectId(initialCard.id)).get() } returns initialMongoCard
         }
 
         @Test
@@ -155,7 +155,7 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every { cardRepository.save(updatedCard.toMongo()) } returns expectedMongoCard
+            every { cardRepository.save(updatedCard.toMongo()).get() } returns expectedMongoCard
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -167,7 +167,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                cardRepository.save(updatedCard.toMongo())
+                cardRepository.save(updatedCard.toMongo()).get()
             }
         }
 
@@ -208,7 +208,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 0) {
-                cardRepository.save(any())
+                cardRepository.save(any()).get()
             }
         }
 
@@ -224,7 +224,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 0) {
-                cardRepository.save(any())
+                cardRepository.save(any()).get()
             }
         }
 
@@ -246,7 +246,7 @@ class CardsServiceTest {
                     value = initialCard.value,
                 )
 
-            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
+            every { cardRepository.save(expectedCard.toMongo()).get() } returns expectedCard.toMongo()
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -258,7 +258,7 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                cardRepository.save(expectedCard.toMongo())
+                cardRepository.save(expectedCard.toMongo()).get()
             }
         }
 
@@ -280,7 +280,7 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
+            every { cardRepository.save(expectedCard.toMongo()).get() } returns expectedCard.toMongo()
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -292,13 +292,13 @@ class CardsServiceTest {
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                cardRepository.save(expectedCard.toMongo())
+                cardRepository.save(expectedCard.toMongo()).get()
             }
         }
 
         private fun baseUpdateValidation() {
             verify(exactly = 1) {
-                cardRepository.findById(initialMongoCard.id!!)
+                cardRepository.findById(initialMongoCard.id!!).get()
             }
         }
     }
@@ -311,7 +311,7 @@ class CardsServiceTest {
         @Test
         fun `should delete the card`() {
             // given
-            every { cardRepository.softDelete(initialMongoCard.id!!) } returns Unit
+            every { cardRepository.softDelete(initialMongoCard.id!!).get() } returns Unit
 
             // when
             cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
@@ -320,7 +320,7 @@ class CardsServiceTest {
             validateValidateUserHasPermissionsWasCalled()
 
             verify(exactly = 1) {
-                cardRepository.softDelete(initialMongoCard.id!!)
+                cardRepository.softDelete(initialMongoCard.id!!).get()
             }
         }
     }
