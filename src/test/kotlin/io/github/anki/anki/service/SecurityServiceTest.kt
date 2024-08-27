@@ -86,7 +86,7 @@ class SecurityServiceTest @Autowired constructor(
                 }
             givenUser shouldNotBe null
 
-            val performPost = postNewDeck(newDeckRequest, response!!.accessToken)
+            val performPost = postNewDeck(newDeckRequest, response.accessToken)
             // then
             performPost
                 .andDo { print() }
