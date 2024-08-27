@@ -1,6 +1,7 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.model.Card
@@ -46,7 +47,9 @@ class CardsService(
     }
 
     private fun getCardById(cardId: String): MongoCard =
-        cardRepository.findById(ObjectId(cardId)).get() ?: throw CardDoesNotExistException.fromCardId(cardId)
+        cardRepository.findByIdWithStatus(
+            ObjectId(cardId), DocumentStatus.ACTIVE,
+        ).get() ?: throw CardDoesNotExistException.fromCardId(cardId)
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(

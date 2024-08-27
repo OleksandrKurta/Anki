@@ -1,5 +1,6 @@
 package io.github.anki.anki.repository.mongodb
 
+import io.github.anki.anki.configuration.ThreadPoolsConfiguration
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
@@ -7,18 +8,18 @@ import org.bson.types.ObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import org.springframework.stereotype.Repository
 import java.util.concurrent.Future
 
 @Repository
 class CardRepository(
     override val mongoTemplate: MongoTemplate,
-    @Qualifier("mongo") threadPool: ThreadPoolTaskExecutor,
+    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
 ) : MongoRepository<MongoCard>(threadPool) {
 
     override val entityClass = MongoCard::class.java

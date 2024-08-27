@@ -1,6 +1,7 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.mapper.toCard
@@ -134,7 +135,9 @@ class CardsServiceTest {
 
         @BeforeEach
         fun baseUpdatePrecondition() {
-            every { cardRepository.findById(ObjectId(initialCard.id)).get() } returns initialMongoCard
+            every {
+                cardRepository.findByIdWithStatus(ObjectId(initialCard.id), DocumentStatus.ACTIVE).get()
+            } returns initialMongoCard
         }
 
         @Test
@@ -298,7 +301,7 @@ class CardsServiceTest {
 
         private fun baseUpdateValidation() {
             verify(exactly = 1) {
-                cardRepository.findById(initialMongoCard.id!!).get()
+                cardRepository.findByIdWithStatus(initialMongoCard.id!!, DocumentStatus.ACTIVE).get()
             }
         }
     }

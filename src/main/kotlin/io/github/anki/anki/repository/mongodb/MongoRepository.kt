@@ -4,15 +4,15 @@ import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
 import org.slf4j.Logger
+import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 import java.util.concurrent.Future
 
 abstract class MongoRepository<T : MongoDocument>(
-    protected open var threadPool: ThreadPoolTaskExecutor,
+    protected open val threadPool: AsyncTaskExecutor,
 ) {
     protected abstract val mongoTemplate: MongoTemplate
     protected abstract val entityClass: Class<T>
@@ -48,15 +48,6 @@ abstract class MongoRepository<T : MongoDocument>(
                 entityClass,
             )
             log.info("Soft deleted by id = {}", id)
-        }
-
-    fun hardDelete(id: ObjectId): Future<*> =
-        threadPool.submit {
-            log.info("Hard deleting by id = {}", id)
-            mongoTemplate.remove(
-                Query(Criteria.where(MongoDocument.ID).`is`(id)),
-            )
-            log.info("Hard deleted by id = {}", id)
         }
 
     fun findById(id: ObjectId): Future<T?> =
