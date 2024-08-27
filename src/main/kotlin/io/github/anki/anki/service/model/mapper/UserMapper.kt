@@ -18,7 +18,7 @@ fun MongoUser.toUser(): User {
         this.roles.stream()
             .map { role ->
                 SimpleGrantedAuthority(
-                    role?.name?.name
+                    role?.name
                         ?: throw AuthoritiesNotFoundException.fromUserName(this.userName),
                 )
             }
@@ -45,7 +45,7 @@ fun User.toJwtDto(token: String): JwtResponseDto {
 fun User.toMongoUser(): MongoUser {
     val roles: Set<MongoRole> =
         this.authorities?.stream()
-            ?.map { authority -> MongoRole(name = Role.valueOf(authority.toString())) }
+            ?.map { authority -> MongoRole(name = Role.valueOf(authority.toString()).name) }
             ?.collect(Collectors.toSet())
             ?: throw AuthoritiesNotFoundException
                 .fromUserName(this.userName)

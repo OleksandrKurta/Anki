@@ -11,7 +11,7 @@ data class MongoRole(
     @Field(MongoDocument.ID)
     var id: ObjectId? = null,
     @Field(ROLE_NAME)
-    var name: Role? = null,
+    var name: String? = null,
 ) {
     companion object {
         const val COLLECTION_NAME = "role"
