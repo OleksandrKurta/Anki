@@ -36,25 +36,25 @@ class AuthController @Autowired constructor(
     @ResponseStatus(HttpStatus.OK)
     fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto?): JwtResponseDto {
         LOG.info(
-            "IN: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with userName${signInRequestDto!!.userName}",
+            "IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with userName${signInRequestDto!!.userName}",
         )
 
         userService.signIn(signInRequestDto.toUser())
         val authentication = secureService.authUser(signInRequestDto)
         val authUser = authentication.principal as User
 
-        LOG.info("OUT: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
+        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
         return authUser.toJwtDto(secureService.jwtUtils.generateJwtToken(authentication))
     }
 
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto?): MessageResponseDto {
-        LOG.info("IN: ${Companion::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
+        LOG.info("IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
 
         userService.signUp(signUpRequestDto!!.toUser(secureService.encoder.encode(signUpRequestDto.password)))
 
-        LOG.info("OUT: ${Companion::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
+        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
         return MessageResponseDto(CREATED_USER_MESSAGE)
     }
 
