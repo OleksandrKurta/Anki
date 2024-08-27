@@ -20,7 +20,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import java.util.stream.Stream
 import kotlin.test.Test
 
-@MVCTest
 @TestInstance(Lifecycle.PER_CLASS)
 class ControllerExceptionHandlerTest {
     private val exceptionHandler = ControllerExceptionHandler()

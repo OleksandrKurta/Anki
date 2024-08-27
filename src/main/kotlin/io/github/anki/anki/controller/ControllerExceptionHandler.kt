@@ -36,12 +36,16 @@ class ControllerExceptionHandler {
     }
 
     @ExceptionHandler(UserDoesNotExistException::class)
-    fun userDoesNotExistHandler(ex: BaseBadRequestException): ResponseEntity<String> =
-        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+    fun userDoesNotExistHandler(ex: BaseBadRequestException): ResponseEntity<String> {
+        LOG.error("OUT AuthController ${AuthController.BASE_URL} ${AuthController.SIGN_UP} ${ex.message}")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+    }
 
     @ExceptionHandler(UserAlreadyExistException::class)
-    fun hasAlreadyExistHandler(ex: BaseBadRequestException): ResponseEntity<String> =
-        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+    fun hasAlreadyExistHandler(ex: BaseBadRequestException): ResponseEntity<String> {
+        LOG.error("OUT AuthController ${AuthController.BASE_URL} ${AuthController.SIGN_UP} ${ex.message}")
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+    }
 
     @ExceptionHandler(Exception::class)
     fun globalExceptionHandler(
