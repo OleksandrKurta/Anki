@@ -173,9 +173,17 @@ class AuthControllerTest @Autowired constructor(
         @Test
         fun `should return 200 if user with email exist but and doesn't create one`() {
             // given
-            newUser.userName = getRandomString()
+            val randomUserName = getRandomString()
             // when
-            val performPost = signUpUser(newUser)
+            val performPost =
+                signUpUser(
+                    SignUpRequestDto(
+                        userName = randomUserName,
+                        email = newUser.email,
+                        password = newUser.password,
+                        roles = setOf(),
+                    ),
+                )
 
             val createdUserResponse =
                 performPost.andReturn()
@@ -190,7 +198,7 @@ class AuthControllerTest @Autowired constructor(
 
             // then
             createdUserResponse.message shouldBe UserCreatedMessageResponseDto(CREATED_USER_MESSAGE).message
-            userRepository.existsByUserName(userName = newUser.userName) shouldBe false
+            userRepository.existsByUserName(userName = randomUserName) shouldBe false
         }
 
         @Test
