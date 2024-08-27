@@ -4,7 +4,6 @@ import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
-import io.github.anki.testing.MVCTest
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
