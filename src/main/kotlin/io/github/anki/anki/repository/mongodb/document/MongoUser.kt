@@ -20,18 +20,18 @@ data class MongoUser(
     @Field(USER_NAME)
     @Size(max = 20)
     @Indexed(unique = true)
-    var userName: String? = null,
+    val userName: String? = null,
     @Size(max = 50)
     @Email
     @Field(EMAIL)
     @Indexed(unique = true)
-    var email: String? = null,
+    val email: String? = null,
     @Size(max = 120)
     @Field(PASSWORD)
-    var password: String? = null,
+    val password: String? = null,
     @DBRef
     @Field(ROLES)
-    var roles: Set<MongoRole?> = HashSet(),
+    val roles: Set<MongoRole?> = HashSet(),
     @Field(MongoDocument.CREATED_AT)
     @CreatedDate
     override val createdAt: Instant? = null,

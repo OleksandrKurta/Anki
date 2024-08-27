@@ -115,5 +115,17 @@ class UserServiceTest {
                 userService.signIn(user)
             }
         }
+
+
+         @Test
+        fun `should return 400 UsernameNotFoundException user always`() {
+            // then
+            val user = newUser.toUser(encodedPassword)
+            every { user.userName?.let { userRepository.findByUserName(it) } } returns null
+
+            shouldThrowExactly<UserDoesNotExistException> {
+                userService.signIn(user)
+            }
+        }
     }
 }

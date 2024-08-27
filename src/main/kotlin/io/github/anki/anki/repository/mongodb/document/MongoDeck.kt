@@ -13,7 +13,7 @@ import java.time.Instant
 data class MongoDeck(
     @Id
     @Field(MongoDocument.ID)
-    override var id: ObjectId? = null,
+    override val id: ObjectId? = null,
     @CreatedDate
     @Field(MongoDocument.CREATED_AT)
     override val createdAt: Instant? = null,
