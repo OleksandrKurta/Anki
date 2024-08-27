@@ -9,30 +9,22 @@ import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
-import jakarta.validation.Validation
-import jakarta.validation.Validator
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.GrantedAuthority
-import org.springframework.security.crypto.password.PasswordEncoder
 import java.util.stream.Collectors
 import kotlin.test.BeforeTest
 
 @MVCTest
-class AuthDtoMapperTest @Autowired constructor(
-    val encoder: PasswordEncoder,
-) {
+class AuthDtoMapperTest {
     private lateinit var randomID: ObjectId
     private lateinit var randomUserName: String
     private lateinit var randomEmail: String
     private lateinit var randomPassword: String
-
-    private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
 
     @BeforeTest
     fun setUp() {
@@ -100,7 +92,7 @@ class AuthDtoMapperTest @Autowired constructor(
                 )
 
             // WHEN
-            val actual: User = signUpRequestDto.toUser(encoder.encode(signUpRequestDto.password))
+            val actual: User = signUpRequestDto.toUser(signUpRequestDto.password)
 
             // THEN
             actual.shouldBeEqualToIgnoringFields(expectedUser, User::id)
