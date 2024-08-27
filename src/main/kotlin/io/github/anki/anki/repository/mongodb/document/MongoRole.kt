@@ -9,7 +9,7 @@ import org.springframework.data.mongodb.core.mapping.Field
 data class MongoRole(
     @Id
     @Field(MongoDocument.ID)
-    var id: ObjectId? = null,
+    val id: ObjectId? = null,
     @Field(ROLE_NAME)
     var name: String? = null,
 ) {

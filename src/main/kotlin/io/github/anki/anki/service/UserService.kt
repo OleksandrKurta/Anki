@@ -15,27 +15,25 @@ import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class UserService : UserDetailsService {
     @Autowired
     var userRepository: UserRepository? = null
 
-    @Transactional
     @Throws(UsernameNotFoundException::class)
     override fun loadUserByUsername(userName: String): UserDetails {
-        val user: MongoUser =
+        val mongoUser: MongoUser =
             userRepository?.findByUserName(userName)
                 ?: throw UsernameNotFoundException("User Not Found with username: $userName")
-        return user.toUser()
+        return mongoUser.toUser()
     }
 
     fun signIn(user: User): User {
-        if (!userRepository?.existsByUserName(user.userName)!!) {
-            throw UserDoesNotExistException.fromUserName(user.userName)
+        if (userRepository?.existsByUserName(user.userName)!!) {
+            return user
         }
-        return user
+        throw UserDoesNotExistException.fromUserName(user.userName)
     }
 
     fun signUp(user: User): User? {
