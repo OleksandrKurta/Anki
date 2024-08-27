@@ -1,9 +1,9 @@
 package io.github.anki.anki.controller
 
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-import io.github.anki.anki.controller.dto.auth.MessageResponseDto
 import io.github.anki.anki.controller.dto.auth.SignInRequestDto
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
+import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.model.User
@@ -49,13 +49,13 @@ class AuthController @Autowired constructor(
 
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
-    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): MessageResponseDto {
+    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): UserCreatedMessageResponseDto {
         LOG.info("IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
 
         userService.signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
 
         LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
-        return MessageResponseDto(CREATED_USER_MESSAGE)
+        return UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)
     }
 
     companion object {

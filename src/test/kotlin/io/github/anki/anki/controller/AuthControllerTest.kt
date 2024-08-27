@@ -6,9 +6,9 @@ import io.github.anki.anki.controller.AuthController.Companion.CREATED_USER_MESS
 import io.github.anki.anki.controller.AuthController.Companion.SIGN_IN
 import io.github.anki.anki.controller.AuthController.Companion.SIGN_UP
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-import io.github.anki.anki.controller.dto.auth.MessageResponseDto
 import io.github.anki.anki.controller.dto.auth.SignInRequestDto
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
+import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
@@ -148,7 +148,7 @@ class AuthControllerTest @Autowired constructor(
                 performPost.andReturn()
                     .response
                     .contentAsString
-                    .let { objectMapper.readValue(it, MessageResponseDto::class.java) }
+                    .let { objectMapper.readValue(it, UserCreatedMessageResponseDto::class.java) }
 
             // then
             performPost
@@ -165,7 +165,7 @@ class AuthControllerTest @Autowired constructor(
             val actualUser = userFromMongo!!.toUser()
             actualUser.id = null
 
-            createdUserResponse.message shouldBe MessageResponseDto(CREATED_USER_MESSAGE).message
+            createdUserResponse.message shouldBe UserCreatedMessageResponseDto(CREATED_USER_MESSAGE).message
 
             actualUser shouldBeEqualToComparingFields randomUser.toUser(userFromMongo.password)
         }
@@ -181,7 +181,7 @@ class AuthControllerTest @Autowired constructor(
                 performPost.andReturn()
                     .response
                     .contentAsString
-                    .let { objectMapper.readValue(it, MessageResponseDto::class.java) }
+                    .let { objectMapper.readValue(it, UserCreatedMessageResponseDto::class.java) }
 
             performPost
                 .andDo { print() }
@@ -189,7 +189,7 @@ class AuthControllerTest @Autowired constructor(
                 .andReturn()
 
             // then
-            createdUserResponse.message shouldBe MessageResponseDto(CREATED_USER_MESSAGE).message
+            createdUserResponse.message shouldBe UserCreatedMessageResponseDto(CREATED_USER_MESSAGE).message
             userRepository.existsByUserName(userName = newUser.userName) shouldBe false
         }
 
