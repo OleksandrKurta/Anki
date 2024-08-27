@@ -39,7 +39,6 @@ class ControllerExceptionHandler {
     fun userDoesNotExistHandler(ex: BaseBadRequestException): ResponseEntity<String> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
 
-
     @ExceptionHandler(UserAlreadyExistException::class)
     fun hasAlreadyExistHandler(ex: BaseBadRequestException): ResponseEntity<String> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
