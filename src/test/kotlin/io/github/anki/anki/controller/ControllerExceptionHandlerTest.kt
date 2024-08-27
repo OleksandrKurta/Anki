@@ -2,6 +2,8 @@ package io.github.anki.anki.controller
 
 import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
+import io.github.anki.anki.service.exceptions.UserAlreadyExistException
+import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.testing.MVCTest
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestInstance
@@ -86,6 +88,28 @@ class ControllerExceptionHandlerTest {
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
         responseEntity.body shouldBe "Card does not exist"
+    }
+
+    @Test
+    fun `should return 400 if user not found`() {
+        // when
+        val responseEntity = exceptionHandler.userDoesNotExistHandler(UserDoesNotExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "User does not exist"
+    }
+
+    @Test
+    fun `should return 400 if user has already exist`() {
+        // when
+        val responseEntity = exceptionHandler.hasAlreadyExistHandler(UserAlreadyExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "User has already exist"
     }
 
     @Suppress("UnusedPrivateMember")

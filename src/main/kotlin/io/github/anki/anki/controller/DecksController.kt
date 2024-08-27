@@ -6,7 +6,7 @@ import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.DeckService
-import io.github.anki.anki.service.secure.jwt.JwtUtils
+import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping(DecksController.BASE_URL)
 class DecksController(
     private val service: DeckService,
-    private val jwtUtils: JwtUtils,
+    val securityService: SecurityService,
 ) {
 
     @PostMapping
@@ -36,7 +36,7 @@ class DecksController(
         @RequestHeader header: HttpHeaders,
     ): DeckDtoResponse {
         LOG.info("IN: $DecksController ${BASE_URL} with name ${request.name}")
-        val deck = service.createNewDeck(request.toDeck(jwtUtils.getUserIdFromAuthHeader(header)))
+        val deck = service.createNewDeck(request.toDeck(securityService.jwtUtils.getUserIdFromAuthHeader(header)))
         LOG.info("OUT: $DecksController ${BASE_URL} create deck with id = ${deck.id}")
         return deck.toDto()
     }
@@ -45,7 +45,7 @@ class DecksController(
     @ResponseStatus(HttpStatus.OK)
     fun getDecks(@RequestHeader header: HttpHeaders): List<DeckDtoResponse> {
         LOG.info("IN: $DecksController ${BASE_URL} get decks")
-        val decks = service.getDecks(jwtUtils.getUserIdFromAuthHeader(header))
+        val decks = service.getDecks(securityService.jwtUtils.getUserIdFromAuthHeader(header))
         LOG.info("OUT: $DecksController ${BASE_URL} get all decks")
         return decks.map { it.toDto() }
     }
@@ -60,7 +60,7 @@ class DecksController(
         LOG.info("IN: $DecksController ${BASE_URL} patch $request deck with id = $deckId")
         val deck =
             service.updateDeck(
-                request.toDeck(deckId = deckId, userId = jwtUtils.getUserIdFromAuthHeader(header)),
+                request.toDeck(deckId = deckId, userId = securityService.jwtUtils.getUserIdFromAuthHeader(header)),
             )
         LOG.info("OUT: $DecksController ${BASE_URL} patched deck with id = $deckId")
         return deck.toDto()
@@ -70,7 +70,7 @@ class DecksController(
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteDeck(@PathVariable deckId: String, @RequestHeader header: HttpHeaders) {
         LOG.info("IN: $DecksController ${BASE_URL} delete deck with id = $deckId")
-        val deck = service.deleteDeck(deckId, jwtUtils.getUserIdFromAuthHeader(header))
+        val deck = service.deleteDeck(deckId, securityService.jwtUtils.getUserIdFromAuthHeader(header))
         LOG.info("OUT: $DecksController ${BASE_URL} deleted deck with id = $deckId")
         return deck
     }

@@ -6,8 +6,7 @@ import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.CardsService
-import io.github.anki.anki.service.secure.jwt.AuthTokenFilter
-import io.github.anki.anki.service.secure.jwt.JwtUtils
+import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
@@ -27,8 +26,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping(CardsController.BASE_URL)
 class CardsController(
     private val cardService: CardsService,
-    val authTokenFilter: AuthTokenFilter,
-    val jwtUtils: JwtUtils,
+    val securityService: SecurityService,
 ) {
 
     @PostMapping
@@ -41,7 +39,7 @@ class CardsController(
         LOG.info("IN: $CardsController ${BASE_URL} create card in deck with id = $deckId")
         val card =
             cardService.createNewCard(
-                userId = jwtUtils.getUserIdFromAuthHeader(header),
+                userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
                 request.toCard(deckId),
             )
         LOG.info("OUT: $CardsController ${BASE_URL} created card ${card.id} with id = $deckId")
@@ -55,7 +53,7 @@ class CardsController(
         val cards =
             cardService.findCardsByDeck(
                 deckId = deckId,
-                userId = jwtUtils.getUserIdFromAuthHeader(header),
+                userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
             )
         LOG.info("OUT: $CardsController ${BASE_URL} already get all cards from deck with id = $deckId")
         return cards.map { it.toDto() }
@@ -72,7 +70,7 @@ class CardsController(
         LOG.info("IN: $CardsController ${BASE_URL} patch card with id $cardId from deck with id = $deckId")
         val card =
             cardService.updateCard(
-                userId = jwtUtils.getUserIdFromAuthHeader(header),
+                userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
                 request.toCard(cardId, deckId),
             )
         LOG.info("OUT: $CardsController ${BASE_URL} patched card with id $cardId from deck with id = $deckId")
@@ -85,7 +83,7 @@ class CardsController(
         LOG.info("IN: $CardsController ${BASE_URL} delete card with id $cardId from deck with id = $deckId")
         cardService.deleteCard(
             deckId = deckId,
-            userId = jwtUtils.getUserIdFromAuthHeader(header),
+            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
             cardId = cardId,
         )
         LOG.info("OUT: $CardsController ${BASE_URL} patched card with id $cardId from deck with id = $deckId")
