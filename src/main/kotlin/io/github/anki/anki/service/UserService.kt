@@ -17,20 +17,20 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 
 @Service
-class UserService : UserDetailsService {
-    @Autowired
-    var userRepository: UserRepository? = null
+class UserService @Autowired constructor(
+    var userRepository: UserRepository
+) : UserDetailsService {
 
     @Throws(UsernameNotFoundException::class)
     override fun loadUserByUsername(userName: String): UserDetails {
         val mongoUser: MongoUser =
-            userRepository?.findByUserName(userName)
+            userRepository.findByUserName(userName)
                 ?: throw UsernameNotFoundException("User Not Found with username: $userName")
         return mongoUser.toUser()
     }
 
     fun signIn(user: User): User {
-        if (userRepository?.existsByUserName(user.userName)!!) {
+        if (userRepository.existsByUserName(user.userName)) {
             return user
         }
         throw UserDoesNotExistException.fromUserName(user.userName)
@@ -38,7 +38,7 @@ class UserService : UserDetailsService {
 
     fun signUp(user: User): User? {
         try {
-            return userRepository?.insert(user.toMongoUser())?.toUser()
+            return userRepository.insert(user.toMongoUser()).toUser()
         } catch (ex: DuplicateKeyException) {
             LOG.error(ex.toString())
             if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {
