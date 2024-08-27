@@ -15,6 +15,8 @@ import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PR
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.randomUser
+import io.github.anki.testing.testcontainers.TestContainersFactory
+import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -23,9 +25,13 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActionsDsl
 import org.springframework.test.web.servlet.post
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -104,5 +110,16 @@ class SecurityServiceTest @Autowired constructor(
                     header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
                 }
             }
+    }
+    companion object {
+        @Container
+        @Suppress("PropertyName")
+        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setMongoUri(registry: DynamicPropertyRegistry) {
+            registry.with(mongoDBContainer)
+        }
     }
 }

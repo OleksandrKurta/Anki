@@ -3,45 +3,44 @@ package io.github.anki.anki.service
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
+import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
-import io.github.anki.testing.MVCTest
+import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.testing.getRandomID
 import io.github.anki.testing.randomUser
+import io.kotest.assertions.throwables.shouldNotThrowExactly
 import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import org.bson.types.ObjectId
+import io.mockk.every
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@MVCTest
-class UserServiceTest @Autowired constructor(
-    var userService: UserService,
-    var userRepository: UserRepository,
-    var passwordEncoder: PasswordEncoder,
-) {
+@ExtendWith(MockKExtension::class)
+class UserServiceTest {
+    @InjectMockKs
+    lateinit var userService: UserService
+
+    @MockK
+    lateinit var userRepository: UserRepository
     private lateinit var newUser: SignUpRequestDto
     private lateinit var encodedPassword: String
-    private lateinit var expectedUser: User
 
     @BeforeTest
     fun setUp() {
         newUser = SignUpRequestDto.randomUser()
-        encodedPassword = passwordEncoder.encode(newUser.password)
-        expectedUser =
-            User(
-                userName = newUser.userName,
-                email = newUser.email,
-                password = encodedPassword,
-                authorities = listOf(),
-            )
+        encodedPassword = BCryptPasswordEncoder().encode(newUser.password)
     }
 
     @Nested
@@ -51,23 +50,51 @@ class UserServiceTest @Autowired constructor(
         @Test
         fun `should create new user always`() {
             // when
+            val user = newUser.toUser(encodedPassword)
+            val createdMongoUser = user.toMongoUser().copy(id = getRandomID())
+            val expectedUser = user.copy(id = createdMongoUser.id!!.toHexString())
+            every { userRepository.insert(user.toMongoUser()) } returns createdMongoUser
             val actualUser: User? = userService.signUp(newUser.toUser(encodedPassword))
 
             // then
-            actualUser!!.id shouldNotBe null
-            userRepository.existsById(ObjectId(actualUser.id)) shouldBe true
-            actualUser.id = null
 
             actualUser shouldBe expectedUser
         }
 
         @Test
-        fun `should return 400 if user already exist `() {
+        fun `should throw UserAlreadyExistException if user already exist `() {
             // given
-            val givenUser = userService.signUp(newUser.toUser(encodedPassword))
-            givenUser shouldNotBe null
+            val user = newUser.toUser(encodedPassword)
+
+            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException(MongoUser.USER_NAME)
             // then
             shouldThrowExactly<UserAlreadyExistException> {
+                userService.signUp(newUser.toUser(encodedPassword))
+            }
+        }
+
+        @Test
+        fun `should trow DuplicateKeyException if user have duplicated fields`() {
+            // given
+            val user = newUser.toUser(encodedPassword)
+
+            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException("other field")
+            // then
+
+            shouldThrowExactly<DuplicateKeyException> {
+                userService.signUp(newUser.toUser(encodedPassword))
+            }
+        }
+
+        @Test
+        fun `should not trow DuplicateKeyException if user already exist `() {
+            // given
+            val user = newUser.toUser(encodedPassword)
+
+            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException(MongoUser.EMAIL)
+            // then
+
+            shouldNotThrowExactly<DuplicateKeyException> {
                 userService.signUp(newUser.toUser(encodedPassword))
             }
         }
@@ -81,8 +108,11 @@ class UserServiceTest @Autowired constructor(
         @Test
         fun `should return 400 UserDoesNotExistException user always`() {
             // then
+            val user = newUser.toUser(encodedPassword)
+            every { userRepository.existsByUserName(user.userName) } returns false
+
             shouldThrowExactly<UserDoesNotExistException> {
-                userService.signIn(SignUpRequestDto.randomUser().toUser(encodedPassword))
+                userService.signIn(user)
             }
         }
     }

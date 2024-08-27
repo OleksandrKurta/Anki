@@ -20,6 +20,8 @@ import io.github.anki.anki.service.secure.jwt.JwtUtils
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.randomUser
+import io.github.anki.testing.testcontainers.TestContainersFactory
+import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -35,10 +37,14 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActionsDsl
 import org.springframework.test.web.servlet.post
+import org.testcontainers.containers.MongoDBContainer
+import org.testcontainers.junit.jupiter.Container
 import kotlin.test.BeforeTest
 
 @MVCTest
@@ -47,12 +53,12 @@ class AuthControllerTest @Autowired constructor(
     val objectMapper: ObjectMapper,
     val userRepository: UserRepository,
     val jwtUtil: JwtUtils,
-    var encoder: PasswordEncoder,
     val authenticationManager: AuthenticationManager,
 ) {
 
     private lateinit var newUser: SignUpRequestDto
     private lateinit var token: String
+    private val encoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
 
     @BeforeTest
     fun setUp() {
@@ -206,5 +212,16 @@ class AuthControllerTest @Autowired constructor(
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(signUpUserRequest)
             }
+    }
+    companion object {
+        @Container
+        @Suppress("PropertyName")
+        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setMongoUri(registry: DynamicPropertyRegistry) {
+            registry.with(mongoDBContainer)
+        }
     }
 }
