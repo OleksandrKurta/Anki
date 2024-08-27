@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service
 
 @Service
 class UserService @Autowired constructor(
-    var userRepository: UserRepository
+    var userRepository: UserRepository,
 ) : UserDetailsService {
 
     @Throws(UsernameNotFoundException::class)

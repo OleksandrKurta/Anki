@@ -49,10 +49,10 @@ class AuthController @Autowired constructor(
 
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
-    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto?): MessageResponseDto {
+    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): MessageResponseDto {
         LOG.info("IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
 
-        userService.signUp(signUpRequestDto!!.toUser(secureService.encoder.encode(signUpRequestDto.password)))
+        userService.signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
 
         LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
         return MessageResponseDto(CREATED_USER_MESSAGE)
