@@ -54,7 +54,7 @@ class UserServiceTest {
             val createdMongoUser = user.toMongoUser().copy(id = getRandomID())
             val expectedUser = user.copy(id = createdMongoUser.id!!.toHexString())
             every { userRepository.insert(user.toMongoUser()) } returns createdMongoUser
-            val actualUser: User? = userService.signUp(newUser.toUser(encodedPassword))
+            val actualUser: User = userService.signUp(newUser.toUser(encodedPassword))
 
             // then
 

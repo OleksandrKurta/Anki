@@ -1,7 +1,6 @@
 package io.github.anki.anki.repository.mongodb.document
 
 import jakarta.validation.constraints.Email
-import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
@@ -18,18 +17,15 @@ data class MongoUser(
     @Id
     @Field(MongoDocument.ID)
     override var id: ObjectId? = null,
-    @NotBlank
     @Field(USER_NAME)
     @Size(max = 20)
     @Indexed(unique = true)
     var userName: String? = null,
-    @NotBlank
     @Size(max = 50)
     @Email
     @Field(EMAIL)
     @Indexed(unique = true)
     var email: String? = null,
-    @NotBlank
     @Size(max = 120)
     @Field(PASSWORD)
     var password: String? = null,
