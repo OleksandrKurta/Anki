@@ -20,9 +20,9 @@ import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.anki.service.secure.SecurityService
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PREFIX
-import io.github.anki.anki.service.secure.jwt.JwtUtils
 import io.github.anki.testing.DATA_PREFIX
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
@@ -45,7 +45,6 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -65,8 +64,7 @@ class CardsControllerTest @Autowired constructor(
     val cardRepository: CardRepository,
     val deckRepository: DeckRepository,
     val userRepository: UserRepository,
-    val jwtUtil: JwtUtils,
-    var encoder: PasswordEncoder,
+    val securityService: SecurityService,
     val authenticationManager: AuthenticationManager,
 ) {
     private lateinit var newCard: NewCardRequest
@@ -76,14 +74,14 @@ class CardsControllerTest @Autowired constructor(
     @BeforeTest
     fun setUp() {
         val userDto = SignUpRequestDto.randomUser()
-        val user = userDto.toUser(encoder.encode(userDto.password))
+        val user = userDto.toUser(securityService.encoder.encode(userDto.password))
         val mockUserId = userRepository.insert(user.toMongoUser()).id.toString()
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(user.userName, userDto.password),
             )
         SecurityContextHolder.getContext().setAuthentication(authentication)
-        token = jwtUtil.generateJwtToken(authentication)
+        token = securityService.jwtUtils.generateJwtToken(authentication)
         newCard =
             NewCardRequest(
                 key = getRandomString(DATA_PREFIX),
@@ -138,7 +136,7 @@ class CardsControllerTest @Autowired constructor(
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
             // then
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
 
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
@@ -237,7 +235,7 @@ class CardsControllerTest @Autowired constructor(
                 )
 
             // then
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val result =
                 performPatch
                     .andExpect {
@@ -362,7 +360,7 @@ class CardsControllerTest @Autowired constructor(
                     .andDo { print() }
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
         }

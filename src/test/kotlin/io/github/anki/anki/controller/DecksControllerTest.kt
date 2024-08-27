@@ -19,9 +19,9 @@ import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.anki.service.secure.SecurityService
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PREFIX
-import io.github.anki.anki.service.secure.jwt.JwtUtils
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -44,7 +44,6 @@ import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -66,8 +65,7 @@ class DecksControllerTest @Autowired constructor(
     val deckRepository: DeckRepository,
     val cardRepository: CardRepository,
     val userRepository: UserRepository,
-    val jwtUtil: JwtUtils,
-    var encoder: PasswordEncoder,
+    val securityService: SecurityService,
     val authenticationManager: AuthenticationManager,
 ) {
     private lateinit var newDeckRequest: NewDeckRequest
@@ -88,14 +86,14 @@ class DecksControllerTest @Autowired constructor(
                 password = getRandomString(),
                 roles = setOf(),
             )
-        val user = userDto.toUser(encoder.encode(userDto.password))
+        val user = userDto.toUser(securityService.encoder.encode(userDto.password))
         userRepository.insert(user.toMongoUser()).id.toString()
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(user.userName, userDto.password),
             )
         SecurityContextHolder.getContext().setAuthentication(authentication)
-        token = jwtUtil.generateJwtToken(authentication)
+        token = securityService.jwtUtils.generateJwtToken(authentication)
     }
 
     @Nested
@@ -178,7 +176,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should return all decks if they exist`() {
             // given
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val numberOfRandomCards = (5..100).random()
             val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(userId))
 
@@ -218,7 +216,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should patch deck if it exists`() {
             // given
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val insertedDeck = deckRepository.insertRandom(1, ObjectId(userId)).first()
 
             val patchDeckRequest =
@@ -265,7 +263,7 @@ class DecksControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, userId).message
 
@@ -292,7 +290,7 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val userId = jwtUtil.getUserIdFromJwtToken(token)
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(userId).toMongo())
             val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
