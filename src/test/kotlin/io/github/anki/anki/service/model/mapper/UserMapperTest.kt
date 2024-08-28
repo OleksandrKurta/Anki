@@ -62,6 +62,21 @@ class UserMapperTest {
 
             actualMongoUser.id shouldBe null
         }
+
+         @Test
+        fun `should raise IllegalArgumentException when no roles`() {
+            // given
+            val user =
+                User(
+                    userName = randomUserName,
+                    email = randomUserEmail,
+                    password = randomUserPassword,
+                    authorities = null,
+                )
+
+            // when
+            shouldThrowExactly<IllegalArgumentException> { user.toMongoUser() }
+        }
     }
 
     @Nested
@@ -146,6 +161,22 @@ class UserMapperTest {
             actualJwtDto shouldBe expectedJwtDto
 
             actualJwtDto.accessToken shouldBe expectedJwtDto.accessToken
+        }
+
+        @Test
+        fun `should raise IllegalArgumentException when no roles`() {
+            // given
+            val token = getRandomString()
+            val user =
+                User(
+                    userName = randomUserName,
+                    email = randomUserEmail,
+                    password = randomUserPassword,
+                    authorities = null,
+                )
+
+            // when
+            shouldThrowExactly<IllegalArgumentException> { user.toJwtDto(token) }
         }
     }
 }

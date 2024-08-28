@@ -74,7 +74,7 @@ class AuthDtoMapperTest {
                     userName = randomUserName,
                     password = randomPassword,
                     email = randomEmail,
-                    roles = setOf("ROLE_USER"),
+                    roles = mutableSetOf(Role.ROLE_USER.name),
                 )
             val expectedUser =
                 User(
