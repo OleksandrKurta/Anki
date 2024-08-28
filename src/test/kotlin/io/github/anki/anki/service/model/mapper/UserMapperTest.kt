@@ -3,6 +3,7 @@ package io.github.anki.anki.service.model.mapper
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
 import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
+import io.github.anki.anki.repository.mongodb.document.Role
 import io.github.anki.anki.service.model.User
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -44,7 +46,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    authorities = listOf(),
+                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
             val expectedMongoUser =
                 MongoUser(
@@ -52,6 +54,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
+                    roles = setOf(MongoRole(name = Role.ROLE_USER.name))
                 )
 
             // when
@@ -92,6 +95,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
+                    roles = setOf(MongoRole(name = Role.ROLE_USER.name))
                 )
 
             val expectedUser =
@@ -100,7 +104,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    authorities = listOf(),
+                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
 
             // when
@@ -142,7 +146,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    authorities = listOf(),
+                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
 
             val expectedJwtDto =
@@ -151,7 +155,7 @@ class UserMapperTest {
                     id = randomUserId.toString(),
                     email = randomUserEmail,
                     userName = randomUserName,
-                    roles = setOf(),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
 
             // when

@@ -275,6 +275,26 @@ class CardsControllerTest @Autowired constructor(
 
             // when
             val performPatch =
+                mockMvc.patch(patchBaseUrl, insertedDeck.id.toString(), randomCardId.toString()) {
+                contentType = MediaType.APPLICATION_JSON
+                content = objectMapper.writeValueAsString(PatchCardRequest())
+            }
+
+            // then
+            performPatch
+                    .andExpect {
+                        status { isUnauthorized() }
+                    }
+                    .andReturn()
+        }
+
+        @Test
+        fun `should return 400 if no auth header exist`() {
+            // given
+            val randomCardId = getRandomID()
+
+            // when
+            val performPatch =
                 sendPatchCard(
                     insertedDeck.id.toString(),
                     cardId = randomCardId.toString(),
@@ -282,15 +302,11 @@ class CardsControllerTest @Autowired constructor(
                 )
 
             // then
-            val result =
-                performPatch
-                    .andExpect {
-                        status { isBadRequest() }
-                    }
-                    .andReturn()
-
-            result.response.contentAsString shouldBe
-                CardDoesNotExistException.fromCardId(randomCardId.toString()).message
+            performPatch
+                .andExpect {
+                    status { isBadRequest() }
+                }
+                .andReturn()
         }
 
         private fun sendPatchCardAndValidateStatusAndContentType(

@@ -6,6 +6,7 @@ import io.github.anki.anki.repository.mongodb.document.Role
 import io.github.anki.anki.service.model.User
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
 import org.bson.types.ObjectId
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.security.core.GrantedAuthority
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import java.util.stream.Collectors
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -74,28 +76,21 @@ class AuthDtoMapperTest {
                     userName = randomUserName,
                     password = randomPassword,
                     email = randomEmail,
-                    roles = mutableSetOf(Role.ROLE_USER.name),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
             val expectedUser =
                 User(
                     userName = randomUserName,
                     password = randomPassword,
                     email = randomEmail,
-                    authorities =
-                    listOf(Role.ROLE_USER.name).stream().map { role ->
-                        GrantedAuthority {
-                            Role.valueOf(
-                                role,
-                            ).name
-                        }
-                    }.collect(Collectors.toList()),
+                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name))
                 )
 
             // WHEN
             val actual: User = signUpRequestDto.toUser(signUpRequestDto.password)
 
             // THEN
-            actual.shouldBeEqualToIgnoringFields(expectedUser, User::id)
+            actual shouldBeEqualToComparingFields expectedUser
 
             actual.id shouldBe null
         }
