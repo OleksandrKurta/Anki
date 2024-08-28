@@ -181,7 +181,6 @@ class AuthControllerTest @Autowired constructor(
                         userName = randomUserName,
                         email = newUser.email,
                         password = newUser.password,
-                        roles = setOf(),
                     ),
                 )
 

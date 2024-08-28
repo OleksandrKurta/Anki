@@ -54,7 +54,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name))
+                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
                 )
 
             // when
@@ -66,7 +66,7 @@ class UserMapperTest {
             actualMongoUser.id shouldBe null
         }
 
-         @Test
+        @Test
         fun `should raise IllegalArgumentException when no roles`() {
             // given
             val user =
@@ -95,7 +95,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name))
+                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
                 )
 
             val expectedUser =

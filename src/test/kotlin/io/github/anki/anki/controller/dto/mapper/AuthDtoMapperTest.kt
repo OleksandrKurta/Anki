@@ -15,9 +15,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import java.util.stream.Collectors
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -83,7 +81,7 @@ class AuthDtoMapperTest {
                     userName = randomUserName,
                     password = randomPassword,
                     email = randomEmail,
-                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name))
+                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
 
             // WHEN

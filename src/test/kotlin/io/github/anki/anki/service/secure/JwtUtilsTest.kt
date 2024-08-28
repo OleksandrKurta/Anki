@@ -12,7 +12,6 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.test.Test
 
-
 @ExtendWith(MockKExtension::class)
 class JwtUtilsTest {
     @InjectMockKs
@@ -21,7 +20,7 @@ class JwtUtilsTest {
     @Nested
     @DisplayName("jwtUtils.validateJwtToken()")
     @TestInstance(Lifecycle.PER_CLASS)
-    inner class jwtUtilsTest {
+    inner class JwtUtilsTest {
         @Test
         fun `should return false while validateJwtToken`() {
             // when
@@ -32,8 +31,8 @@ class JwtUtilsTest {
         fun `should throw exception `() {
             // when
             shouldThrowExactly<IllegalArgumentException> {
-                jwtUtils.getUserIdFromAuthHeader(header = org.springframework.http.HttpHeaders()) }
+                jwtUtils.getUserIdFromAuthHeader(header = org.springframework.http.HttpHeaders())
+            }
         }
-
     }
 }

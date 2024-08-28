@@ -16,7 +16,6 @@ import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
-import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongoUser
@@ -276,16 +275,16 @@ class CardsControllerTest @Autowired constructor(
             // when
             val performPatch =
                 mockMvc.patch(patchBaseUrl, insertedDeck.id.toString(), randomCardId.toString()) {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(PatchCardRequest())
-            }
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(PatchCardRequest())
+                }
 
             // then
             performPatch
-                    .andExpect {
-                        status { isUnauthorized() }
-                    }
-                    .andReturn()
+                .andExpect {
+                    status { isUnauthorized() }
+                }
+                .andReturn()
         }
 
         @Test
