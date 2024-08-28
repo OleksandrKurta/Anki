@@ -50,5 +50,5 @@ fun UserRepository.insertRandom(numberOfUsers: Int): List<MongoUser> {
             ),
         )
     }
-    return this.insert(listOfUsers)
+    return this.insert(listOfUsers).get()
 }

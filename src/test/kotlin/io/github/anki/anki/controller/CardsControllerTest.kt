@@ -75,7 +75,7 @@ class CardsControllerTest @Autowired constructor(
     fun setUp() {
         val userDto = SignUpRequestDto.randomUser()
         val user = userDto.toUser(securityService.encoder.encode(userDto.password))
-        val mockUserId = userRepository.insert(user.toMongoUser()).id.toString()
+        val mockUserId = userRepository.insert(user.toMongoUser()).get().id.toString()
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(user.userName, userDto.password),

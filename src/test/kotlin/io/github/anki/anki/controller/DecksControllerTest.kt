@@ -87,7 +87,7 @@ class DecksControllerTest @Autowired constructor(
                 roles = setOf(),
             )
         val user = userDto.toUser(securityService.encoder.encode(userDto.password))
-        userRepository.insert(user.toMongoUser()).id.toString()
+        userRepository.insert(user.toMongoUser()).get().id.toString()
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(user.userName, userDto.password),
@@ -290,8 +290,8 @@ class DecksControllerTest @Autowired constructor(
         @Test
         fun `should delete the deck`() {
             // given
-            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo()).get()
             val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
+            val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(userId).toMongo()).get()
             val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when

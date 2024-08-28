@@ -7,6 +7,7 @@ import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
+import io.github.anki.anki.service.utils.getOrThrowCause
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,21 +25,21 @@ class UserService @Autowired constructor(
     @Throws(UsernameNotFoundException::class)
     override fun loadUserByUsername(userName: String): UserDetails {
         val mongoUser: MongoUser =
-            userRepository.findByUserName(userName)
+            userRepository.findByUserName(userName).get()
                 ?: throw UsernameNotFoundException("User Not Found with username: $userName")
         return mongoUser.toUser()
     }
 
     fun signIn(user: User): User {
-        if (userRepository.existsByUserName(user.userName)) {
+        if (userRepository.existsByUserName(user.userName).get()) {
             return user
         }
         throw UserDoesNotExistException.fromUserName(user.userName)
     }
 
     fun signUp(user: User): User {
-         try {
-            return userRepository.insert(user.toMongoUser()).toUser()
+        try {
+            return userRepository.insert(user.toMongoUser()).getOrThrowCause().toUser()
         } catch (ex: DuplicateKeyException) {
             LOG.error(ex.toString())
             if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {
