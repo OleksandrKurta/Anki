@@ -37,11 +37,17 @@ class UserService @Autowired constructor(
     }
 
     fun signUp(user: User): User {
-        try {
+         try {
             return userRepository.insert(user.toMongoUser()).toUser()
         } catch (ex: DuplicateKeyException) {
-            throw UserAlreadyExistException(cause = ex)
+            LOG.error(ex.toString())
+            if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {
+                throw UserAlreadyExistException.fromUserName(user.userName)
+            } else if (!ex.stackTraceToString().contains(MongoUser.EMAIL)) {
+                throw ex
+            }
         }
+        return user
     }
 
     companion object {
