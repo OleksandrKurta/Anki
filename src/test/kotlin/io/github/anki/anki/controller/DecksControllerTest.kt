@@ -2,17 +2,26 @@ package io.github.anki.anki.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.github.anki.anki.controller.DecksController.Companion.BASE_URL
+import io.github.anki.anki.controller.DecksController.Companion.CONCRETE_DECK
 import io.github.anki.anki.controller.dto.DeckDtoResponse
 import io.github.anki.anki.controller.dto.NewDeckRequest
 import io.github.anki.anki.controller.dto.PatchDeckRequest
+import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
+import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
+import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
+import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PREFIX
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -31,6 +40,10 @@ import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -51,10 +64,12 @@ class DecksControllerTest @Autowired constructor(
     val objectMapper: ObjectMapper,
     val deckRepository: DeckRepository,
     val cardRepository: CardRepository,
+    val userRepository: UserRepository,
+    val securityService: SecurityService,
+    val authenticationManager: AuthenticationManager,
 ) {
-    private val baseUrl = "/api/v1/decks"
-    private val mockUserId = "66a11305dc669eefd22b5f3a"
     private lateinit var newDeckRequest: NewDeckRequest
+    private lateinit var token: String
 
     @BeforeTest
     fun setUp() {
@@ -63,10 +78,26 @@ class DecksControllerTest @Autowired constructor(
                 name = getRandomString("initial"),
                 description = getRandomString("initial"),
             )
+
+        val userDto =
+            SignUpRequestDto(
+                email = "${getRandomString()}@gmail.com",
+                userName = getRandomString(),
+                password = getRandomString(),
+                roles = setOf(),
+            )
+        val user = userDto.toUser(securityService.encoder.encode(userDto.password))
+        userRepository.insert(user.toMongoUser()).id.toString()
+        val authentication: Authentication =
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(user.userName, userDto.password),
+            )
+        SecurityContextHolder.getContext().setAuthentication(authentication)
+        token = securityService.jwtUtils.generateJwtToken(authentication)
     }
 
     @Nested
-    @DisplayName("POST /api/v1/decks")
+    @DisplayName("POST ${BASE_URL}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PostDeck {
         @Test
@@ -122,9 +153,12 @@ class DecksControllerTest @Autowired constructor(
         }
 
         private fun postNewDeck(newDeck: NewDeckRequest): ResultActionsDsl =
-            mockMvc.post(baseUrl) {
+            mockMvc.post(BASE_URL) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(newDeck)
+                headers {
+                    header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+                }
             }
 
         @Suppress("UnusedPrivateMember")
@@ -136,14 +170,15 @@ class DecksControllerTest @Autowired constructor(
     }
 
     @Nested
-    @DisplayName("GET api/v1/decks/")
+    @DisplayName("GET ${BASE_URL}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class GetDecks {
         @Test
         fun `should return all decks if they exist`() {
             // given
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val numberOfRandomCards = (5..100).random()
-            val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(mockUserId))
+            val insertedDecks = deckRepository.insertRandom(numberOfRandomCards, ObjectId(userId))
 
             // when
             val performGet = sendGetDecks()
@@ -163,17 +198,26 @@ class DecksControllerTest @Autowired constructor(
         }
 
         private fun sendGetDecks(): ResultActionsDsl =
-            mockMvc.get(baseUrl)
+            mockMvc.get(BASE_URL) {
+                contentType = MediaType.APPLICATION_JSON
+                headers {
+                    header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+                }
+            }
     }
 
     @Nested
-    @DisplayName("PATCH api/v1/decks/{deckId}")
+    @DisplayName("PATCH ${BASE_URL}${CONCRETE_DECK}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PatchDeck {
+
+        private val patchBaseUrl = BASE_URL + CONCRETE_DECK
+
         @Test
         fun `should patch deck if it exists`() {
             // given
-            val insertedDeck = deckRepository.insertRandom(1, ObjectId(mockUserId)).first()
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
+            val insertedDeck = deckRepository.insertRandom(1, ObjectId(userId)).first()
 
             val patchDeckRequest =
                 PatchDeckRequest(
@@ -219,27 +263,35 @@ class DecksControllerTest @Autowired constructor(
                     }
                     .andReturn()
 
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             result.response.contentAsString shouldBe
-                DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, mockUserId).message
+                DeckDoesNotExistException.fromDeckIdAndUserId(notExistingDeckID, userId).message
 
             deckRepository.existsById(ObjectId(notExistingDeckID)).get() shouldBe false
         }
 
         private fun sendPatchDeck(deckId: String, patchDeckRequest: PatchDeckRequest): ResultActionsDsl =
-            mockMvc.patch("$baseUrl/$deckId") {
+            mockMvc.patch(patchBaseUrl, deckId) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(patchDeckRequest)
+                headers {
+                    header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+                }
             }
     }
 
     @Nested
-    @DisplayName("DELETE api/v1/decks/{id}")
+    @DisplayName("DELETE ${BASE_URL}${CONCRETE_DECK}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class DeleteDeck {
+
+        private val deleteBaseUrl = BASE_URL + CONCRETE_DECK
+
         @Test
         fun `should delete the deck`() {
             // given
             val insertedDeck = deckRepository.insert(newDeckRequest.toDeck(mockUserId).toMongo()).get()
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val insertedCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
@@ -256,7 +308,7 @@ class DecksControllerTest @Autowired constructor(
 
             result.response.contentAsString.isEmpty() shouldBe true
 
-            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE).get()shouldBe false
+            deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.ACTIVE).get() shouldBe false
             deckRepository.existsByIdWithStatus(insertedDeck.id!!, DocumentStatus.DELETED).get() shouldBe true
 
             cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).get().isEmpty() shouldBe true
@@ -267,7 +319,11 @@ class DecksControllerTest @Autowired constructor(
         }
 
         private fun sendDeleteDeck(deckId: String): ResultActionsDsl =
-            mockMvc.delete("$baseUrl/$deckId")
+            mockMvc.delete(deleteBaseUrl, deckId) {
+                headers {
+                    header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+                }
+            }
     }
 
     companion object {

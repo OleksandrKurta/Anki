@@ -41,7 +41,7 @@ class CardsServiceTest {
     @InjectMockKs
     lateinit var cardService: CardsService
 
-    private val mockUserId = "66a11305dc669eefd22b5f3a"
+    private val mockUserId = getRandomID().toString()
 
     private lateinit var deckId: ObjectId
 

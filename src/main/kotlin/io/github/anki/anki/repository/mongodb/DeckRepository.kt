@@ -32,7 +32,7 @@ class DeckRepository(
             log.info("Finding by userId = {} and status = {}", userId, status)
             mongoTemplate.find(
                 Query(
-                    Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.STATUS).`is`(status),
+                    Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
                 ),
                 entityClass,
             ).also { log.info("Found by userId = {} and status = {} object = {}", userId, status, it) }
@@ -52,7 +52,7 @@ class DeckRepository(
                         .`is`(id)
                         .and(MongoDeck.USER_ID)
                         .`is`(userId)
-                        .and(MongoDocument.STATUS)
+                        .and(MongoDocument.DOCUMENT_STATUS)
                         .`is`(status),
                 ),
                 entityClass,
@@ -69,7 +69,7 @@ class DeckRepository(
                         .`is`(id)
                         .and(MongoDeck.USER_ID)
                         .`is`(userId)
-                        .and(MongoDocument.STATUS)
+                        .and(MongoDocument.DOCUMENT_STATUS)
                         .`is`(status),
                 ),
                 entityClass,
