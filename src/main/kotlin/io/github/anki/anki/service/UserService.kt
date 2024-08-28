@@ -37,7 +37,7 @@ class UserService @Autowired constructor(
     }
 
     fun signUp(user: User): User {
-         try {
+        try {
             return userRepository.insert(user.toMongoUser()).toUser()
         } catch (ex: DuplicateKeyException) {
             LOG.error(ex.toString())

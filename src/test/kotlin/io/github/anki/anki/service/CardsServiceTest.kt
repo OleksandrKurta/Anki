@@ -1,6 +1,7 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.controller.dto.PaginationDto
+import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
@@ -110,13 +111,13 @@ class CardsServiceTest {
             // given
             val initialMongoCards = getRandomMongoCards(cardsAmount, deckId)
 
-            val pagination = PaginationDto(limit = cardsAmount)
+            val paginationDto = PaginationDto(limit = cardsAmount)
 
             every {
                 cardRepository.findByDeckIdWithStatus(
                     deckId = deckId,
-                    limit = pagination.limit,
-                    offset = pagination.offset,
+                    limit = paginationDto.limit,
+                    offset = paginationDto.offset,
                 )
             } returns initialMongoCards
 
@@ -125,8 +126,7 @@ class CardsServiceTest {
                 cardService.findCardsByDeckWithPagination(
                     deckId.toString(),
                     mockUserId,
-                    limit = pagination.limit,
-                    offset = pagination.offset,
+                    paginationDto.toPagination(),
                 )
 
             // then
@@ -137,8 +137,8 @@ class CardsServiceTest {
             verify(exactly = 1) {
                 cardRepository.findByDeckIdWithStatus(
                     deckId = deckId,
-                    limit = pagination.limit,
-                    offset = pagination.offset,
+                    limit = paginationDto.limit,
+                    offset = paginationDto.offset,
                 )
             }
         }

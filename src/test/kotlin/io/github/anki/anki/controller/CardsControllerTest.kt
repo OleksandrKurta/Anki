@@ -232,10 +232,10 @@ class CardsControllerTest @Autowired constructor(
         }
 
         private fun sendGetCards(deckId: String, paginationDto: PaginationDto): ResultActionsDsl =
-            mockMvc.get(String.format(baseUrl, deckId)) {
+            mockMvc.get(BASE_URL, deckId) {
                 header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(paginationDto)
+                param(PaginationDto.LIMIT, paginationDto.limit.toString())
+                param(PaginationDto.OFFSET, paginationDto.offset.toString())
             }.andDo { print() }
     }
 
