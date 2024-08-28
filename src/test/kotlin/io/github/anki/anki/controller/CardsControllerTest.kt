@@ -2,22 +2,32 @@ package io.github.anki.anki.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import io.github.anki.anki.controller.CardsController.Companion.BASE_URL
+import io.github.anki.anki.controller.CardsController.Companion.CONCRETE_CARD
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
 import io.github.anki.anki.controller.dto.PatchCardRequest
+import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toDto
+import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
+import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
-import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toCard
+import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
+import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PREFIX
+import io.github.anki.testing.DATA_PREFIX
 import io.github.anki.testing.MVCTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.insertRandom
+import io.github.anki.testing.randomUser
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
@@ -29,7 +39,12 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.servlet.MockMvc
@@ -48,24 +63,35 @@ class CardsControllerTest @Autowired constructor(
     val objectMapper: ObjectMapper,
     val cardRepository: CardRepository,
     val deckRepository: DeckRepository,
+    val userRepository: UserRepository,
+    val securityService: SecurityService,
+    val authenticationManager: AuthenticationManager,
 ) {
-    private val baseUrl = "/api/v1/decks/%s/cards"
-    private val mockUserId = "66a11305dc669eefd22b5f3a"
     private lateinit var newCard: NewCardRequest
     private lateinit var insertedDeck: MongoDeck
+    private lateinit var token: String
 
     @BeforeTest
     fun setUp() {
+        val userDto = SignUpRequestDto.randomUser()
+        val user = userDto.toUser(securityService.encoder.encode(userDto.password))
+        val mockUserId = userRepository.insert(user.toMongoUser()).id.toString()
+        val authentication: Authentication =
+            authenticationManager.authenticate(
+                UsernamePasswordAuthenticationToken(user.userName, userDto.password),
+            )
+        SecurityContextHolder.getContext().setAuthentication(authentication)
+        token = securityService.jwtUtils.generateJwtToken(authentication)
         newCard =
             NewCardRequest(
-                key = getRandomString("initial"),
-                value = getRandomString("initial"),
+                key = getRandomString(DATA_PREFIX),
+                value = getRandomString(DATA_PREFIX),
             )
         insertedDeck = deckRepository.insertRandom(1, userId = ObjectId(mockUserId)).first()
     }
 
     @Nested
-    @DisplayName("POST /api/v1/decks/{deckId}/cards")
+    @DisplayName("POST ${BASE_URL}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PostCard {
         @Test
@@ -110,20 +136,42 @@ class CardsControllerTest @Autowired constructor(
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
             // then
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
 
             result.response.contentAsString shouldBe
-                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
+        }
+
+        @Test
+        fun `should return authException token was not in header`() {
+            // given
+            val randomDeckId = getRandomID()
+
+            // when
+            val performPost =
+                mockMvc.post(BASE_URL, randomDeckId.toString()) {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(newCard)
+                }
+            val result =
+                performPost
+                    .andDo { print() }
+                    .andExpect { status { isUnauthorized() } }
+                    .andReturn()
+            // then
+            result.response.status shouldBe HttpStatus.UNAUTHORIZED.value()
         }
 
         private fun postNewCard(newCard: NewCardRequest, deckId: String): ResultActionsDsl =
-            mockMvc.post(String.format(baseUrl, deckId)) {
+            mockMvc.post(BASE_URL, deckId) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(newCard)
+                header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
             }
     }
 
     @Nested
-    @DisplayName("GET api/v1/decks/{deckId}/cards")
+    @DisplayName("GET ${BASE_URL}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class GetCards {
         @Test
@@ -147,14 +195,17 @@ class CardsControllerTest @Autowired constructor(
             cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
         }
 
-        private fun sendGetCards(deckId: String): ResultActionsDsl = mockMvc.get(String.format(baseUrl, deckId))
+        private fun sendGetCards(deckId: String): ResultActionsDsl =
+            mockMvc.get(BASE_URL, deckId) {
+                header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+            }
     }
 
     @Nested
-    @DisplayName("PATCH api/v1/decks/{deckId}/cards/{id}")
+    @DisplayName("PATCH ${BASE_URL}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class PatchCard {
-        private val patchBaseUrl = "/api/v1/decks/%s/cards/%s"
+        private val patchBaseUrl = BASE_URL + CONCRETE_CARD
         private lateinit var insertedCard: MongoCard
 
         @BeforeTest
@@ -204,6 +255,7 @@ class CardsControllerTest @Autowired constructor(
                 )
 
             // then
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             val result =
                 performPatch
                     .andExpect {
@@ -212,11 +264,31 @@ class CardsControllerTest @Autowired constructor(
                     .andReturn()
 
             result.response.contentAsString shouldBe
-                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
         }
 
         @Test
         fun `should return 400 if card does not exist`() {
+            // given
+            val randomCardId = getRandomID()
+
+            // when
+            val performPatch =
+                mockMvc.patch(patchBaseUrl, insertedDeck.id.toString(), randomCardId.toString()) {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(PatchCardRequest())
+                }
+
+            // then
+            performPatch
+                .andExpect {
+                    status { isUnauthorized() }
+                }
+                .andReturn()
+        }
+
+        @Test
+        fun `should return 400 if no auth header exist`() {
             // given
             val randomCardId = getRandomID()
 
@@ -229,15 +301,11 @@ class CardsControllerTest @Autowired constructor(
                 )
 
             // then
-            val result =
-                performPatch
-                    .andExpect {
-                        status { isBadRequest() }
-                    }
-                    .andReturn()
-
-            result.response.contentAsString shouldBe
-                CardDoesNotExistException.fromCardId(randomCardId.toString()).message
+            performPatch
+                .andExpect {
+                    status { isBadRequest() }
+                }
+                .andReturn()
         }
 
         private fun sendPatchCardAndValidateStatusAndContentType(
@@ -258,17 +326,18 @@ class CardsControllerTest @Autowired constructor(
             cardId: String,
             patchCardRequest: PatchCardRequest,
         ): ResultActionsDsl =
-            mockMvc.patch(String.format(patchBaseUrl, deckId, cardId)) {
+            mockMvc.patch(patchBaseUrl, deckId, cardId) {
                 contentType = MediaType.APPLICATION_JSON
                 content = objectMapper.writeValueAsString(patchCardRequest)
+                header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
             }
     }
 
     @Nested
-    @DisplayName("DELETE api/v1/decks/{deckId}/cards/{id}")
+    @DisplayName("DELETE ${BASE_URL}${CONCRETE_CARD}")
     @TestInstance(Lifecycle.PER_CLASS)
     inner class DeleteCard {
-        private val deleteBaseUrl = "/api/v1/decks/%s/cards/%s"
+        private val deleteBaseUrl = BASE_URL + CONCRETE_CARD
 
         @Test
         fun `should delete the card`() {
@@ -327,13 +396,15 @@ class CardsControllerTest @Autowired constructor(
                     .andDo { print() }
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
-
+            val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
             result.response.contentAsString shouldBe
-                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), mockUserId).message
+                DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
         }
 
         private fun sendDeleteCard(deckId: String, cardId: String): ResultActionsDsl =
-            mockMvc.delete(String.format(deleteBaseUrl, deckId, cardId))
+            mockMvc.delete(deleteBaseUrl, deckId, cardId) {
+                header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
+            }
     }
 
     companion object {

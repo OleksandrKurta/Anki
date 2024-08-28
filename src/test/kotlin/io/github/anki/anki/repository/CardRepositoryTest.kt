@@ -69,6 +69,42 @@ class CardRepositoryTest @Autowired constructor(
         cardRepository.existsById(notExistingCardId) shouldBe false
     }
 
+    @Test
+    fun `should NOT find card by not exist deckId`() {
+        // given
+        val notExistingDeckId = getRandomID()
+
+        // when
+        val card = cardRepository.findByDeckIdWithStatus(deckId = notExistingDeckId)
+
+        // then
+        card shouldBe listOf()
+    }
+
+    @Test
+    fun `should find card by deckId`() {
+        // given
+        val expectedCard = cardRepository.insert(newCard)
+
+        // when
+        val card = newCard.deckId?.let { cardRepository.findByDeckIdWithStatus(deckId = it) }
+
+        // then
+        card shouldBe listOf(expectedCard)
+    }
+
+    @Test
+    fun `should soft delete by card by deckId`() {
+        // given
+        val expectedCard = cardRepository.insert(newCard)
+
+        // when
+        newCard.deckId?.let { cardRepository.softDeleteByDeckId(deckId = it) }
+
+        // then
+        expectedCard.id?.let { cardRepository.findByIdWithStatus(it, DocumentStatus.ACTIVE) } shouldBe null
+    }
+
     companion object {
         @Container
         @Suppress("PropertyName")

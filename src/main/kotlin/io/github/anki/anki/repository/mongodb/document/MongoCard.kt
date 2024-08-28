@@ -20,7 +20,7 @@ data class MongoCard(
     @LastModifiedDate
     @Field(MongoDocument.MODIFIED_AT)
     override val modifiedAt: Instant? = null,
-    @Field(MongoDocument.STATUS)
+    @Field(MongoDocument.DOCUMENT_STATUS)
     override val status: DocumentStatus = DocumentStatus.ACTIVE,
     @Field(DECK_ID)
     @Indexed

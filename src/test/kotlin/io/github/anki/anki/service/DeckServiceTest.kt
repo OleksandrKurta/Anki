@@ -8,6 +8,7 @@ import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
+import io.github.anki.testing.DATA_PREFIX
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -54,7 +55,7 @@ class DeckServiceTest {
         @Test
         fun `should create new deck always`() {
             // given
-            val userId = ObjectId()
+            val userId = getRandomID()
             val deck =
                 Deck(
                     userId = userId.toHexString(),
@@ -67,7 +68,7 @@ class DeckServiceTest {
                     name = deck.name,
                     description = deck.description,
                 )
-            val createdMongoDeck = mongoDeck.copy(id = ObjectId())
+            val createdMongoDeck = mongoDeck.copy(id = getRandomID())
             val expectedDeck = deck.copy(id = createdMongoDeck.id!!.toHexString())
             every { deckRepository.insert(mongoDeck) } returns createdMongoDeck
 
@@ -92,7 +93,7 @@ class DeckServiceTest {
         @ValueSource(ints = [0, 1, 20, 100])
         fun `should return all decks if they exist`(numberOfDecks: Int) {
             // given
-            val userId = ObjectId()
+            val userId = getRandomID()
 
             val randomDecks = getRandomMongoDecks(numberOfDecks, userId)
 
@@ -114,10 +115,10 @@ class DeckServiceTest {
             repeat(number) {
                 mongoDecks.add(
                     MongoDeck(
-                        id = ObjectId(),
+                        id = getRandomID(),
                         userId = userId,
-                        name = getRandomString("initial"),
-                        description = getRandomString("initial"),
+                        name = getRandomString(DATA_PREFIX),
+                        description = getRandomString(DATA_PREFIX),
                     ),
                 )
             }
@@ -136,8 +137,8 @@ class DeckServiceTest {
                 Deck(
                     id = getRandomID().toString(),
                     userId = getRandomID().toString(),
-                    name = getRandomString("initial"),
-                    description = getRandomString("initial"),
+                    name = getRandomString(DATA_PREFIX),
+                    description = getRandomString(DATA_PREFIX),
                 )
             val updatedDeck =
                 Deck(

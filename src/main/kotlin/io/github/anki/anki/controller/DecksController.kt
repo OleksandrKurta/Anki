@@ -6,7 +6,10 @@ import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.DeckService
+import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
+import org.slf4j.LoggerFactory
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -14,34 +17,68 @@ import org.springframework.web.bind.annotation.PatchMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("api/v1/decks")
+@RequestMapping(DecksController.BASE_URL)
 class DecksController(
     private val service: DeckService,
+    val securityService: SecurityService,
 ) {
-    private val requestUserId = "66a11305dc669eefd22b5f3a"
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createDeck(@Valid @RequestBody request: NewDeckRequest): DeckDtoResponse =
-        service.createNewDeck(request.toDeck(requestUserId)).toDto()
+    fun createDeck(
+        @Valid @RequestBody request: NewDeckRequest,
+        @RequestHeader header: HttpHeaders,
+    ): DeckDtoResponse {
+        LOG.info("IN: $DecksController ${BASE_URL} with name ${request.name}")
+        val deck = service.createNewDeck(request.toDeck(securityService.jwtUtils.getUserIdFromAuthHeader(header)))
+        LOG.info("OUT: $DecksController ${BASE_URL} create deck with id = ${deck.id}")
+        return deck.toDto()
+    }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getDecks(): List<DeckDtoResponse> = service.getDecks(requestUserId).map { it.toDto() }
+    fun getDecks(@RequestHeader header: HttpHeaders): List<DeckDtoResponse> {
+        LOG.info("IN: $DecksController ${BASE_URL} get decks")
+        val decks = service.getDecks(securityService.jwtUtils.getUserIdFromAuthHeader(header))
+        LOG.info("OUT: $DecksController ${BASE_URL} get all decks")
+        return decks.map { it.toDto() }
+    }
 
-    @PatchMapping("/{deckId}")
+    @PatchMapping(CONCRETE_DECK)
     @ResponseStatus(HttpStatus.OK)
-    fun patchDeck(@Valid @RequestBody request: PatchDeckRequest, @PathVariable deckId: String): DeckDtoResponse =
-        service.updateDeck(request.toDeck(deckId = deckId, userId = requestUserId)).toDto()
+    fun patchDeck(
+        @Valid @RequestBody request: PatchDeckRequest,
+        @PathVariable deckId: String,
+        @RequestHeader header: HttpHeaders,
+    ): DeckDtoResponse {
+        LOG.info("IN: $DecksController ${BASE_URL} patch $request deck with id = $deckId")
+        val deck =
+            service.updateDeck(
+                request.toDeck(deckId = deckId, userId = securityService.jwtUtils.getUserIdFromAuthHeader(header)),
+            )
+        LOG.info("OUT: $DecksController ${BASE_URL} patched deck with id = $deckId")
+        return deck.toDto()
+    }
 
-    @DeleteMapping("/{deckId}")
+    @DeleteMapping(CONCRETE_DECK)
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteDeck(@PathVariable deckId: String) {
-        service.deleteDeck(deckId, requestUserId)
+    fun deleteDeck(@PathVariable deckId: String, @RequestHeader header: HttpHeaders) {
+        LOG.info("IN: $DecksController ${BASE_URL} delete deck with id = $deckId")
+        val deck = service.deleteDeck(deckId, securityService.jwtUtils.getUserIdFromAuthHeader(header))
+        LOG.info("OUT: $DecksController ${BASE_URL} deleted deck with id = $deckId")
+        return deck
+    }
+
+    companion object {
+        private val LOG = LoggerFactory.getLogger(DecksController::class.java)
+
+        const val BASE_URL = "/api/v1/decks"
+        const val CONCRETE_DECK = "/{deckId}"
     }
 }
