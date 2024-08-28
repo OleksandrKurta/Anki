@@ -20,14 +20,28 @@ class CardRepository(
     override val entityClass = MongoCard::class.java
     override val log: Logger = LoggerFactory.getLogger(CardRepository::class.java)
 
-    fun findByDeckIdWithStatus(deckId: ObjectId, status: DocumentStatus = DocumentStatus.ACTIVE): List<MongoCard> {
-        log.info("Finding by deckId = {} and status = {}", deckId, status)
+    fun findByDeckIdWithStatus(
+        deckId: ObjectId,
+        status: DocumentStatus = DocumentStatus.ACTIVE,
+        limit: Int = 50,
+        offset: Int = 0,
+    ): List<MongoCard> {
+        log.info("Finding by deckId = {} and status = {} and limit = {} and offset = {}", deckId, status, limit, offset)
         return mongoTemplate.find(
             Query(
                 Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.STATUS).`is`(status),
-            ),
+            ).limit(limit).skip(offset.toLong()),
             entityClass,
-        ).also { log.info("Found by deckId = {} and status = {} object = {}", deckId, status, it) }
+        ).also {
+            log.info(
+                "Found by deckId = {} and status = {} and limit = {} and offset = {} object = {}",
+                deckId,
+                status,
+                limit,
+                offset,
+                it,
+            )
+        }
     }
 
     fun softDeleteByDeckId(deckId: ObjectId) {

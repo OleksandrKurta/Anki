@@ -2,6 +2,7 @@ package io.github.anki.anki.controller
 
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
+import io.github.anki.anki.controller.dto.PaginationDto
 import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
@@ -41,10 +42,15 @@ class CardsController(
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getAllCardsFromDeck(@PathVariable deckId: String): List<CardDtoResponse> =
-        cardService.findCardsByDeck(
+    fun getAllCardsFromDeck(
+        @PathVariable deckId: String,
+        @RequestBody pagination: PaginationDto,
+    ): List<CardDtoResponse> =
+        cardService.findCardsByDeckWithPagination(
             deckId = deckId,
             userId = requestUserId,
+            limit = pagination.limit,
+            offset = pagination.offset,
         ).map { it.toDto() }
 
     @PatchMapping("/{cardId}")

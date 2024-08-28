@@ -21,10 +21,14 @@ class CardsService(
             .toCard()
     }
 
-    fun findCardsByDeck(deckId: String, userId: String): List<Card> {
+    fun findCardsByDeckWithPagination(deckId: String, userId: String, limit: Int, offset: Int): List<Card> {
         deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
-            .findByDeckIdWithStatus(ObjectId(deckId))
+            .findByDeckIdWithStatus(
+                deckId = ObjectId(deckId),
+                limit = limit,
+                offset = offset,
+            )
             .map { it.toCard() }
     }
 
