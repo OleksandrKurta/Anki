@@ -21,9 +21,5 @@ class SignUpRequestDto(
     String? = null,
 ) {
 
-    fun setRole(roles: Set<String>?) {
-        this.roles = roles
-    }
-
     companion object
 }

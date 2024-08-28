@@ -61,13 +61,6 @@ class JwtUtils {
             .parseClaimsJws(token)
             .body["id"].toString()
 
-    fun getUserEmailFromJwtToken(token: String?): String =
-        Jwts.parserBuilder()
-            .setSigningKey(key())
-            .build()
-            .parseClaimsJwt(token)
-            .body["email"].toString()
-
     fun getUserIdFromAuthHeader(header: HttpHeaders): String {
         val headerAuth = header[AUTH_HEADER_NAME.lowercase()]?.get(0)
         val token = headerAuth?.substring(TOKEN_PREFIX.length, headerAuth.length)

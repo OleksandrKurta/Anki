@@ -23,6 +23,7 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.dao.DuplicateKeyException
+import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -116,15 +117,31 @@ class UserServiceTest {
             }
         }
 
-
-         @Test
+        @Test
         fun `should return 400 UsernameNotFoundException user always`() {
+            // then
+            val user = newUser.toUser(encodedPassword)
+            every { user.userName?.let { userRepository.existsByUserName(it) } } returns false
+
+            shouldThrowExactly<UserDoesNotExistException> {
+                userService.signIn(user)
+            }
+        }
+    }
+
+    @Nested
+    @DisplayName("UserService.loadUserByUsername()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class LoadUserByUsername {
+
+        @Test
+        fun `should throw UsernameNotFoundException when user not in db`() {
             // then
             val user = newUser.toUser(encodedPassword)
             every { user.userName?.let { userRepository.findByUserName(it) } } returns null
 
-            shouldThrowExactly<UserDoesNotExistException> {
-                userService.signIn(user)
+            shouldThrowExactly<UsernameNotFoundException> {
+                user.userName?.let { userService.loadUserByUsername(it) }
             }
         }
     }

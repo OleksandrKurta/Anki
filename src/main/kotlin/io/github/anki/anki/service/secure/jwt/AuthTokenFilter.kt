@@ -1,7 +1,6 @@
 package io.github.anki.anki.service.secure.jwt
 
 import io.github.anki.anki.service.UserService
-import io.github.anki.anki.service.exceptions.NoJwtUtilsRuntimeException
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest
@@ -33,7 +32,9 @@ class AuthTokenFilter : OncePerRequestFilter() {
     ) {
         try {
             val jwt = parseJwt(request)
-            if (jwt != null && jwtUtils?.validateJwtToken(jwt) ?: throw NoJwtUtilsRuntimeException()) {
+            if (jwt != null && jwtUtils?.validateJwtToken(jwt)
+                ?: throw IllegalArgumentException("JwtUtils not initialized")
+            ) {
                 val userName: String = jwtUtils.getUserNameFromJwtToken(jwt)
 
                 val userDetails: UserDetails = userDetailsService!!.loadUserByUsername(userName)

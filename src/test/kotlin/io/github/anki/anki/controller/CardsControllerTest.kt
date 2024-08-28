@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -140,6 +141,26 @@ class CardsControllerTest @Autowired constructor(
 
             result.response.contentAsString shouldBe
                 DeckDoesNotExistException.fromDeckIdAndUserId(randomDeckId.toString(), userId).message
+        }
+
+        @Test
+        fun `should return authException token was not in header`() {
+            // given
+            val randomDeckId = getRandomID()
+
+            // when
+            val performPost =
+                mockMvc.post(BASE_URL, randomDeckId.toString()) {
+                    contentType = MediaType.APPLICATION_JSON
+                    content = objectMapper.writeValueAsString(newCard)
+                }
+            val result =
+                performPost
+                    .andDo { print() }
+                    .andExpect { status { isUnauthorized() } }
+                    .andReturn()
+            // then
+            result.response.status shouldBe HttpStatus.UNAUTHORIZED.value()
         }
 
         private fun postNewCard(newCard: NewCardRequest, deckId: String): ResultActionsDsl =

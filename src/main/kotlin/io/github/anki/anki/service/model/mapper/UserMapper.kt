@@ -3,8 +3,6 @@ package io.github.anki.anki.service.model.mapper
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
 import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
-import io.github.anki.anki.repository.mongodb.document.Role
-import io.github.anki.anki.service.exceptions.AuthoritiesNotFoundException
 import io.github.anki.anki.service.model.User
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import java.util.stream.Collectors
@@ -15,14 +13,13 @@ fun MongoUser.toUser(): User {
         this.userName.toString(),
         this.email.toString(),
         this.password.toString(),
-        this.roles.stream()
+        this.roles
             .map { role ->
                 SimpleGrantedAuthority(
                     role?.name
-                        ?: throw AuthoritiesNotFoundException.fromUserName(this.userName),
+                        ?: throw IllegalArgumentException("User roles can not be null"),
                 )
-            }
-            .collect(Collectors.toList()),
+            },
     )
 }
 
@@ -31,8 +28,7 @@ fun User.toJwtDto(token: String): JwtResponseDto {
         this.authorities?.stream()
             ?.map { authority -> authority.toString() }
             ?.collect(Collectors.toSet())
-            ?: throw AuthoritiesNotFoundException
-                .fromUserName(this.userName)
+            ?: throw throw IllegalArgumentException("User roles can not be null")
     return JwtResponseDto(
         accessToken = token,
         id = this.id,
@@ -45,10 +41,9 @@ fun User.toJwtDto(token: String): JwtResponseDto {
 fun User.toMongoUser(): MongoUser {
     val roles: Set<MongoRole> =
         this.authorities?.stream()
-            ?.map { authority -> MongoRole(name = Role.valueOf(authority.toString()).name) }
+            ?.map { authority -> MongoRole(name = authority.toString()) }
             ?.collect(Collectors.toSet())
-            ?: throw AuthoritiesNotFoundException
-                .fromUserName(this.userName)
+            ?: throw IllegalArgumentException("User authorities can not be null")
     return MongoUser(
         userName = this.username.toString(),
         email = this.email.toString(),

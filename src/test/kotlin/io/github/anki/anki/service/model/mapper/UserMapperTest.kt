@@ -1,10 +1,12 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
+import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.model.User
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
+import io.kotest.assertions.throwables.shouldThrowExactly
 import io.kotest.matchers.shouldBe
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
@@ -94,12 +96,27 @@ class UserMapperTest {
 
             actualUser.id shouldBe expectedUser.id
         }
+
+        @Test
+        fun `should raise IllegalArgumentException when no roles`() {
+            val mongoUser =
+                MongoUser(
+                    id = randomUserId,
+                    userName = randomUserName,
+                    email = randomUserEmail,
+                    password = randomUserPassword,
+                    roles = setOf(MongoRole()),
+                )
+
+            // when
+            shouldThrowExactly<IllegalArgumentException> { mongoUser.toUser() }
+        }
     }
 
     @Nested
     @DisplayName("User.toJwtDto(token)")
     @TestInstance(Lifecycle.PER_CLASS)
-    inner class UsertoJwtDto {
+    inner class UserToJwtDto {
         @Test
         fun `should map MongoUser to User`() {
             // given
