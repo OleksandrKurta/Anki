@@ -29,7 +29,7 @@ class CardRepository(
         log.info("Finding by deckId = {} and status = {} and limit = {} and offset = {}", deckId, status, limit, offset)
         return mongoTemplate.find(
             Query(
-                Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.STATUS).`is`(status),
+                Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
             ).limit(limit).skip(offset.toLong()),
             entityClass,
         ).also {
@@ -48,7 +48,7 @@ class CardRepository(
         log.info("Soft deleting by deckId = {}", deckId)
         mongoTemplate.updateMulti(
             Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),
-            Update().set(MongoDocument.STATUS, DocumentStatus.DELETED),
+            Update().set(MongoDocument.DOCUMENT_STATUS, DocumentStatus.DELETED),
             entityClass,
         )
         log.info("Soft deleted by deckId = {}", deckId)

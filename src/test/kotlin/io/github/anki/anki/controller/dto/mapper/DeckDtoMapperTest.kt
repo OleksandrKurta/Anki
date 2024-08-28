@@ -28,7 +28,7 @@ class DeckDtoMapperTest {
     private lateinit var randomDeckName: String
     private lateinit var randomDeckDescription: String
 
-    private val mockUserId = "66a11305dc669eefd22b5f3a"
+    private val mockUserId = getRandomID().toString()
 
     private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
 

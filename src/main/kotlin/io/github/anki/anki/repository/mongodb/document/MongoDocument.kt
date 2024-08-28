@@ -13,6 +13,6 @@ interface MongoDocument {
         const val ID = "id"
         const val CREATED_AT = "createdAt"
         const val MODIFIED_AT = "modifiedAt"
-        const val STATUS = "status"
+        const val DOCUMENT_STATUS = "status"
     }
 }

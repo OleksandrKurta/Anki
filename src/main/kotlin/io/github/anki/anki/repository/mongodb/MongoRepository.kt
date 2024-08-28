@@ -35,7 +35,7 @@ abstract class MongoRepository<T : MongoDocument> {
         log.info("Soft deleting by id = {}", id)
         mongoTemplate.updateFirst(
             Query(Criteria.where(MongoDocument.ID).`is`(id)),
-            Update().set(MongoDocument.STATUS, DocumentStatus.DELETED),
+            Update().set(MongoDocument.DOCUMENT_STATUS, DocumentStatus.DELETED),
             entityClass,
         )
         log.info("Soft deleted by id = {}", id)
@@ -61,7 +61,7 @@ abstract class MongoRepository<T : MongoDocument> {
         log.info("Finding by id = {} and status = {}", id, status)
         return mongoTemplate.findOne(
             Query(
-                Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.STATUS).`is`(status),
+                Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
             ),
             entityClass,
         ).also { log.info("Found by id = {} and status {} object = {}", id, status, it) }
@@ -79,7 +79,7 @@ abstract class MongoRepository<T : MongoDocument> {
         log.info("Checking existing by id = {} and status = {}", id, status)
         return mongoTemplate.exists(
             Query(
-                Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.STATUS).`is`(status),
+                Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
             ),
             entityClass,
         ).also { log.info("Does exist by id = {} and status = {} object = {}", id, status, it) }
