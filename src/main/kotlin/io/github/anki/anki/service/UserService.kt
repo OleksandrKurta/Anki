@@ -40,14 +40,8 @@ class UserService @Autowired constructor(
         try {
             return userRepository.insert(user.toMongoUser()).toUser()
         } catch (ex: DuplicateKeyException) {
-            LOG.error(ex.toString())
-            if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {
-                throw UserAlreadyExistException.fromUserName(user.userName)
-            } else if (!ex.stackTraceToString().contains(MongoUser.EMAIL)) {
-                throw ex
-            }
+            throw UserAlreadyExistException(cause = ex)
         }
-        return user
     }
 
     companion object {
