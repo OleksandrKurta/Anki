@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import java.util.concurrent.CompletableFuture
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -54,7 +55,9 @@ class UserServiceTest {
             val user = newUser.toUser(encodedPassword)
             val createdMongoUser = user.toMongoUser().copy(id = getRandomID())
             val expectedUser = user.copy(id = createdMongoUser.id!!.toHexString())
-            every { userRepository.insert(user.toMongoUser()).get() } returns createdMongoUser
+            every {
+                userRepository.insert(user.toMongoUser())
+            } returns CompletableFuture.completedFuture(createdMongoUser)
             val actualUser: User = userService.signUp(newUser.toUser(encodedPassword))
 
             // then
@@ -110,7 +113,9 @@ class UserServiceTest {
         fun `should return 400 UserDoesNotExistException user always`() {
             // then
             val user = newUser.toUser(encodedPassword)
-            every { userRepository.existsByUserName(user.userName).get() } returns false
+            every {
+                userRepository.existsByUserName(user.userName)
+            } returns CompletableFuture.completedFuture(false)
 
             shouldThrowExactly<UserDoesNotExistException> {
                 userService.signIn(user)
@@ -121,7 +126,9 @@ class UserServiceTest {
         fun `should return 400 UsernameNotFoundException user always`() {
             // then
             val user = newUser.toUser(encodedPassword)
-            every { user.userName?.let { userRepository.existsByUserName(it).get() } } returns false
+            every {
+                user.userName?.let { userRepository.existsByUserName(it) }
+            } returns CompletableFuture.completedFuture(false)
 
             shouldThrowExactly<UserDoesNotExistException> {
                 userService.signIn(user)
@@ -138,7 +145,9 @@ class UserServiceTest {
         fun `should throw UsernameNotFoundException when user not in db`() {
             // then
             val user = newUser.toUser(encodedPassword)
-            every { user.userName?.let { userRepository.findByUserName(it).get() } } returns null
+            every {
+                user.userName?.let { userRepository.findByUserName(it) }
+            } returns CompletableFuture.completedFuture(null)
 
             shouldThrowExactly<UsernameNotFoundException> {
                 user.userName?.let { userService.loadUserByUsername(it).username }

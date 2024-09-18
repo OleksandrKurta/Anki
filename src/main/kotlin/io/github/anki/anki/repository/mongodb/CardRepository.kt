@@ -14,7 +14,7 @@ import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
-import java.util.concurrent.Future
+import java.util.concurrent.CompletableFuture
 
 @Repository
 class CardRepository(
@@ -30,8 +30,8 @@ class CardRepository(
         status: DocumentStatus = DocumentStatus.ACTIVE,
         limit: Int = 50,
         offset: Int = 0,
-    ): Future<List<MongoCard>> =
-        threadPool.submit<List<MongoCard>> {
+    ): CompletableFuture<List<MongoCard>> =
+        threadPool.submitCompletable<List<MongoCard>> {
             log.info("Finding by deckId = {} and status = {}", deckId, status)
             mongoTemplate.find(
                 Query(
@@ -50,8 +50,8 @@ class CardRepository(
             }
         }
 
-    fun softDeleteByDeckId(deckId: ObjectId): Future<*> =
-        threadPool.submit {
+    fun softDeleteByDeckId(deckId: ObjectId): CompletableFuture<Void> =
+        threadPool.submitCompletable {
             log.info("Soft deleting by deckId = {}", deckId)
             mongoTemplate.updateMulti(
                 Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),

@@ -10,7 +10,7 @@ import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
-import java.util.concurrent.Future
+import java.util.concurrent.CompletableFuture
 
 @Service
 class DeckService(
@@ -52,10 +52,10 @@ class DeckService(
 
     fun deleteDeck(deckId: String, userId: String) {
         validateUserHasPermissions(deckId, userId)
-        val deleteDeckFuture: Future<*> = deckRepository.softDelete(ObjectId(deckId))
-        val deleteCardsFuture: Future<*> = cardRepository.softDeleteByDeckId(ObjectId(deckId))
-        deleteDeckFuture.get()
-        deleteCardsFuture.get()
+        CompletableFuture.allOf(
+            deckRepository.softDelete(ObjectId(deckId)),
+            cardRepository.softDeleteByDeckId(ObjectId(deckId)),
+        ).join()
     }
 
     fun validateUserHasPermissions(deckId: String, userId: String) {

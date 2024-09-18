@@ -12,7 +12,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
-import java.util.concurrent.Future
+import java.util.concurrent.CompletableFuture
 
 @Repository
 class UserRepository(
@@ -22,8 +22,11 @@ class UserRepository(
     override val entityClass = MongoUser::class.java
     override val log: Logger = LoggerFactory.getLogger(UserRepository::class.java)
 
-    fun findByUserName(userName: String, status: DocumentStatus = DocumentStatus.ACTIVE): Future<MongoUser?> =
-        threadPool.submit<MongoUser?> {
+    fun findByUserName(
+        userName: String,
+        status: DocumentStatus = DocumentStatus.ACTIVE,
+    ): CompletableFuture<MongoUser?> =
+        threadPool.submitCompletable<MongoUser?> {
             log.info("Finding by userName = {} with status = {}", userName, status)
             mongoTemplate.findOne(
                 Query(
@@ -37,8 +40,11 @@ class UserRepository(
             ).also { log.info("Found by userName = {} and status = {} object = {}", userName, status, it) }
         }
 
-    fun existsByUserName(userName: String?, status: DocumentStatus = DocumentStatus.ACTIVE): Future<Boolean> =
-        threadPool.submit<Boolean> {
+    fun existsByUserName(
+        userName: String?,
+        status: DocumentStatus = DocumentStatus.ACTIVE,
+    ): CompletableFuture<Boolean> =
+        threadPool.submitCompletable<Boolean> {
             log.info("Check exists by userName = {} with status = {}", userName, status)
             mongoTemplate.exists(
                 Query(

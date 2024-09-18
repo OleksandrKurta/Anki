@@ -13,7 +13,7 @@ import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
-import java.util.concurrent.Future
+import java.util.concurrent.CompletableFuture
 
 @Repository
 class DeckRepository(
@@ -27,8 +27,8 @@ class DeckRepository(
     fun findByUserIdWithStatus(
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): Future<List<MongoDeck>> =
-        threadPool.submit<List<MongoDeck>> {
+    ): CompletableFuture<List<MongoDeck>> =
+        threadPool.submitCompletable<List<MongoDeck>> {
             log.info("Finding by userId = {} and status = {}", userId, status)
             mongoTemplate.find(
                 Query(
@@ -42,8 +42,8 @@ class DeckRepository(
         id: ObjectId,
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): Future<MongoDeck?> =
-        threadPool.submit<MongoDeck?> {
+    ): CompletableFuture<MongoDeck?> =
+        threadPool.submitCompletable<MongoDeck?> {
             log.info("Finding by id = {} userId = {} and status = {}", id, userId, status)
             mongoTemplate.findOne(
                 Query(
@@ -59,8 +59,12 @@ class DeckRepository(
             ).also { log.info("Found by id = {} and userId = {} and status = {} object = {}", id, userId, status, it) }
         }
 
-    fun existsByIdAndUserIdWithStatus(id: ObjectId, userId: ObjectId, status: DocumentStatus): Future<Boolean> =
-        threadPool.submit<Boolean> {
+    fun existsByIdAndUserIdWithStatus(
+        id: ObjectId,
+        userId: ObjectId,
+        status: DocumentStatus,
+    ): CompletableFuture<Boolean> =
+        threadPool.submitCompletable<Boolean> {
             log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status)
             mongoTemplate.exists(
                 Query(
