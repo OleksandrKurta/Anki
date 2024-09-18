@@ -29,6 +29,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.concurrent.CompletableFuture
 import kotlin.test.Test
 
 @ExtendWith(MockKExtension::class)
@@ -70,7 +71,7 @@ class DeckServiceTest {
                 )
             val createdMongoDeck = mongoDeck.copy(id = getRandomID())
             val expectedDeck = deck.copy(id = createdMongoDeck.id!!.toHexString())
-            every { deckRepository.insert(mongoDeck) } returns createdMongoDeck
+            every { deckRepository.insert(mongoDeck) } returns CompletableFuture.completedFuture(createdMongoDeck)
 
             // when
             val actual: Deck = deckService.createNewDeck(deck)
@@ -97,7 +98,9 @@ class DeckServiceTest {
 
             val randomDecks = getRandomMongoDecks(numberOfDecks, userId)
 
-            every { deckRepository.findByUserIdWithStatus(userId) } returns randomDecks
+            every {
+                deckRepository.findByUserIdWithStatus(userId)
+            } returns CompletableFuture.completedFuture(randomDecks)
             val expectedDecks = randomDecks.map { it.toDeck() }
 
             // when
@@ -154,15 +157,15 @@ class DeckServiceTest {
                     ObjectId(initialDeck.userId),
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
 
             every {
                 deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
-            } returns initialDeck.toMongo()
+            } returns CompletableFuture.completedFuture(initialDeck.toMongo())
 
             every {
                 deckRepository.save(updatedDeck.toMongo())
-            } returns updatedDeck.toMongo()
+            } returns CompletableFuture.completedFuture(updatedDeck.toMongo())
 
             // when
             val actualDeck = deckService.updateDeck(updatedDeck)
@@ -179,7 +182,10 @@ class DeckServiceTest {
             }
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id!!),
+                    ObjectId(initialDeck.userId),
+                )
             }
 
             verify(exactly = 1) {
@@ -196,11 +202,11 @@ class DeckServiceTest {
                     any(),
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
 
             every {
                 deckRepository.findByIdAndUserIdWithStatus(any(), any())
-            } returns null
+            } returns CompletableFuture.completedFuture(null)
 
             // when/then
             shouldThrowExactly<DeckDoesNotExistException> {
@@ -243,15 +249,15 @@ class DeckServiceTest {
 
             every {
                 deckRepository.existsByIdAndUserIdWithStatus(
-                    any(),
-                    any(),
+                    ObjectId(initialDeck.id),
+                    ObjectId(initialDeck.userId),
                     DocumentStatus.ACTIVE,
-                )
+                ).get()
             } returns true
 
             every {
                 deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
-            } returns initialDeck.toMongo()
+            } returns CompletableFuture.completedFuture(initialDeck.toMongo())
 
             // when
             val actualDeck = deckService.updateDeck(initialDeck)
@@ -268,7 +274,10 @@ class DeckServiceTest {
             }
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id!!),
+                    ObjectId(initialDeck.userId),
+                )
             }
 
             verify(exactly = 0) {
@@ -300,11 +309,11 @@ class DeckServiceTest {
                     ObjectId(initialDeck.userId),
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
 
             every {
                 deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
-            } returns initialDeck.toMongo()
+            } returns CompletableFuture.completedFuture(initialDeck.toMongo())
 
             // when
             val actualDeck = deckService.updateDeck(updatedDeck)
@@ -321,7 +330,10 @@ class DeckServiceTest {
             }
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id!!),
+                    ObjectId(initialDeck.userId),
+                )
             }
 
             verify(exactly = 0) {
@@ -360,14 +372,14 @@ class DeckServiceTest {
                     ObjectId(initialDeck.userId),
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
             every {
                 deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
-            } returns initialDeck.toMongo()
+            } returns CompletableFuture.completedFuture(initialDeck.toMongo())
 
             every {
                 deckRepository.save(any())
-            } returns expectedDeck.toMongo()
+            } returns CompletableFuture.completedFuture(expectedDeck.toMongo())
 
             // when
             val actualDeck = deckService.updateDeck(updatedDeck)
@@ -384,7 +396,10 @@ class DeckServiceTest {
             }
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id!!),
+                    ObjectId(initialDeck.userId),
+                )
             }
 
             verify(exactly = 1) {
@@ -423,15 +438,15 @@ class DeckServiceTest {
                     ObjectId(initialDeck.userId),
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
 
             every {
                 deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id), ObjectId(initialDeck.userId))
-            } returns initialDeck.toMongo()
+            } returns CompletableFuture.completedFuture(initialDeck.toMongo())
 
             every {
                 deckRepository.save(any())
-            } returns expectedDeck.toMongo()
+            } returns CompletableFuture.completedFuture(expectedDeck.toMongo())
 
             // when
             val actualDeck = deckService.updateDeck(updatedDeck)
@@ -448,7 +463,10 @@ class DeckServiceTest {
             }
 
             verify(exactly = 1) {
-                deckRepository.findByIdAndUserIdWithStatus(ObjectId(initialDeck.id!!), ObjectId(initialDeck.userId))
+                deckRepository.findByIdAndUserIdWithStatus(
+                    ObjectId(initialDeck.id!!),
+                    ObjectId(initialDeck.userId),
+                )
             }
 
             verify(exactly = 1) {
@@ -473,10 +491,10 @@ class DeckServiceTest {
                     userId,
                     DocumentStatus.ACTIVE,
                 )
-            } returns true
+            } returns CompletableFuture.completedFuture(true)
 
-            every { deckRepository.softDelete(deckId) } returns Unit
-            every { cardRepository.softDeleteByDeckId(deckId) } returns Unit
+            every { deckRepository.softDelete(deckId) } returns CompletableFuture.completedFuture(null)
+            every { cardRepository.softDeleteByDeckId(deckId) } returns CompletableFuture.completedFuture(null)
 
             // when
             deckService.deleteDeck(deckId.toString(), userId.toString())

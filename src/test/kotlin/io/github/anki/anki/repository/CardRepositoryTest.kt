@@ -37,24 +37,24 @@ class CardRepositoryTest @Autowired constructor(
     @Test
     fun `should insert card`() {
         // when
-        val cardFromMongo = cardRepository.insert(newCard)
+        val cardFromMongo = cardRepository.insert(newCard).get()
 
         // then
         cardFromMongo.id shouldNotBe null
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
     }
 
     @Test
     fun `should soft delete existing card by id`() {
         // given
-        val cardFromMongo = cardRepository.insert(newCard)
+        val cardFromMongo = cardRepository.insert(newCard).get()
 
         // when
-        cardRepository.softDelete(cardFromMongo.id!!)
+        cardRepository.softDelete(cardFromMongo.id!!).get()
 
         // then
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe false
+        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED).get() shouldBe true
     }
 
     @Test
@@ -63,10 +63,10 @@ class CardRepositoryTest @Autowired constructor(
         val notExistingCardId = getRandomID()
 
         // when
-        cardRepository.softDelete(notExistingCardId)
+        cardRepository.softDelete(notExistingCardId).get()
 
         // then
-        cardRepository.existsById(notExistingCardId) shouldBe false
+        cardRepository.existsById(notExistingCardId).get() shouldBe false
     }
 
     @Test
@@ -75,7 +75,7 @@ class CardRepositoryTest @Autowired constructor(
         val notExistingDeckId = getRandomID()
 
         // when
-        val card = cardRepository.findByDeckIdWithStatus(deckId = notExistingDeckId)
+        val card = cardRepository.findByDeckIdWithStatus(deckId = notExistingDeckId).get()
 
         // then
         card shouldBe listOf()
@@ -84,10 +84,10 @@ class CardRepositoryTest @Autowired constructor(
     @Test
     fun `should find card by deckId`() {
         // given
-        val expectedCard = cardRepository.insert(newCard)
+        val expectedCard = cardRepository.insert(newCard).get()
 
         // when
-        val card = newCard.deckId?.let { cardRepository.findByDeckIdWithStatus(deckId = it) }
+        val card = cardRepository.findByDeckIdWithStatus(deckId = newCard.deckId!!).get()
 
         // then
         card shouldBe listOf(expectedCard)
@@ -96,13 +96,13 @@ class CardRepositoryTest @Autowired constructor(
     @Test
     fun `should soft delete by card by deckId`() {
         // given
-        val expectedCard = cardRepository.insert(newCard)
+        val expectedCard = cardRepository.insert(newCard).get()
 
         // when
-        newCard.deckId?.let { cardRepository.softDeleteByDeckId(deckId = it) }
+        cardRepository.softDeleteByDeckId(deckId = newCard.deckId!!).get()
 
         // then
-        expectedCard.id?.let { cardRepository.findByIdWithStatus(it, DocumentStatus.ACTIVE) } shouldBe null
+        cardRepository.findByIdWithStatus(expectedCard.id!!, DocumentStatus.ACTIVE).get() shouldBe null
     }
 
     companion object {

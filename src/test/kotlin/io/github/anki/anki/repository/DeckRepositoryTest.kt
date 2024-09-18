@@ -38,25 +38,25 @@ class DeckRepositoryTest @Autowired constructor(
     @Test
     fun `should insert deck`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
 
         // when, then
         deckFromMongo.id shouldNotBe null
 
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
     }
 
     @Test
     fun `should delete existing deck by id`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
 
         // when
-        deckRepository.softDelete(deckFromMongo.id!!)
+        deckRepository.softDelete(deckFromMongo.id!!).get()
 
         // then
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe false
-        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED) shouldBe true
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe false
+        deckRepository.existsByIdWithStatus(deckFromMongo.id!!, DocumentStatus.DELETED).get() shouldBe true
     }
 
     @Test
@@ -65,10 +65,10 @@ class DeckRepositoryTest @Autowired constructor(
         val notExistingDeckId = getRandomID()
 
         // when
-        deckRepository.softDelete(notExistingDeckId)
+        deckRepository.softDelete(notExistingDeckId).get()
 
         // then
-        deckRepository.existsById(notExistingDeckId) shouldBe false
+        deckRepository.existsById(notExistingDeckId).get() shouldBe false
     }
 
     @Test
@@ -77,7 +77,7 @@ class DeckRepositoryTest @Autowired constructor(
         val randomDecks = deckRepository.insertRandom(5, newDeck.userId)
 
         // when
-        val decks = deckRepository.findByUserIdWithStatus(newDeck.userId, status = DocumentStatus.ACTIVE)
+        val decks = deckRepository.findByUserIdWithStatus(newDeck.userId, status = DocumentStatus.ACTIVE).get()
         decks.size shouldBe 5
         // then
         decks shouldBe randomDecks
@@ -86,10 +86,10 @@ class DeckRepositoryTest @Autowired constructor(
     @Test
     fun `should NOT find deck by UserId with DELETED status`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
 
         // when
-        val deck = deckRepository.findByUserIdWithStatus(deckFromMongo.userId, status = DocumentStatus.DELETED)
+        val deck = deckRepository.findByUserIdWithStatus(deckFromMongo.userId, status = DocumentStatus.DELETED).get()
 
         // then
         deck shouldBe listOf()
@@ -98,17 +98,15 @@ class DeckRepositoryTest @Autowired constructor(
     @Test
     fun `should return true if deck with Id and UserId exists`() {
         // given
-        val deckFromMongo = deckRepository.insert(newDeck)
+        val deckFromMongo = deckRepository.insert(newDeck).get()
         deckRepository.insertRandom(5, newDeck.userId)
         // when
         val deck =
-            deckFromMongo.id?.let {
-                deckRepository.existsByIdAndUserIdWithStatus(
-                    it,
-                    deckFromMongo.userId,
-                    status = DocumentStatus.ACTIVE,
-                )
-            }
+            deckRepository.existsByIdAndUserIdWithStatus(
+                deckFromMongo.id!!,
+                deckFromMongo.userId,
+                status = DocumentStatus.ACTIVE,
+            ).get()
 
         // then
         deck shouldBe true
@@ -123,7 +121,7 @@ class DeckRepositoryTest @Autowired constructor(
                 getRandomID(),
                 newDeck.userId,
                 status = DocumentStatus.DELETED,
-            )
+            ).get()
 
         // then
         deck shouldBe false

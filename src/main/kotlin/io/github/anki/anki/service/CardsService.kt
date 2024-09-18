@@ -1,6 +1,7 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.model.Card
@@ -19,6 +20,7 @@ class CardsService(
         deckService.validateUserHasPermissions(card.deckId, userId)
         return cardRepository
             .insert(card.toMongo())
+            .get()
             .toCard()
     }
 
@@ -30,6 +32,7 @@ class CardsService(
                 limit = pagination.limit,
                 offset = pagination.offset,
             )
+            .get()
             .map { it.toCard() }
     }
 
@@ -40,16 +43,18 @@ class CardsService(
         if (mongoCard == updatedMongoCard) {
             return mongoCard.toCard()
         }
-        return cardRepository.save(updatedMongoCard).toCard()
+        return cardRepository.save(updatedMongoCard).get().toCard()
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
         deckService.validateUserHasPermissions(deckId, userId)
-        cardRepository.softDelete(ObjectId(cardId))
+        cardRepository.softDelete(ObjectId(cardId)).get()
     }
 
     private fun getCardById(cardId: String): MongoCard =
-        cardRepository.findById(ObjectId(cardId)) ?: throw CardDoesNotExistException.fromCardId(cardId)
+        cardRepository.findByIdWithStatus(
+            ObjectId(cardId), DocumentStatus.ACTIVE,
+        ).get() ?: throw CardDoesNotExistException.fromCardId(cardId)
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(

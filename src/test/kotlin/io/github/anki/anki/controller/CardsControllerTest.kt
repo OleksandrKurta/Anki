@@ -78,7 +78,7 @@ class CardsControllerTest @Autowired constructor(
     fun setUp() {
         val userDto = SignUpRequestDto.randomUser()
         val user = userDto.toUser(securityService.encoder.encode(userDto.password))
-        val mockUserId = userRepository.insert(user.toMongoUser()).id.toString()
+        val mockUserId = userRepository.insert(user.toMongoUser()).get().id.toString()
         val authentication: Authentication =
             authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken(user.userName, userDto.password),
@@ -119,7 +119,7 @@ class CardsControllerTest @Autowired constructor(
                     }
                 }
 
-            val cardFromMongo = cardRepository.findById(ObjectId(createdCard.id))
+            val cardFromMongo = cardRepository.findById(ObjectId(createdCard.id)).get()
 
             cardFromMongo shouldNotBe null
 
@@ -272,7 +272,7 @@ class CardsControllerTest @Autowired constructor(
             actualCard.key shouldBe patchCardRequest.key
             actualCard.value shouldBe patchCardRequest.value
 
-            val cardFromMongo = cardRepository.findById(insertedCard.id!!)!!
+            val cardFromMongo = cardRepository.findById(insertedCard.id!!).get()!!
 
             cardFromMongo.key shouldBe patchCardRequest.key
 
@@ -395,8 +395,8 @@ class CardsControllerTest @Autowired constructor(
             result.response.contentType shouldBe null
             result.response.contentAsString.isEmpty() shouldBe true
 
-            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.ACTIVE) shouldBe false
-            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.DELETED) shouldBe true
+            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.ACTIVE).get() shouldBe false
+            cardRepository.existsByIdWithStatus(model.id!!, DocumentStatus.DELETED).get() shouldBe true
         }
 
         @Test
@@ -417,7 +417,7 @@ class CardsControllerTest @Autowired constructor(
             result.response.contentType shouldBe null
             result.response.contentAsString.isEmpty() shouldBe true
 
-            cardRepository.existsByIdWithStatus(notExistingCardID, DocumentStatus.ACTIVE) shouldBe false
+            cardRepository.existsByIdWithStatus(notExistingCardID, DocumentStatus.ACTIVE).get() shouldBe false
         }
 
         @Test

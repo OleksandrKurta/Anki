@@ -20,7 +20,7 @@ fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<Mong
             ),
         )
     }
-    return this.insert(listOfDecks)
+    return this.insert(listOfDecks).get()
 }
 
 fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<MongoCard> {
@@ -35,7 +35,7 @@ fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): List<Mong
             ),
         )
     }
-    return this.insert(listOfCards)
+    return this.insert(listOfCards).get()
 }
 
 fun UserRepository.insertRandom(numberOfUsers: Int): List<MongoUser> {
@@ -50,5 +50,5 @@ fun UserRepository.insertRandom(numberOfUsers: Int): List<MongoUser> {
             ),
         )
     }
-    return this.insert(listOfUsers)
+    return this.insert(listOfUsers).get()
 }

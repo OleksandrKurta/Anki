@@ -37,19 +37,19 @@ class UserRepositoryTest @Autowired constructor(
     @Test
     fun `should insert user`() {
         // when
-        val userFromMongo = userRepository.insert(newUser)
+        val userFromMongo = userRepository.insert(newUser).get()
         // then
         userFromMongo.id shouldNotBe null
-        userRepository.existsByIdWithStatus(userFromMongo.id!!, DocumentStatus.ACTIVE) shouldBe true
+        userRepository.existsByIdWithStatus(userFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
     }
 
     @Test
     fun `should find existing user by userName`() {
         // given
-        val userFromMongo = userRepository.insert(newUser)
+        val userFromMongo = userRepository.insert(newUser).get()
 
         // when
-        val userFromFind = userFromMongo.userName?.let { userRepository.findByUserName(userName = it) }
+        val userFromFind = userFromMongo.userName?.let { userRepository.findByUserName(userName = it).get() }
 
         // then
         userFromFind!!.userName shouldBe userFromMongo.userName
@@ -60,7 +60,7 @@ class UserRepositoryTest @Autowired constructor(
         // given
         val userName = getRandomString()
         // when
-        val userFromFind = userRepository.findByUserName(userName = userName)
+        val userFromFind = userRepository.findByUserName(userName = userName).get()
         // then
         userFromFind shouldBe null
     }
@@ -68,9 +68,9 @@ class UserRepositoryTest @Autowired constructor(
     @Test
     fun `should return true for existsByUserName when user exist`() {
         // given
-        val userFromMongo = userRepository.insert(newUser)
+        val userFromMongo = userRepository.insert(newUser).get()
         // then
-        userRepository.existsByUserName(userFromMongo.userName) shouldBe true
+        userRepository.existsByUserName(userFromMongo.userName).get() shouldBe true
     }
 
     @Test
@@ -78,7 +78,7 @@ class UserRepositoryTest @Autowired constructor(
         // given
         val notExistingUserName = getRandomString()
         // then
-        userRepository.existsByUserName(notExistingUserName) shouldBe false
+        userRepository.existsByUserName(notExistingUserName).get() shouldBe false
     }
 
     companion object {

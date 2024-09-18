@@ -3,6 +3,7 @@ package io.github.anki.anki.service
 import io.github.anki.anki.controller.dto.PaginationDto
 import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.mapper.toCard
@@ -28,6 +29,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import java.util.concurrent.CompletableFuture
 import kotlin.test.Test
 
 @ExtendWith(MockKExtension::class)
@@ -86,7 +88,7 @@ class CardsServiceTest {
 
             every {
                 cardRepository.insert(initialMongoCard)
-            } returns expectedMongoCard
+            } returns CompletableFuture.completedFuture(expectedMongoCard)
 
             // when
             val actualCard = cardService.createNewCard(mockUserId, initialCard)
@@ -119,7 +121,7 @@ class CardsServiceTest {
                     limit = paginationDto.limit,
                     offset = paginationDto.offset,
                 )
-            } returns initialMongoCards
+            } returns CompletableFuture.completedFuture(initialMongoCards)
 
             // when
             val actualDecks =
@@ -151,7 +153,9 @@ class CardsServiceTest {
 
         @BeforeEach
         fun baseUpdatePrecondition() {
-            every { cardRepository.findById(ObjectId(initialCard.id)) } returns initialMongoCard
+            every {
+                cardRepository.findByIdWithStatus(ObjectId(initialCard.id), DocumentStatus.ACTIVE)
+            } returns CompletableFuture.completedFuture(initialMongoCard)
         }
 
         @Test
@@ -172,7 +176,9 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every { cardRepository.save(updatedCard.toMongo()) } returns expectedMongoCard
+            every {
+                cardRepository.save(updatedCard.toMongo())
+            } returns CompletableFuture.completedFuture(expectedMongoCard)
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -263,7 +269,9 @@ class CardsServiceTest {
                     value = initialCard.value,
                 )
 
-            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
+            every {
+                cardRepository.save(expectedCard.toMongo())
+            } returns CompletableFuture.completedFuture(expectedCard.toMongo())
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -297,7 +305,9 @@ class CardsServiceTest {
                     value = updatedCard.value,
                 )
 
-            every { cardRepository.save(expectedCard.toMongo()) } returns expectedCard.toMongo()
+            every {
+                cardRepository.save(expectedCard.toMongo())
+            } returns CompletableFuture.completedFuture(expectedCard.toMongo())
 
             // when
             val actualCard = cardService.updateCard(mockUserId, updatedCard)
@@ -315,7 +325,7 @@ class CardsServiceTest {
 
         private fun baseUpdateValidation() {
             verify(exactly = 1) {
-                cardRepository.findById(initialMongoCard.id!!)
+                cardRepository.findByIdWithStatus(initialMongoCard.id!!, DocumentStatus.ACTIVE)
             }
         }
     }
@@ -328,7 +338,9 @@ class CardsServiceTest {
         @Test
         fun `should delete the card`() {
             // given
-            every { cardRepository.softDelete(initialMongoCard.id!!) } returns Unit
+            every {
+                cardRepository.softDelete(initialMongoCard.id!!)
+            } returns CompletableFuture.completedFuture(null)
 
             // when
             cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
