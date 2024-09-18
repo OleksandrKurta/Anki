@@ -6,6 +6,7 @@ import io.github.anki.anki.controller.CardsController.Companion.BASE_URL
 import io.github.anki.anki.controller.CardsController.Companion.CONCRETE_CARD
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
+import io.github.anki.anki.controller.dto.PaginationDto
 import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toDto
@@ -38,6 +39,8 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -135,6 +138,7 @@ class CardsControllerTest @Autowired constructor(
                     .andDo { print() }
                     .andExpect { status { isBadRequest() } }
                     .andReturn()
+
             // then
             val userId = securityService.jwtUtils.getUserIdFromJwtToken(token)
 
@@ -180,7 +184,7 @@ class CardsControllerTest @Autowired constructor(
             val mongoCards = cardRepository.insertRandom((5..100).random(), insertedDeck.id!!)
 
             // when
-            val result = sendGetCards(insertedDeck.id!!.toString())
+            val result = sendGetCards(insertedDeck.id!!.toString(), PaginationDto(limit = 100))
 
             // then
             result.andExpect {
@@ -195,10 +199,44 @@ class CardsControllerTest @Autowired constructor(
             cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
         }
 
-        private fun sendGetCards(deckId: String): ResultActionsDsl =
+        @ParameterizedTest
+        @ValueSource(ints = [50, 75, 100, 228, 1488])
+        fun `should return cards with pagination`(cardsAmount: Int) {
+            // given
+            val mongoCards = cardRepository.insertRandom(cardsAmount, insertedDeck.id!!)
+
+            val cardsFromResponses = mutableListOf<CardDtoResponse>()
+
+            var requestCounter = 0
+
+            // when
+            do {
+                val paginationDto = PaginationDto(offset = cardsFromResponses.size)
+                val result = sendGetCards(deckId = insertedDeck.id!!.toString(), paginationDto = paginationDto)
+                result.andExpect {
+                    status { isOk() }
+                }
+                val cardsFromThisResponse: List<CardDtoResponse> =
+                    result.andReturn().let {
+                        objectMapper.readValue(it.response.contentAsString)
+                    }
+
+                cardsFromResponses.addAll(cardsFromThisResponse)
+                requestCounter++
+            } while (cardsFromThisResponse.size == paginationDto.limit)
+
+            // then
+            cardsFromResponses shouldBe mongoCards.map { it.toCard().toDto() }
+
+            requestCounter shouldBe cardsAmount / PaginationDto.DEFAULT_LIMIT + 1
+        }
+
+        private fun sendGetCards(deckId: String, paginationDto: PaginationDto): ResultActionsDsl =
             mockMvc.get(BASE_URL, deckId) {
                 header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
-            }
+                param(PaginationDto.LIMIT, paginationDto.limit.toString())
+                param(PaginationDto.OFFSET, paginationDto.offset.toString())
+            }.andDo { print() }
     }
 
     @Nested

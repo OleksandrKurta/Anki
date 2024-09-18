@@ -1,5 +1,7 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.controller.dto.PaginationDto
+import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.model.Card
@@ -109,12 +111,23 @@ class CardsServiceTest {
             // given
             val initialMongoCards = getRandomMongoCards(cardsAmount, deckId)
 
+            val paginationDto = PaginationDto(limit = cardsAmount)
+
             every {
-                cardRepository.findByDeckIdWithStatus(deckId)
+                cardRepository.findByDeckIdWithStatus(
+                    deckId = deckId,
+                    limit = paginationDto.limit,
+                    offset = paginationDto.offset,
+                )
             } returns initialMongoCards
 
             // when
-            val actualDecks = cardService.findCardsByDeck(deckId.toString(), mockUserId)
+            val actualDecks =
+                cardService.findCardsByDeckWithPagination(
+                    deckId.toString(),
+                    mockUserId,
+                    paginationDto.toPagination(),
+                )
 
             // then
             actualDecks.size shouldBe cardsAmount
@@ -122,7 +135,11 @@ class CardsServiceTest {
 
             validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
-                cardRepository.findByDeckIdWithStatus(deckId)
+                cardRepository.findByDeckIdWithStatus(
+                    deckId = deckId,
+                    limit = paginationDto.limit,
+                    offset = paginationDto.offset,
+                )
             }
         }
     }
