@@ -314,7 +314,7 @@ class DecksControllerTest @Autowired constructor(
             cardRepository.findByDeckIdWithStatus(insertedDeck.id!!).get().isEmpty() shouldBe true
 
             cardRepository.findByDeckIdWithStatus(
-                insertedDeck.id!!, DocumentStatus.DELETED,
+                insertedDeck.id!!, DocumentStatus.DELETED, limit = insertedCards.size,
             ).get().size shouldBe insertedCards.size
         }
 

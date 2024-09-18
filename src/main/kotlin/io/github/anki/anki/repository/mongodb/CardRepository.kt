@@ -28,15 +28,26 @@ class CardRepository(
     fun findByDeckIdWithStatus(
         deckId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
+        limit: Int = 50,
+        offset: Int = 0,
     ): Future<List<MongoCard>> =
         threadPool.submit<List<MongoCard>> {
             log.info("Finding by deckId = {} and status = {}", deckId, status)
             mongoTemplate.find(
                 Query(
                     Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
-                ),
+                ).limit(limit).skip(offset.toLong()),
                 entityClass,
-            ).also { log.info("Found by deckId = {} and status = {} object = {}", deckId, status, it) }
+            ).also {
+                log.info(
+                    "Found by deckId = {} and status = {} and limit = {} and offset = {} object = {}",
+                    deckId,
+                    status,
+                    limit,
+                    offset,
+                    it,
+                )
+            }
         }
 
     fun softDeleteByDeckId(deckId: ObjectId): Future<*> =

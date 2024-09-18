@@ -5,6 +5,7 @@ import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.model.Card
+import io.github.anki.anki.service.model.Pagination
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
@@ -23,10 +24,14 @@ class CardsService(
             .toCard()
     }
 
-    fun findCardsByDeck(deckId: String, userId: String): List<Card> {
+    fun findCardsByDeckWithPagination(deckId: String, userId: String, pagination: Pagination): List<Card> {
         deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
-            .findByDeckIdWithStatus(ObjectId(deckId))
+            .findByDeckIdWithStatus(
+                deckId = ObjectId(deckId),
+                limit = pagination.limit,
+                offset = pagination.offset,
+            )
             .get()
             .map { it.toCard() }
     }

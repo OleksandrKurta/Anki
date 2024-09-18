@@ -2,9 +2,11 @@ package io.github.anki.anki.controller
 
 import io.github.anki.anki.controller.dto.CardDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
+import io.github.anki.anki.controller.dto.PaginationDto
 import io.github.anki.anki.controller.dto.PatchCardRequest
 import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
+import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -48,16 +51,25 @@ class CardsController(
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    fun getAllCardsFromDeck(@PathVariable deckId: String, @RequestHeader header: HttpHeaders): List<CardDtoResponse> {
-        LOG.info("IN: $CardsController ${BASE_URL} get all cards from deck with id = $deckId")
-        val cards =
-            cardService.findCardsByDeck(
-                deckId = deckId,
-                userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
-            )
-        LOG.info("OUT: $CardsController ${BASE_URL} already get all cards from deck with id = $deckId")
-        return cards.map { it.toDto() }
-    }
+    fun getAllCardsFromDeck(
+        @PathVariable deckId: String,
+        @RequestHeader header: HttpHeaders,
+        @RequestParam(
+            name = PaginationDto.LIMIT,
+            required = false,
+            defaultValue = PaginationDto.DEFAULT_LIMIT.toString(),
+        ) limit: Int,
+        @RequestParam(
+            name = PaginationDto.OFFSET,
+            required = false,
+            defaultValue = PaginationDto.DEFAULT_OFFSET.toString(),
+        ) offset: Int,
+    ): List<CardDtoResponse> =
+        cardService.findCardsByDeckWithPagination(
+            deckId = deckId,
+            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
+            pagination = PaginationDto(limit, offset).toPagination(),
+        ).map { it.toDto() }
 
     @PatchMapping(CONCRETE_CARD)
     @ResponseStatus(HttpStatus.OK)
