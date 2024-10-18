@@ -42,6 +42,9 @@ class CardRepository(
                 entityClass,
             )
             .doFirst { log.info("Finding by deckId = {} and status = {}", deckId, status) }
+            .buffer(CHUNK_SIZE_TO_LOG)
+            .doOnNext { log.info("Found by deckId = {} and status = {} objects = {}", deckId, status, it) }
+            .flatMapIterable { list -> list }
 
     fun softDeleteByDeckId(deckId: ObjectId): Mono<Void> =
         mongoTemplate
@@ -53,4 +56,8 @@ class CardRepository(
             .doFirst { log.info("Soft deleting by deckId = {}", deckId) }
             .doOnNext { log.info("Soft deleted by deckId = {}", deckId) }
             .then()
+
+    companion object {
+        private const val CHUNK_SIZE_TO_LOG: Int = 50
+    }
 }

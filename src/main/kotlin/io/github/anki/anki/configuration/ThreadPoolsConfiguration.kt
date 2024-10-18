@@ -24,6 +24,6 @@ class ThreadPoolsConfiguration {
     companion object {
         const val MONGO_THREAD_NAME_PREFIX: String = "Mongo-"
         const val MONGO_THREAD_POOL_QUALIFIER: String = "mongo-thread-pool"
-        val MONGO_THREAD_POOL_SIZE: Int = Runtime.getRuntime().availableProcessors() * 10
+        val MONGO_THREAD_POOL_SIZE: Int = 100
     }
 }

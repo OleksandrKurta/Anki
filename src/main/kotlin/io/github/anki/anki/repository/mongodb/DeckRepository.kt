@@ -9,14 +9,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.AsyncTaskExecutor
-import org.springframework.data.mongodb.core.MongoTemplate
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
-import java.util.concurrent.CompletableFuture
 
 @Repository
 class DeckRepository(
@@ -39,13 +37,15 @@ class DeckRepository(
                 entityClass,
             )
             .doFirst { log.info("Finding by userId = {} and status = {}", userId, status) }
-
+            .buffer(CHUNK_SIZE_TO_LOG)
+            .doOnNext { log.info("Found by userId = {} and status = {} objects = {}", userId, status, it) }
+            .flatMapIterable { list -> list }
 
     fun findByIdAndUserIdWithStatus(
         id: ObjectId,
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): Mono<MongoDeck?> =
+    ): Mono<MongoDeck> =
         mongoTemplate
             .findOne(
                 Query(
@@ -60,9 +60,13 @@ class DeckRepository(
                 entityClass,
             )
             .doFirst { log.info("Finding by id = {} userId = {} and status = {}", id, userId, status) }
-            .doOnNext { obj ->
+            .doOnNext {
                 log.info(
-                    "Found by id = {} and userId = {} and status = {} object = {}", id, userId, status, obj,
+                    "Found by id = {} and userId = {} and status = {} object = {}",
+                    id,
+                    userId,
+                    status,
+                    it,
                 )
             }
 
@@ -84,9 +88,17 @@ class DeckRepository(
             entityClass,
         )
             .doFirst { log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status) }
-            .doOnNext { exists ->
+            .doOnNext {
                 log.info(
-                    "Does exist by id = {} and userId = {} and status = {} object = {}", id, userId, status, exists,
+                    "Does exist by id = {} and userId = {} and status = {} object = {}",
+                    id,
+                    userId,
+                    status,
+                    it,
                 )
             }
+
+    companion object {
+        private const val CHUNK_SIZE_TO_LOG: Int = 10
+    }
 }

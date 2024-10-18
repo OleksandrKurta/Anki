@@ -8,5 +8,8 @@ class DeckDoesNotExistException(
     companion object {
         fun fromDeckIdAndUserId(deckId: String, userId: String) =
             DeckDoesNotExistException("Deck was not found with given deckId = $deckId and userId = $userId")
+
+        fun fromDeckId(deckId: String) =
+            DeckDoesNotExistException("Deck was not found with given deckId = $deckId")
     }
 }

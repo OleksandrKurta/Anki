@@ -1,4 +1,5 @@
 package io.github.anki.anki.service.utils
 
-class StringUtils {
-}
+import org.bson.types.ObjectId
+
+fun String.toObjectId() = ObjectId(this)

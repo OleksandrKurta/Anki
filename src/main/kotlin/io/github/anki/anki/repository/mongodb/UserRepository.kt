@@ -25,7 +25,7 @@ class UserRepository(
     fun findByUserName(
         userName: String,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): Mono<MongoUser?> =
+    ): Mono<MongoUser> =
         mongoTemplate.findOne(
             Query(
                 Criteria

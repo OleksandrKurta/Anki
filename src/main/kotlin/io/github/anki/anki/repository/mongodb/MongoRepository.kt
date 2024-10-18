@@ -25,10 +25,13 @@ abstract class MongoRepository<T : MongoDocument>(
             .doFirst { log.info("Inserting {}", obj) }
             .doOnNext { log.info("Inserted object = {}", it) }
 
-    fun insert(objects: Iterable<T>): Flux<T> =
+    fun insert(objects: Collection<T>): Flux<T> =
         mongoTemplate
             .insertAll(objects.toList())
             .doFirst { log.info("Inserting {}", objects) }
+            .buffer(objects.size)
+            .doOnNext { log.info("Inserted objects = {}", it) }
+            .flatMapIterable { list -> list }
 
     fun save(obj: T): Mono<T> =
         mongoTemplate
@@ -47,7 +50,7 @@ abstract class MongoRepository<T : MongoDocument>(
             .doOnNext { log.info("Soft deleted by id = {}", id) }
             .then()
 
-    fun findById(id: ObjectId): Mono<T?> =
+    fun findById(id: ObjectId): Mono<T> =
         mongoTemplate
             .findOne(
                 Query(Criteria.where(MongoDocument.ID).`is`(id)),
@@ -56,7 +59,7 @@ abstract class MongoRepository<T : MongoDocument>(
             .doFirst { log.info("Finding by id = {}", id) }
             .doOnNext { obj -> log.info("Found by id = {} object = {}", id, obj) }
 
-    fun findByIdWithStatus(id: ObjectId, status: DocumentStatus): Mono<T?> =
+    fun findByIdWithStatus(id: ObjectId, status: DocumentStatus): Mono<T> =
         mongoTemplate.findOne(
             Query(
                 Criteria.where(MongoDocument.ID).`is`(id).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
