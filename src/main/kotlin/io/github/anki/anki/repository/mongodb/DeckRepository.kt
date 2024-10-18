@@ -10,14 +10,17 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.stereotype.Repository
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.util.concurrent.CompletableFuture
 
 @Repository
 class DeckRepository(
-    override val mongoTemplate: MongoTemplate,
+    override val mongoTemplate: ReactiveMongoTemplate,
     @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
 ) : MongoRepository<MongoDeck>(threadPool) {
 
@@ -27,25 +30,24 @@ class DeckRepository(
     fun findByUserIdWithStatus(
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): CompletableFuture<List<MongoDeck>> =
-        threadPool.submitCompletable<List<MongoDeck>> {
-            log.info("Finding by userId = {} and status = {}", userId, status)
-            mongoTemplate.find(
+    ): Flux<MongoDeck> =
+        mongoTemplate
+            .find(
                 Query(
                     Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
                 ),
                 entityClass,
-            ).also { log.info("Found by userId = {} and status = {} object = {}", userId, status, it) }
-        }
+            )
+            .doFirst { log.info("Finding by userId = {} and status = {}", userId, status) }
+
 
     fun findByIdAndUserIdWithStatus(
         id: ObjectId,
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): CompletableFuture<MongoDeck?> =
-        threadPool.submitCompletable<MongoDeck?> {
-            log.info("Finding by id = {} userId = {} and status = {}", id, userId, status)
-            mongoTemplate.findOne(
+    ): Mono<MongoDeck?> =
+        mongoTemplate
+            .findOne(
                 Query(
                     Criteria
                         .where(MongoDocument.ID)
@@ -56,35 +58,35 @@ class DeckRepository(
                         .`is`(status),
                 ),
                 entityClass,
-            ).also { log.info("Found by id = {} and userId = {} and status = {} object = {}", id, userId, status, it) }
-        }
+            )
+            .doFirst { log.info("Finding by id = {} userId = {} and status = {}", id, userId, status) }
+            .doOnNext { obj ->
+                log.info(
+                    "Found by id = {} and userId = {} and status = {} object = {}", id, userId, status, obj,
+                )
+            }
 
     fun existsByIdAndUserIdWithStatus(
         id: ObjectId,
         userId: ObjectId,
         status: DocumentStatus,
-    ): CompletableFuture<Boolean> =
-        threadPool.submitCompletable<Boolean> {
-            log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status)
-            mongoTemplate.exists(
-                Query(
-                    Criteria
-                        .where(MongoDocument.ID)
-                        .`is`(id)
-                        .and(MongoDeck.USER_ID)
-                        .`is`(userId)
-                        .and(MongoDocument.DOCUMENT_STATUS)
-                        .`is`(status),
-                ),
-                entityClass,
-            ).also {
+    ): Mono<Boolean> =
+        mongoTemplate.exists(
+            Query(
+                Criteria
+                    .where(MongoDocument.ID)
+                    .`is`(id)
+                    .and(MongoDeck.USER_ID)
+                    .`is`(userId)
+                    .and(MongoDocument.DOCUMENT_STATUS)
+                    .`is`(status),
+            ),
+            entityClass,
+        )
+            .doFirst { log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status) }
+            .doOnNext { exists ->
                 log.info(
-                    "Does exist by id = {} and userId = {} and status = {} object = {}",
-                    id,
-                    userId,
-                    status,
-                    it,
+                    "Does exist by id = {} and userId = {} and status = {} object = {}", id, userId, status, exists,
                 )
             }
-        }
 }

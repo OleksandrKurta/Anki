@@ -10,15 +10,18 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.MongoTemplate
+import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
 import org.springframework.data.mongodb.core.query.Update
 import org.springframework.stereotype.Repository
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
 import java.util.concurrent.CompletableFuture
 
 @Repository
 class CardRepository(
-    override val mongoTemplate: MongoTemplate,
+    override val mongoTemplate: ReactiveMongoTemplate,
     @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
 ) : MongoRepository<MongoCard>(threadPool) {
 
@@ -30,34 +33,24 @@ class CardRepository(
         status: DocumentStatus = DocumentStatus.ACTIVE,
         limit: Int = 50,
         offset: Int = 0,
-    ): CompletableFuture<List<MongoCard>> =
-        threadPool.submitCompletable<List<MongoCard>> {
-            log.info("Finding by deckId = {} and status = {}", deckId, status)
-            mongoTemplate.find(
+    ): Flux<MongoCard> =
+        mongoTemplate
+            .find(
                 Query(
                     Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
                 ).limit(limit).skip(offset.toLong()),
                 entityClass,
-            ).also {
-                log.info(
-                    "Found by deckId = {} and status = {} and limit = {} and offset = {} object = {}",
-                    deckId,
-                    status,
-                    limit,
-                    offset,
-                    it,
-                )
-            }
-        }
+            )
+            .doFirst { log.info("Finding by deckId = {} and status = {}", deckId, status) }
 
-    fun softDeleteByDeckId(deckId: ObjectId): CompletableFuture<Void> =
-        threadPool.submitCompletable {
-            log.info("Soft deleting by deckId = {}", deckId)
-            mongoTemplate.updateMulti(
+    fun softDeleteByDeckId(deckId: ObjectId): Mono<Void> =
+        mongoTemplate
+            .updateMulti(
                 Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),
                 Update().set(MongoDocument.DOCUMENT_STATUS, DocumentStatus.DELETED),
                 entityClass,
             )
-            log.info("Soft deleted by deckId = {}", deckId)
-        }
+            .doFirst { log.info("Soft deleting by deckId = {}", deckId) }
+            .doOnNext { log.info("Soft deleted by deckId = {}", deckId) }
+            .then()
 }
