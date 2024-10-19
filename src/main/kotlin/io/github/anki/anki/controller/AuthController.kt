@@ -6,9 +6,9 @@ import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
-import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toJwtDto
 import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.jwt.JwtUtils
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @CrossOrigin(
     origins = ["*"],
@@ -30,33 +31,34 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController @Autowired constructor(
     val userService: UserService,
     val secureService: SecurityService,
+    val jwtUtils: JwtUtils,
 ) {
 
     @PostMapping(SIGN_IN)
     @ResponseStatus(HttpStatus.OK)
-    fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto?): JwtResponseDto {
-        LOG.info(
-            "IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with userName${signInRequestDto!!.userName}",
-        )
-
-        userService.signIn(signInRequestDto.toUser())
-        val authentication = secureService.authUser(signInRequestDto)
-        val authUser = authentication.principal as User
-
-        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
-        return authUser.toJwtDto(secureService.jwtUtils.generateJwtToken(authentication))
-    }
+    fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto): Mono<JwtResponseDto> =
+        userService
+            .signIn(signInRequestDto.toUser())
+            .map { secureService.authUser(it) }
+            .doFirst {
+                LOG.info(
+                    "IN: ${AuthController::class.java.name}:" +
+                        " ${BASE_URL}${SIGN_IN} with userName${signInRequestDto.userName}",
+                )
+            }
+            .map { user -> user.toJwtDto(jwtUtils.generateJwtToken(user)) }
+            .doOnNext {
+                LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}")
+            }
 
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
-    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): UserCreatedMessageResponseDto {
-        LOG.info("IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
-
-        userService.signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
-
-        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
-        return UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)
-    }
+    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
+        userService
+            .signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
+            .doFirst {LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto")}
+            .then(Mono.just(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
+            .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(AuthController::class.java)

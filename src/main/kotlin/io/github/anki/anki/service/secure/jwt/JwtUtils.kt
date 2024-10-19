@@ -11,7 +11,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
-import org.springframework.security.core.Authentication
 import org.springframework.stereotype.Component
 import java.security.Key
 import java.util.*
@@ -24,18 +23,16 @@ class JwtUtils {
     @Value("\${anki.app.jwtExpirationMs}")
     private val jwtExpirationMs = 0
 
-    fun generateJwtToken(authentication: Authentication): String {
-        val userPrincipal: User = authentication.principal as User
-
+    fun generateJwtToken(user: User): String {
         return Jwts.builder()
             .setClaims(
                 mapOf(
-                    "email" to userPrincipal.email,
-                    "userName" to userPrincipal.userName,
-                    "id" to userPrincipal.id,
+                    "email" to user.email,
+                    "userName" to user.userName,
+                    "id" to user.id,
                 ),
             )
-            .setSubject("${userPrincipal.getUsername()}")
+            .setSubject("${user.getUsername()}")
             .setIssuedAt(Date())
             .setExpiration(Date(Date().time + jwtExpirationMs))
             .signWith(key(), SignatureAlgorithm.HS256)

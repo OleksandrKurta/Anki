@@ -42,7 +42,7 @@ class CardsController(
         @RequestHeader header: HttpHeaders,
     ): Mono<CardDtoResponse> =
         cardService.createNewCard(
-            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
+            userId = securityService.getUserIdFromAuthHeader(header),
             request.toCard(deckId),
         )
             .doFirst { LOG.info("IN: $CardsController $BASE_URL create card in deck with id = $deckId") }
@@ -67,7 +67,7 @@ class CardsController(
     ): Mono<List<CardDtoResponse>> =
         cardService.findCardsByDeckWithPagination(
             deckId = deckId,
-            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
+            userId = securityService.getUserIdFromAuthHeader(header),
             pagination = PaginationDto(limit, offset).toPagination(),
         )
             .doFirst { LOG.info("IN: $CardsController $BASE_URL get all cards in deck with id = $deckId") }
@@ -84,7 +84,7 @@ class CardsController(
         @RequestBody request: PatchCardRequest,
     ): Mono<CardDtoResponse> =
         cardService.updateCard(
-            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
+            userId = securityService.getUserIdFromAuthHeader(header),
             request.toCard(cardId, deckId),
         )
             .doFirst {
@@ -100,7 +100,7 @@ class CardsController(
     fun deleteCard(
         @PathVariable deckId: String,
         @PathVariable cardId: String,
-        @RequestHeader header: HttpHeaders
+        @RequestHeader header: HttpHeaders,
     ): Mono<Void> =
         cardService.deleteCard(
             deckId = deckId,
