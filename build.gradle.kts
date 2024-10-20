@@ -44,6 +44,7 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.23.6")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("io.kotest:kotest-runner-junit5:5.0.0")
     testImplementation("io.mockk:mockk:1.13.12")

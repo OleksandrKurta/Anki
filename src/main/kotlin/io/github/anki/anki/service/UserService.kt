@@ -32,19 +32,18 @@ class UserService @Autowired constructor(
     fun signUp(user: User): Mono<User> =
         userRepository.insert(user.toMongoUser())
             .map(MongoUser::toUser)
-            .onErrorMap(
+            .onErrorResume(
                 DuplicateKeyException::class.java,
-                { error ->
-                    LOG.error(error.toString())
-                    mapDuplicateKeyException(error, user)
-                },
+                { mapDuplicateKeyException(it, user) }
             )
 
-    private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): RuntimeException {
+    private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): Mono<User> {
         if (error.stackTraceToString().contains(MongoUser.USER_NAME)) {
-            return UserAlreadyExistException.fromUserName(user.userName)
+            return Mono.error(UserAlreadyExistException.fromUserName(user.userName))
+        } else if (!error.stackTraceToString().contains(MongoUser.EMAIL)) {
+            return Mono.error(error)
         }
-        return error
+        return Mono.just(user)
     }
 
     companion object {

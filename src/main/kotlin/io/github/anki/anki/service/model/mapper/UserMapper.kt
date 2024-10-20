@@ -16,7 +16,7 @@ fun MongoUser.toUser(): User {
         this.roles
             .map { role ->
                 SimpleGrantedAuthority(
-                    role?.name
+                    role
                         ?: throw IllegalArgumentException("User roles can not be null"),
                 )
             },
@@ -25,10 +25,10 @@ fun MongoUser.toUser(): User {
 
 fun User.toJwtDto(token: String): JwtResponseDto {
     val roles: Set<String> =
-        this.authorities?.stream()
+        this.authorities
             ?.map { authority -> authority.toString() }
-            ?.collect(Collectors.toSet())
-            ?: throw throw IllegalArgumentException("User roles can not be null")
+            ?.toSet()
+            ?: throw IllegalArgumentException("User roles can not be null")
     return JwtResponseDto(
         accessToken = token,
         id = this.id,
@@ -39,10 +39,10 @@ fun User.toJwtDto(token: String): JwtResponseDto {
 }
 
 fun User.toMongoUser(): MongoUser {
-    val roles: Set<MongoRole> =
-        this.authorities?.stream()
-            ?.map { authority -> MongoRole(name = authority.toString()) }
-            ?.collect(Collectors.toSet())
+    val roles: Set<String> =
+        this.authorities
+            ?.map { it.toString() }
+            ?.toSet()
             ?: throw IllegalArgumentException("User authorities can not be null")
     return MongoUser(
         userName = this.username.toString(),

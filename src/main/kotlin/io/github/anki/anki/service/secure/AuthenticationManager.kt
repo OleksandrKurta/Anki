@@ -22,7 +22,7 @@ class AuthenticationManager(
         val password: String = authentication.credentials.toString()
 
         return userDetailsService.findByUsername(username)
-            .filter { userDetails: UserDetails -> passwordEncoder.matches(password, userDetails.password) }
+            .filter { passwordEncoder.matches(password, it.password) }
             .map {
                 UsernamePasswordAuthenticationToken(
                     it,
@@ -34,7 +34,7 @@ class AuthenticationManager(
             .map { it.authentication }
     }
 
-    private fun setAuthentication(authentication: UsernamePasswordAuthenticationToken): Mono<SecurityContext> =
+    fun setAuthentication(authentication: UsernamePasswordAuthenticationToken): Mono<SecurityContext> =
         ReactiveSecurityContextHolder
             .getContext()
             .doOnNext { it.authentication = authentication }

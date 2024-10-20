@@ -104,7 +104,7 @@ class CardsController(
     ): Mono<Void> =
         cardService.deleteCard(
             deckId = deckId,
-            userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
+            userId = securityService.getUserIdFromAuthHeader(header),
             cardId = cardId,
         )
             .doFirst {

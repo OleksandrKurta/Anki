@@ -14,7 +14,6 @@ class UserDetailsService(
     private val userRepository: UserRepository,
 ) : ReactiveUserDetailsService {
 
-    @Throws(UsernameNotFoundException::class)
     override fun findByUsername(userName: String): Mono<UserDetails> =
         userRepository.findByUserName(userName)
             .switchIfEmpty(Mono.error(UsernameNotFoundException("User Not Found with username: $userName")))

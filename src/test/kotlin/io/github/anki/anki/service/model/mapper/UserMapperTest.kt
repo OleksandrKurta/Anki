@@ -54,7 +54,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
 
             // when
@@ -95,7 +95,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
 
             val expectedUser =
@@ -124,7 +124,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole()),
+                    roles = setOf(null),
                 )
 
             // when

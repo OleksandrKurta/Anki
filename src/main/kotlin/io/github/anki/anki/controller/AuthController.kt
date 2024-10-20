@@ -60,7 +60,7 @@ class AuthController @Autowired constructor(
         userService
             .signUp(signUpRequestDto.toUser(encoder.encode(signUpRequestDto.password)))
             .doFirst {LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto")}
-            .then(Mono.just(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
+            .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
 
     companion object {

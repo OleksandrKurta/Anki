@@ -29,9 +29,8 @@ data class MongoUser(
     @Size(max = 120)
     @Field(PASSWORD)
     val password: String? = null,
-    @DBRef
     @Field(ROLES)
-    val roles: Set<MongoRole?> = HashSet(),
+    val roles: Set<String?> = HashSet(),
     @Field(MongoDocument.CREATED_AT)
     @CreatedDate
     override val createdAt: Instant? = null,

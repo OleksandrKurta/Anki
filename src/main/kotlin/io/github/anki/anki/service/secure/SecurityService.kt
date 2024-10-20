@@ -16,8 +16,8 @@ import reactor.core.publisher.Mono
 
 @Service
 class SecurityService @Autowired constructor(
-    val authenticationManager: ReactiveAuthenticationManager,
-    val jwtUtils: JwtUtils,
+    private val authenticationManager: ReactiveAuthenticationManager,
+    private val jwtUtils: JwtUtils,
 ) {
 
     fun authUser(user: User): Mono<User> =

@@ -14,7 +14,8 @@ import reactor.core.publisher.Mono
 class AuthEntryPointJwt : ServerAuthenticationEntryPoint {
 
     override fun commence(exchange: ServerWebExchange, ex: AuthenticationException): Mono<Void> {
-        LOG.error("Unauthorized error: {}", ex.message)
+        LOG.error("Unauthorized error: ${ex.message}, ${ex.stackTrace}")
+        ex.printStackTrace()
         val response: ServerHttpResponse = exchange.response
         response.setStatusCode(HttpStatus.UNAUTHORIZED)
         return response.writeWith(
@@ -25,5 +26,4 @@ class AuthEntryPointJwt : ServerAuthenticationEntryPoint {
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(AuthEntryPointJwt::class.java)
     }
-
 }
