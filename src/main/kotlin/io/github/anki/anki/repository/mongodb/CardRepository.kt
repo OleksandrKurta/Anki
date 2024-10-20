@@ -22,8 +22,7 @@ import java.util.concurrent.CompletableFuture
 @Repository
 class CardRepository(
     override val mongoTemplate: ReactiveMongoTemplate,
-    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
-) : MongoRepository<MongoCard>(threadPool) {
+) : MongoRepository<MongoCard>() {
 
     override val entityClass = MongoCard::class.java
     override val log: Logger = LoggerFactory.getLogger(CardRepository::class.java)

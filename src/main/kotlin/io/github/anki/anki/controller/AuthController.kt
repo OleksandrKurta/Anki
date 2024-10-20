@@ -14,6 +14,8 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -32,14 +34,15 @@ class AuthController @Autowired constructor(
     val userService: UserService,
     val secureService: SecurityService,
     val jwtUtils: JwtUtils,
+    val encoder: PasswordEncoder,
 ) {
 
-    @PostMapping(SIGN_IN)
+    @PostMapping(SIGN_IN, produces = [MediaType.APPLICATION_JSON_VALUE])
     @ResponseStatus(HttpStatus.OK)
     fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto): Mono<JwtResponseDto> =
         userService
             .signIn(signInRequestDto.toUser())
-            .map { secureService.authUser(it) }
+            .flatMap { secureService.authUser(it) }
             .doFirst {
                 LOG.info(
                     "IN: ${AuthController::class.java.name}:" +
@@ -55,7 +58,7 @@ class AuthController @Autowired constructor(
     @ResponseStatus(HttpStatus.CREATED)
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
         userService
-            .signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
+            .signUp(signUpRequestDto.toUser(encoder.encode(signUpRequestDto.password)))
             .doFirst {LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto")}
             .then(Mono.just(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }

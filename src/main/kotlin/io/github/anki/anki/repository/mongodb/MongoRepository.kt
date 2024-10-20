@@ -4,7 +4,6 @@ import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
 import org.slf4j.Logger
-import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -12,9 +11,7 @@ import org.springframework.data.mongodb.core.query.Update
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
-abstract class MongoRepository<T : MongoDocument>(
-    protected open val threadPool: AsyncTaskExecutor,
-) {
+abstract class MongoRepository<T : MongoDocument> {
     protected abstract val mongoTemplate: ReactiveMongoTemplate
     protected abstract val entityClass: Class<T>
     protected abstract val log: Logger

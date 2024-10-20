@@ -19,8 +19,7 @@ import reactor.core.publisher.Mono
 @Repository
 class DeckRepository(
     override val mongoTemplate: ReactiveMongoTemplate,
-    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
-) : MongoRepository<MongoDeck>(threadPool) {
+) : MongoRepository<MongoDeck>() {
 
     override val entityClass = MongoDeck::class.java
     override val log: Logger = LoggerFactory.getLogger(DeckRepository::class.java)

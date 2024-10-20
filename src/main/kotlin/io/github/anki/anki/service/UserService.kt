@@ -1,6 +1,5 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
@@ -8,15 +7,12 @@ import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
-import io.github.anki.anki.service.secure.SecurityService
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.security.core.Authentication
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
@@ -24,15 +20,7 @@ import reactor.core.publisher.Mono
 @Service
 class UserService @Autowired constructor(
     private val userRepository: UserRepository,
-) : UserDetailsService {
-
-    @Throws(UsernameNotFoundException::class)
-    override fun loadUserByUsername(userName: String): UserDetails {
-        val mongoUser: MongoUser =
-            userRepository.findByUserName(userName).block()
-                ?: throw UsernameNotFoundException("User Not Found with username: $userName")
-        return mongoUser.toUser()
-    }
+) {
 
     fun signIn(user: User): Mono<User> =
         userRepository

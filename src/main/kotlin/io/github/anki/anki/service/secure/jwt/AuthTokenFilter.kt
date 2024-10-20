@@ -2,68 +2,58 @@ package io.github.anki.anki.service.secure.jwt
 
 import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
-import jakarta.servlet.FilterChain
-import jakarta.servlet.ServletException
-import jakarta.servlet.http.HttpServletRequest
-import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.server.reactive.ServerHttpRequest
+import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource
+import org.springframework.stereotype.Component
 import org.springframework.util.StringUtils
-import org.springframework.web.filter.OncePerRequestFilter
-import java.io.IOException
+import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.WebFilter
+import org.springframework.web.server.WebFilterChain
+import reactor.core.publisher.Mono
 
-class AuthTokenFilter : OncePerRequestFilter() {
+@Component
+class AuthTokenFilter(
+    private val jwtUtils: JwtUtils,
+    private val authenticationManager: ReactiveAuthenticationManager,
+) : WebFilter {
+
     @Autowired
-    private val jwtUtils: JwtUtils? = null
+    @Suppress("LateinitUsage")
+    private lateinit var userDetailsService: ReactiveUserDetailsService
 
-    @Autowired
-    private val userDetailsService: UserService? = null
+    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
+        Mono.fromCallable { parseJwt(exchange.request) }
+            .filter(jwtUtils::validateJwtToken)
+            .flatMap(this::getUserByProvidedJwt)
+            .map { UsernamePasswordAuthenticationToken(it, null, it.authorities) }
+            .flatMap(authenticationManager::authenticate)
+            .doOnError { LOG.error("Cannot set user authentication", it) }
+            .onErrorComplete()
+            .then(chain.filter(exchange))
 
-    @Throws(ServletException::class, IOException::class)
-    @Suppress("Detekt.TooGenericExceptionCaught")
-    override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain,
-    ) {
-        try {
-            val jwt = parseJwt(request)
-            if (jwt != null && jwtUtils?.validateJwtToken(jwt)
-                ?: throw IllegalArgumentException("JwtUtils not initialized")
-            ) {
-                val userName: String = jwtUtils.getUserNameFromJwtToken(jwt)
-
-                val userDetails: UserDetails = userDetailsService?.loadUserByUsername(userName)
-                    ?: throw UserDoesNotExistException.fromUserName(userName)
-                val authentication =
-                    UsernamePasswordAuthenticationToken(
-                        userDetails,
-                        null,
-                        userDetails.authorities,
-                    )
-                authentication.details = WebAuthenticationDetailsSource().buildDetails(request)
-
-                SecurityContextHolder.getContext().authentication = authentication
-            }
-        } catch (e: Exception) {
-            LOG.error("Cannot set user authentication", e)
-        }
-
-        filterChain.doFilter(request, response)
+    private fun getUserByProvidedJwt(jwtToken: String): Mono<UserDetails> {
+        val userName: String = jwtUtils.getUserNameFromJwtToken(jwtToken)
+        return userDetailsService
+            .findByUsername(userName)
+            .switchIfEmpty(Mono.error(UserDoesNotExistException.fromUserName(userName)))
     }
 
-    private fun parseJwt(request: HttpServletRequest): String? {
-        val headerAuth = request.getHeader(AUTH_HEADER_NAME)
+    private fun parseJwt(request: ServerHttpRequest): String {
+        val headerAuth = request.headers.getFirst(AUTH_HEADER_NAME)
+        headerAuth ?: throw IllegalArgumentException("Authorization header is not provided")
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(TOKEN_PREFIX)) {
             return headerAuth.substring(TOKEN_PREFIX.length, headerAuth.length)
         }
+        throw IllegalArgumentException("Can not parse provided jwt token")
 
-        return null
     }
 
     companion object {

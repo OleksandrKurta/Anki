@@ -17,8 +17,7 @@ import reactor.core.publisher.Mono
 @Repository
 class UserRepository(
     override val mongoTemplate: ReactiveMongoTemplate,
-    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
-) : MongoRepository<MongoUser>(threadPool) {
+) : MongoRepository<MongoUser>() {
     override val entityClass = MongoUser::class.java
     override val log: Logger = LoggerFactory.getLogger(UserRepository::class.java)
 
@@ -37,14 +36,7 @@ class UserRepository(
             entityClass,
         )
             .doFirst { log.info("Finding by userName = {} with status = {}", userName, status) }
-            .doOnNext { obj ->
-                log.info(
-                    "Found by userName = {} and status = {} object = {}",
-                    userName,
-                    status,
-                    obj,
-                )
-            }
+            .doOnSuccess { log.info("Found by userName = {} and status = {} object = {}", userName, status, it) }
 
     fun existsByUserName(
         userName: String?,
