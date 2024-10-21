@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.server.reactive.ServerHttpRequest
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Component
@@ -20,45 +21,18 @@ import reactor.core.publisher.Mono
 @Component
 class AuthTokenFilter(
     private val jwtUtils: JwtUtils,
-    private val authenticationManager: AuthenticationManager,
 ) : WebFilter {
 
-    @Autowired
-    @Suppress("LateinitUsage")
-    private lateinit var userDetailsService: ReactiveUserDetailsService
-
-    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> {
-        if (shouldFilter(exchange).block() == true) {
-            return chain.filter(exchange)
-        }
-
-        return Mono.fromCallable { parseJwt(exchange.request) }
-            .filter(jwtUtils::validateJwtToken)
-            .flatMap(this::getUserByProvidedJwt)
-            .map { UsernamePasswordAuthenticationToken(it, null, it.authorities) }
-            .flatMap(authenticationManager::setAuthentication)
+    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
+        Mono.fromCallable { jwtUtils.getAuthFromAuthHeader(exchange.request.headers) }
+            .flatMap { chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(it)) }
             .doOnError { LOG.error("Cannot set user authentication", it.stackTrace) }
-            .onErrorResume {
-                Mono.empty()
-            }
+            .onErrorResume(
+                IllegalArgumentException::class.java,
+                { Mono.empty() }
+            )
             .then(chain.filter(exchange))
-    }
-
-    private fun getUserByProvidedJwt(jwtToken: String): Mono<UserDetails> {
-        val userName: String = jwtUtils.getUserNameFromJwtToken(jwtToken)
-        return userDetailsService
-            .findByUsername(userName)
-            .switchIfEmpty(Mono.error(UserDoesNotExistException.fromUserName(userName)))
-    }
-
-    private fun parseJwt(request: ServerHttpRequest): String {
-        val headerAuth = request.headers.getFirst(AUTH_HEADER_NAME)
-        headerAuth ?: throw IllegalArgumentException("Authorization header is not provided")
-        if (StringUtils.hasText(headerAuth) && headerAuth.startsWith(TOKEN_PREFIX)) {
-            return headerAuth.substring(TOKEN_PREFIX.length, headerAuth.length)
-        }
-        throw IllegalArgumentException("Can not parse provided jwt token")
-    }
+            .then()
 
     // TODO: rewrite with ALLOWED_ENDPOINTS
     private fun shouldFilter(exchange: ServerWebExchange): Mono<Boolean> =

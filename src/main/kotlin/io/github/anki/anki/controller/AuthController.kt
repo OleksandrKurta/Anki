@@ -8,6 +8,7 @@ import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.model.mapper.toJwtDto
 import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.UserAuthentication
 import io.github.anki.anki.service.secure.jwt.JwtUtils
 import jakarta.validation.Valid
 import org.slf4j.Logger
@@ -32,24 +33,23 @@ import reactor.core.publisher.Mono
 @RequestMapping(AuthController.BASE_URL)
 class AuthController @Autowired constructor(
     val userService: UserService,
-    val secureService: SecurityService,
-    val jwtUtils: JwtUtils,
+//    val secureService: SecurityService,
+//    val jwtUtils: JwtUtils,
     val encoder: PasswordEncoder,
 ) {
 
-    @PostMapping(SIGN_IN, produces = [MediaType.APPLICATION_JSON_VALUE])
+    @PostMapping(SIGN_IN)
     @ResponseStatus(HttpStatus.OK)
     fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto): Mono<JwtResponseDto> =
         userService
             .signIn(signInRequestDto.toUser())
-            .flatMap { secureService.authUser(it) }
             .doFirst {
                 LOG.info(
                     "IN: ${AuthController::class.java.name}:" +
                         " ${BASE_URL}${SIGN_IN} with userName${signInRequestDto.userName}",
                 )
             }
-            .map { user -> user.toJwtDto(jwtUtils.generateJwtToken(user)) }
+            .map(UserAuthentication::toJwtDto)
             .doOnNext {
                 LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}")
             }
@@ -58,7 +58,7 @@ class AuthController @Autowired constructor(
     @ResponseStatus(HttpStatus.CREATED)
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
         userService
-            .signUp(signUpRequestDto.toUser(encoder.encode(signUpRequestDto.password)))
+            .signUp(signUpRequestDto.toUser(signUpRequestDto.password))
             .doFirst {LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto")}
             .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }

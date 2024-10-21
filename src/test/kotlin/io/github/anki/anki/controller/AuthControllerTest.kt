@@ -17,6 +17,8 @@ import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
+import io.github.anki.anki.service.secure.AuthenticationManager
+import io.github.anki.anki.service.secure.UserAuthentication
 import io.github.anki.anki.service.secure.jwt.JwtUtils
 import io.github.anki.testing.ReactiveIntegrationTest
 import io.github.anki.testing.getRandomEmail
@@ -55,7 +57,7 @@ class AuthControllerTest @Autowired constructor(
     private val userRepository: UserRepository,
     private val jwtUtil: JwtUtils,
     private val encoder: PasswordEncoder,
-    private val authenticationManager: ReactiveAuthenticationManager,
+    private val authenticationManager: AuthenticationManager,
     private val webTestClient: WebTestClient,
 ) {
     private lateinit var newUser: SignUpRequestDto
@@ -64,12 +66,11 @@ class AuthControllerTest @Autowired constructor(
     @BeforeTest
     fun setUp() {
         newUser = SignUpRequestDto.randomUser()
-        val user: User = newUser.toUser(encoder.encode(newUser.password))
-        userRepository.insert(user.toMongoUser()).block()
-        authenticationManager
-            .authenticate(UsernamePasswordAuthenticationToken(user.userName, newUser.password))
-            .then()
-        token = jwtUtil.generateJwtToken(user)
+        userRepository.insert(newUser.toUser(encoder.encode(newUser.password)).toMongoUser()).block()
+        token = authenticationManager
+            .authenticate(newUser.toUser())
+            .map { it.creds }
+            .block()!!
     }
 
     @Nested
@@ -80,7 +81,9 @@ class AuthControllerTest @Autowired constructor(
         @Test
         fun `should authenticate User always`() {
             signInUser(SignInRequestDto(newUser.userName, newUser.password))
-                .expectStatus().isOk
+                .expectStatus()
+                .also { LOG.info(it.toString()) }
+                .isOk
                 .expectBody(JwtResponseDto::class.java)
         }
 

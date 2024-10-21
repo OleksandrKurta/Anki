@@ -19,7 +19,7 @@ import org.springframework.web.server.WebFilter
 class WebSecurityConfig(
     private val unauthorizedHandler: AuthEntryPointJwt,
     private val authTokenFilter: WebFilter,
-    private val authenticationManager: ReactiveAuthenticationManager
+//    private val authenticationManager: ReactiveAuthenticationManager
 ) {
 
     @Bean
@@ -31,7 +31,7 @@ class WebSecurityConfig(
                 )
             }
             .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
-            .authenticationManager(authenticationManager)
+//            .authenticationManager(authenticationManager)
             .authorizeExchange { auth ->
                 auth
                     .pathMatchers("/api/auth/**")
@@ -39,6 +39,6 @@ class WebSecurityConfig(
                     .anyExchange()
                     .authenticated()
             }
-            .addFilterBefore(authTokenFilter, SecurityWebFiltersOrder.AUTHENTICATION)
+//            .addFilterAt(authTokenFilter, SecurityWebFiltersOrder.HTTP_BASIC)
             .build()
 }

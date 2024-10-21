@@ -1,18 +1,17 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.secure.UserAuthentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import java.util.stream.Collectors
 
 fun MongoUser.toUser(): User {
     return User(
         this.id.toString(),
-        this.userName.toString(),
-        this.email.toString(),
-        this.password.toString(),
+        this.userName,
+        this.email,
+        this.password,
         this.roles
             .map { role ->
                 SimpleGrantedAuthority(
@@ -23,17 +22,17 @@ fun MongoUser.toUser(): User {
     )
 }
 
-fun User.toJwtDto(token: String): JwtResponseDto {
+fun UserAuthentication.toJwtDto(): JwtResponseDto {
     val roles: Set<String> =
         this.authorities
-            ?.map { authority -> authority.toString() }
-            ?.toSet()
-            ?: throw IllegalArgumentException("User roles can not be null")
+            .map { authority -> authority.toString() }
+            .toSet()
+    require(roles.isEmpty(), { "User roles can not be null" })
     return JwtResponseDto(
-        accessToken = token,
-        id = this.id,
-        email = this.email,
-        userName = this.userName,
+        accessToken = this.creds,
+        id = user.id,
+        email = user.email,
+        userName = user.userName,
         roles = roles,
     )
 }

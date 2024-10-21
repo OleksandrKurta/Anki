@@ -4,7 +4,6 @@ import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.secure.jwt.JwtUtils
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
-import org.springframework.security.authentication.AuthenticationManager
 import org.springframework.security.authentication.ReactiveAuthenticationManager
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
@@ -16,17 +15,14 @@ import reactor.core.publisher.Mono
 
 @Service
 class SecurityService @Autowired constructor(
-    private val authenticationManager: ReactiveAuthenticationManager,
+    private val authenticationManager: AuthenticationManager,
     private val jwtUtils: JwtUtils,
 ) {
 
-    fun authUser(user: User): Mono<User> =
-        authenticationManager
-            .authenticate(UsernamePasswordAuthenticationToken(user.userName, user.password))
-            .map { it.principal }
-            .cast(User::class.java)
+    fun authUser(user: User): Mono<UserAuthentication> =
+        authenticationManager.authenticate(user)
 
     // TODO: Rewirte other methods from jwtUtils
-    fun getUserIdFromAuthHeader(header: HttpHeaders): String = jwtUtils.getUserIdFromAuthHeader(header)
+//    fun getUserIdFromAuthHeader(header: HttpHeaders): String = jwtUtils.getUserIdFromAuthHeader(header)
 
 }

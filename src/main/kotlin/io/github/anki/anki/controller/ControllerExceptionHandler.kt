@@ -23,18 +23,18 @@ class ControllerExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationExceptions(ex: MethodArgumentNotValidException): Mono<ResponseEntity<Map<String, String>>> =
         Mono.just(ResponseEntity(ex.toMap(), HttpStatus.BAD_REQUEST))
-
-    @ExceptionHandler(CardDoesNotExistException::class)
-    fun cardDoesNotExistHandler(ex: BaseBadRequestException): Mono<ResponseEntity<String>> {
-        LOG.error("OUT CardsController ${CardsController.BASE_URL} ${ex.message}")
-        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-    }
-
-    @ExceptionHandler(DeckDoesNotExistException::class)
-    fun deckDoesNotExistHandler(ex: BaseBadRequestException): Mono<ResponseEntity<String>> {
-        LOG.error("OUT DecksController ${DecksController.BASE_URL} ${ex.message}")
-        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-    }
+//
+//    @ExceptionHandler(CardDoesNotExistException::class)
+//    fun cardDoesNotExistHandler(ex: BaseBadRequestException): Mono<ResponseEntity<String>> {
+//        LOG.error("OUT CardsController ${CardsController.BASE_URL} ${ex.message}")
+//        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
+//    }
+//
+//    @ExceptionHandler(DeckDoesNotExistException::class)
+//    fun deckDoesNotExistHandler(ex: BaseBadRequestException): Mono<ResponseEntity<String>> {
+//        LOG.error("OUT DecksController ${DecksController.BASE_URL} ${ex.message}")
+//        return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
+//    }
 
     @ExceptionHandler(UserDoesNotExistException::class)
     fun userDoesNotExistHandler(ex: BaseBadRequestException): Mono<ResponseEntity<String>> {
