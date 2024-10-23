@@ -11,7 +11,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
-import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Component
@@ -21,7 +20,7 @@ import java.util.*
 @Component
 class JwtUtils {
     @Value("\${anki.app.jwtSecret}")
-    private val JWT_SECRET: String? = null
+    private val jwtSecret: String? = null
 
     @Value("\${anki.app.jwtExpirationMs}")
     private val jwtExpirationMs = 0
@@ -34,7 +33,7 @@ class JwtUtils {
                     "id" to user.id,
                     "email" to user.email,
                     "userName" to user.userName,
-                    "roles" to user.authorities.map { it.authority }.joinToString(separator = ","),
+                    "roles" to user.authorities.joinToString(separator = ",") { it.authority },
                 ),
             )
             .setIssuedAt(Date())
@@ -52,24 +51,17 @@ class JwtUtils {
                 .parseClaimsJws(token)
                 .body
 
-        val authoritiesClaim = claims.get(AUTHORITIES_KEY)
-        val authorities: Collection<GrantedAuthority> =
-            if (authoritiesClaim == null) {
-                AuthorityUtils.NO_AUTHORITIES
-            } else {
-                AuthorityUtils.commaSeparatedStringToAuthorityList(authoritiesClaim.toString())
-            }
+        val authorities = AuthorityUtils.commaSeparatedStringToAuthorityList(claims[AUTHORITIES_KEY].toString())
 
         return UserAuthentication(
             User(
-                id = claims.get("id").toString(),
-                userName = claims.get("userName").toString(),
-                email = claims.get("email").toString(),
+                id = claims["id"].toString(),
+                userName = claims["userName"].toString(),
+                email = claims["email"].toString(),
                 password = null,
                 authorities = authorities.toSet(),
             ),
             token,
-            authorities,
         )
     }
 
@@ -78,11 +70,8 @@ class JwtUtils {
         val token: String =
             headerAuth?.substring(TOKEN_PREFIX.length, headerAuth.length)
                 ?: throw IllegalArgumentException("Can't find token in headers")
-        val isValidToken: Boolean = validateJwtToken(token)
-        if (isValidToken) {
-            return getAuthentication(token)
-        }
-        throw IllegalArgumentException("Provided token is not valid")
+        validateJwtToken(token)
+        return getAuthentication(token)
     }
 
     fun validateJwtToken(authToken: String?): Boolean {
@@ -93,10 +82,10 @@ class JwtUtils {
         } catch (e: IllegalArgumentException) {
             LOG.error("JWT claims string is empty: {}", e.message)
         }
-        return false
+        throw IllegalArgumentException("Provided token $authToken is not valid")
     }
 
-    private fun getKey(): Key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JWT_SECRET))
+    private fun getKey(): Key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(jwtSecret))
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(JwtUtils::class.java)

@@ -26,7 +26,7 @@ import reactor.core.publisher.Mono
 @RequestMapping(DecksController.BASE_URL)
 class DecksController(
     private val service: DeckService,
-    val securityService: SecurityService,
+    private val securityService: SecurityService,
 ) {
 
     @PostMapping

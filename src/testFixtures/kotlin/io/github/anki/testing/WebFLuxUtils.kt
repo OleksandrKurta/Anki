@@ -2,7 +2,6 @@ package io.github.anki.testing
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.test.web.reactive.server.WebTestClient
-import reactor.core.publisher.Mono
 
 inline fun <reified T> WebTestClient.ResponseSpec.getDtoFromResponseBody(mapper: ObjectMapper): T =
     this.expectBody()

@@ -23,11 +23,8 @@ class CardsService(
     fun createNewCard(userId: String, card: Card): Mono<Card> =
         deckService
             .validateUserHasPermissions(card.deckId, userId)
-            .doOnNext { LOG.info("After Permission validation $it") }
             .flatMap { cardRepository.insert(card.toMongo()) }
-            .doOnNext { LOG.info("Inserted object in Service $it") }
             .map(MongoCard::toCard)
-            .doOnNext { LOG.info("Mapped Card $it") }
 
     fun findCardsByDeckWithPagination(deckId: String, userId: String, pagination: Pagination): Flux<Card> =
         deckService.validateUserHasPermissions(deckId, userId)
@@ -55,6 +52,7 @@ class CardsService(
     private fun saveIfNotEquals(mongoCard: MongoCard, card: Card): Mono<Card> {
         val updatedMongoCard = mongoCard.update(card)
         if (mongoCard == updatedMongoCard) {
+            LOG.info("Nothing to change in Card with id {}", mongoCard.id)
             return Mono.just(mongoCard.toCard())
         }
         return cardRepository

@@ -35,42 +35,7 @@ class DeckRepository(
             .doFirst { log.info("Finding by userId = {} and status = {}", userId, status) }
             .buffer(CHUNK_SIZE_TO_LOG)
             .doOnNext { log.info("Found by userId = {} and status = {} objects = {}", userId, status, it) }
-//            .switchIfEmpty {
-//                Flux.defer {
-//                    log.info("Nothing was found by userId = {} and status = {}", userId, status)
-//                    Flux.empty<MongoDeck>()
-//                }
-//            }
             .flatMapIterable { list -> list }
-
-    fun findByIdAndUserIdWithStatus(
-        id: ObjectId,
-        userId: ObjectId,
-        status: DocumentStatus = DocumentStatus.ACTIVE,
-    ): Mono<MongoDeck> =
-        mongoTemplate
-            .findOne(
-                Query(
-                    Criteria
-                        .where(MongoDocument.ID)
-                        .`is`(id)
-                        .and(MongoDeck.USER_ID)
-                        .`is`(userId)
-                        .and(MongoDocument.DOCUMENT_STATUS)
-                        .`is`(status),
-                ),
-                entityClass,
-            )
-            .doFirst { log.info("Finding by id = {} userId = {} and status = {}", id, userId, status) }
-            .doOnNext {
-                log.info(
-                    "Found by id = {} and userId = {} and status = {} object = {}",
-                    id,
-                    userId,
-                    status,
-                    it,
-                )
-            }
 
     fun existsByIdAndUserIdWithStatus(
         id: ObjectId,

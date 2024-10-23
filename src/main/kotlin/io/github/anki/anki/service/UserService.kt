@@ -32,14 +32,21 @@ class UserService @Autowired constructor(
                 { mapDuplicateKeyException(it, user) },
             )
 
-    private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): Mono<User> {
-        if (error.stackTraceToString().contains(MongoUser.USER_NAME)) {
-            return Mono.error(UserAlreadyExistException.fromUserName(user.userName))
-        } else if (!error.stackTraceToString().contains(MongoUser.EMAIL)) {
-            return Mono.error(error)
-        }
-        return Mono.just(user)
-    }
+    private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): Mono<User> =
+        Mono
+            .just(error.stackTraceToString())
+            .flatMap {
+                when {
+                    it.contains(MongoUser.USER_NAME)
+                    -> Mono.error(UserAlreadyExistException.fromUserName(user.userName))
+
+                    !it.contains(MongoUser.EMAIL) -> Mono.error(error)
+                    else ->
+                        Mono
+                            .just(user)
+                            .doFirst { LOG.error("User with this email {} already exists", user.email) }
+                }
+            }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(UserService::class.java)

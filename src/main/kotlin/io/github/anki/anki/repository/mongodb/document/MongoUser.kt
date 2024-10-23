@@ -29,7 +29,7 @@ data class MongoUser(
     @Field(PASSWORD)
     val password: String? = null,
     @Field(ROLES)
-    val roles: Set<String?> = HashSet(),
+    val roles: Set<String?> = emptySet(),
     @Field(MongoDocument.CREATED_AT)
     @CreatedDate
     override val createdAt: Instant? = null,
@@ -42,7 +42,6 @@ data class MongoUser(
 
     companion object {
         const val COLLECTION_NAME = "user"
-
         const val USER_NAME = "userName"
         const val EMAIL = "email"
         const val PASSWORD = "password"

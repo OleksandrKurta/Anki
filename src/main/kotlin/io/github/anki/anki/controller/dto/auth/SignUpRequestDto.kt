@@ -20,6 +20,5 @@ class SignUpRequestDto(
     @Size(min = 6, max = 40)
     String? = null,
 ) {
-
     companion object
 }

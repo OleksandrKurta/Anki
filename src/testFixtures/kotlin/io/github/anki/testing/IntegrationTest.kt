@@ -14,4 +14,4 @@ annotation class IntegrationTest
 
 @IntegrationTest
 @AutoConfigureWebTestClient
-annotation class ReactiveIntegrationTest
+annotation class IntegrationTestWithClient

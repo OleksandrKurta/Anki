@@ -22,7 +22,7 @@ import kotlin.test.BeforeTest
 
 @IntegrationTest
 class DeckRepositoryTest @Autowired constructor(
-    val deckRepository: DeckRepository,
+    private val deckRepository: DeckRepository,
 ) {
     private lateinit var newDeck: MongoDeck
 
@@ -144,8 +144,8 @@ class DeckRepositoryTest @Autowired constructor(
                             getRandomID(),
                             newDeck.userId,
                             status = DocumentStatus.DELETED,
-                        )
-                    )
+                        ),
+                    ),
             )
             .expectNext(false)
             .verifyComplete()

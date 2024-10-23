@@ -27,7 +27,7 @@ import io.github.anki.anki.service.secure.jwt.JwtUtils.Companion.AUTH_HEADER_NAM
 import io.github.anki.anki.service.secure.jwt.JwtUtils.Companion.TOKEN_PREFIX
 import io.github.anki.anki.service.utils.toObjectId
 import io.github.anki.testing.DATA_PREFIX
-import io.github.anki.testing.ReactiveIntegrationTest
+import io.github.anki.testing.IntegrationTestWithClient
 import io.github.anki.testing.getDtoFromResponseBody
 import io.github.anki.testing.getListOfDtoFromResponseBody
 import io.github.anki.testing.getRandomID
@@ -58,7 +58,7 @@ import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
 
-@ReactiveIntegrationTest
+@IntegrationTestWithClient
 class CardsControllerTest @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val cardRepository: CardRepository,
@@ -75,11 +75,12 @@ class CardsControllerTest @Autowired constructor(
 
     @BeforeTest
     fun setUp() {
-        val newUser = SignUpRequestDto.randomUser()
-        val mongoUser = userRepository.insert(newUser.toUser(encoder.encode(newUser.password)).toMongoUser()).block()!!
+        val newUserDto = SignUpRequestDto.randomUser()
+        val newUser = newUserDto.toUser(encoder)
+        val mongoUser = userRepository.insert(newUser.toMongoUser()).block()!!
         user = mongoUser.toUser()
         token = authenticationManager
-            .authenticate(newUser.toUser())
+            .authenticate(newUser)
             .map { it.creds }
             .block()!!
         insertedDeck = deckRepository.insertRandom(1, userId = mongoUser.id!!).blockFirst()!!

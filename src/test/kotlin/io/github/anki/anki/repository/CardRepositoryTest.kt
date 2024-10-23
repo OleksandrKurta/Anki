@@ -9,8 +9,6 @@ import io.github.anki.testing.getRandomString
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import reactor.util.context.Context
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -23,7 +21,7 @@ import kotlin.test.BeforeTest
 
 @IntegrationTest
 class CardRepositoryTest @Autowired constructor(
-    val cardRepository: CardRepository,
+    private val cardRepository: CardRepository,
 ) {
     private lateinit var newCard: MongoCard
 
@@ -43,7 +41,7 @@ class CardRepositoryTest @Autowired constructor(
             .create(
                 cardRepository
                     .insert(newCard)
-                    .flatMap { cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE) }
+                    .flatMap { cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE) },
             )
             .expectNext(true)
             .verifyComplete()
@@ -62,9 +60,9 @@ class CardRepositoryTest @Autowired constructor(
                                     .zip(
                                         cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE),
                                         cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.DELETED),
-                                    )
+                                    ),
                             )
-                    }
+                    },
             )
             .assertNext {
                 it.t1 shouldBe false
@@ -79,7 +77,7 @@ class CardRepositoryTest @Autowired constructor(
         StepVerifier
             .create(
                 cardRepository.softDelete(notExistingCardId)
-                    .then(cardRepository.existsById(notExistingCardId))
+                    .then(cardRepository.existsById(notExistingCardId)),
             )
             .expectNext(false)
             .verifyComplete()
@@ -100,7 +98,7 @@ class CardRepositoryTest @Autowired constructor(
                 cardRepository
                     .insert(newCard)
                     .concatWith(cardRepository.findByDeckIdWithStatus(deckId = newCard.deckId!!))
-                    .buffer(2)
+                    .buffer(2),
             )
             .assertNext {
                 it[0] shouldBe it[1]
@@ -118,7 +116,7 @@ class CardRepositoryTest @Autowired constructor(
                         cardRepository
                             .softDeleteByDeckId(deckId = it.deckId!!)
                             .then(cardRepository.findByIdWithStatus(it.id!!, DocumentStatus.ACTIVE))
-                    }
+                    },
             )
             .expectNextCount(0)
             .verifyComplete()

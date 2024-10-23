@@ -1,157 +1,144 @@
-// package io.github.anki.anki.service
-//
-// import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
-// import io.github.anki.anki.controller.dto.mapper.toUser
-// import io.github.anki.anki.repository.mongodb.UserRepository
-// import io.github.anki.anki.repository.mongodb.document.MongoUser
-// import io.github.anki.anki.service.exceptions.UserAlreadyExistException
-// import io.github.anki.anki.service.exceptions.UserDoesNotExistException
-// import io.github.anki.anki.service.model.User
-// import io.github.anki.anki.service.model.mapper.toMongoUser
-// import io.github.anki.testing.getRandomID
-// import io.github.anki.testing.randomUser
-// import io.kotest.assertions.throwables.shouldNotThrowExactly
-// import io.kotest.assertions.throwables.shouldThrowExactly
-// import io.kotest.matchers.shouldBe
-// import io.mockk.every
-// import io.mockk.impl.annotations.InjectMockKs
-// import io.mockk.impl.annotations.MockK
-// import io.mockk.junit5.MockKExtension
-// import org.junit.jupiter.api.DisplayName
-// import org.junit.jupiter.api.Nested
-// import org.junit.jupiter.api.TestInstance
-// import org.junit.jupiter.api.TestInstance.Lifecycle
-// import org.junit.jupiter.api.extension.ExtendWith
-// import org.springframework.dao.DuplicateKeyException
-// import org.springframework.security.core.userdetails.UsernameNotFoundException
-// import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
-// import java.util.concurrent.CompletableFuture
-// import kotlin.test.BeforeTest
-// import kotlin.test.Test
-//
-// @ExtendWith(MockKExtension::class)
-// class UserServiceTest {
-//    @InjectMockKs
-//    lateinit var userService: UserService
-//
-//    @MockK
-//    lateinit var userRepository: UserRepository
-//    private lateinit var newUser: SignUpRequestDto
-//    private lateinit var encodedPassword: String
-//
-//    @BeforeTest
-//    fun setUp() {
-//        newUser = SignUpRequestDto.randomUser()
-//        encodedPassword = BCryptPasswordEncoder().encode(newUser.password)
-//    }
-//
-//    @Nested
-//    @DisplayName("UserService.signUp()")
-//    @TestInstance(Lifecycle.PER_CLASS)
-//    inner class CreateNewUser {
-//        @Test
-//        fun `should create new user always`() {
-//            // when
-//            val user = newUser.toUser(encodedPassword)
-//            val createdMongoUser = user.toMongoUser().copy(id = getRandomID())
-//            val expectedUser = user.copy(id = createdMongoUser.id!!.toHexString())
-//            every {
-//                userRepository.insert(user.toMongoUser())
-//            } returns CompletableFuture.completedFuture(createdMongoUser)
-//            val actualUser: User = userService.signUp(newUser.toUser(encodedPassword))
-//
-//            // then
-//
-//            actualUser shouldBe expectedUser
-//        }
-//
-//        @Test
-//        fun `should throw UserAlreadyExistException if user already exist `() {
-//            // given
-//            val user = newUser.toUser(encodedPassword)
-//
-//            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException(MongoUser.USER_NAME)
-//            // then
-//            shouldThrowExactly<UserAlreadyExistException> {
-//                userService.signUp(newUser.toUser(encodedPassword))
-//            }
-//        }
-//
-//        @Test
-//        fun `should trow DuplicateKeyException if user have duplicated fields`() {
-//            // given
-//            val user = newUser.toUser(encodedPassword)
-//
-//            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException("other field")
-//            // then
-//
-//            shouldThrowExactly<DuplicateKeyException> {
-//                userService.signUp(newUser.toUser(encodedPassword))
-//            }
-//        }
-//
-//        @Test
-//        fun `should not trow DuplicateKeyException if user already exist `() {
-//            // given
-//            val user = newUser.toUser(encodedPassword)
-//
-//            every { userRepository.insert(user.toMongoUser()) } throws DuplicateKeyException(MongoUser.EMAIL)
-//            // then
-//
-//            shouldNotThrowExactly<DuplicateKeyException> {
-//                userService.signUp(newUser.toUser(encodedPassword))
-//            }
-//        }
-//    }
-//
-//    @Nested
-//    @DisplayName("UserService.signIn()")
-//    @TestInstance(Lifecycle.PER_CLASS)
-//    inner class LogInUser {
-//
-//        @Test
-//        fun `should return 400 UserDoesNotExistException user always`() {
-//            // then
-//            val user = newUser.toUser(encodedPassword)
-//            every {
-//                userRepository.existsByUserName(user.userName)
-//            } returns CompletableFuture.completedFuture(false)
-//
-//            shouldThrowExactly<UserDoesNotExistException> {
-//                userService.signIn(user)
-//            }
-//        }
-//
-//        @Test
-//        fun `should return 400 UsernameNotFoundException user always`() {
-//            // then
-//            val user = newUser.toUser(encodedPassword)
-//            every {
-//                user.userName?.let { userRepository.existsByUserName(it) }
-//            } returns CompletableFuture.completedFuture(false)
-//
-//            shouldThrowExactly<UserDoesNotExistException> {
-//                userService.signIn(user)
-//            }
-//        }
-//    }
-//
-//    @Nested
-//    @DisplayName("UserService.loadUserByUsername()")
-//    @TestInstance(Lifecycle.PER_CLASS)
-//    inner class LoadUserByUsername {
-//
-//        @Test
-//        fun `should throw UsernameNotFoundException when user not in db`() {
-//            // then
-//            val user = newUser.toUser(encodedPassword)
-//            every {
-//                user.userName?.let { userRepository.findByUserName(it) }
-//            } returns CompletableFuture.completedFuture(null)
-//
-//            shouldThrowExactly<UsernameNotFoundException> {
-//                user.userName?.let { userService.loadUserByUsername(it).username }
-//            }
-//        }
-//    }
-// }
+package io.github.anki.anki.service
+
+import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
+import io.github.anki.anki.controller.dto.mapper.toUser
+import io.github.anki.anki.repository.mongodb.UserRepository
+import io.github.anki.anki.repository.mongodb.document.MongoUser
+import io.github.anki.anki.service.exceptions.UserAlreadyExistException
+import io.github.anki.anki.service.exceptions.UserDoesNotExistException
+import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.model.mapper.toMongoUser
+import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.testing.getRandomID
+import io.github.anki.testing.randomUser
+import io.kotest.matchers.shouldBe
+import io.mockk.every
+import io.mockk.impl.annotations.InjectMockKs
+import io.mockk.impl.annotations.MockK
+import io.mockk.junit5.MockKExtension
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.TestInstance.Lifecycle
+import org.junit.jupiter.api.extension.ExtendWith
+import org.springframework.dao.DuplicateKeyException
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import reactor.core.publisher.Mono
+import reactor.test.StepVerifier
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+
+@ExtendWith(MockKExtension::class)
+class UserServiceTest {
+    @InjectMockKs
+    private lateinit var userService: UserService
+
+    @MockK
+    private lateinit var userRepository: UserRepository
+
+    @MockK
+    private lateinit var securityService: SecurityService
+
+    private lateinit var newUserDto: SignUpRequestDto
+    private lateinit var newUser: User
+
+    private val encoder = BCryptPasswordEncoder()
+
+    @BeforeTest
+    fun setUp() {
+        newUserDto = SignUpRequestDto.randomUser()
+        newUser = newUserDto.toUser(encoder)
+    }
+
+    @Nested
+    @DisplayName("UserService.signUp()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class CreateNewUser {
+        @Test
+        fun `should create new user always`() {
+            // given
+            val createdMongoUser = newUser.toMongoUser().copy(id = getRandomID())
+            val expectedUser = newUser.copy(id = createdMongoUser.id!!.toString())
+            every {
+                userRepository.insert(newUser.toMongoUser())
+            } returns Mono.just(createdMongoUser)
+
+            // when/then
+            StepVerifier
+                .create(
+                    userService.signUp(newUser),
+                )
+                .assertNext {
+                    it shouldBe expectedUser
+                }
+                .verifyComplete()
+        }
+
+        @Test
+        fun `should throw UserAlreadyExistException if user already exist `() {
+            // given
+            every {
+                userRepository.insert(newUser.toMongoUser())
+            } returns Mono.error(DuplicateKeyException(MongoUser.USER_NAME))
+
+            // when/then
+            StepVerifier
+                .create(
+                    userService.signUp(newUser),
+                )
+                .verifyError(UserAlreadyExistException::class.java)
+        }
+
+        @Test
+        fun `should trow DuplicateKeyException if user have duplicated fields`() {
+            // given
+            every {
+                userRepository.insert(newUser.toMongoUser())
+            } returns Mono.error(DuplicateKeyException("other field"))
+
+            // when/then
+            StepVerifier
+                .create(
+                    userService.signUp(newUser),
+                )
+                .verifyError(DuplicateKeyException::class.java)
+        }
+
+        @Test
+        fun `should not trow DuplicateKeyException if user already exist`() {
+            // given
+            every {
+                userRepository.insert(newUser.toMongoUser())
+            } returns Mono.error(DuplicateKeyException(MongoUser.EMAIL))
+
+            // when/then
+            StepVerifier
+                .create(
+                    userService.signUp(newUser),
+                )
+                .expectNextCount(1)
+                .verifyComplete()
+        }
+    }
+
+    @Nested
+    @DisplayName("UserService.signIn()")
+    @TestInstance(Lifecycle.PER_CLASS)
+    inner class LogInUser {
+
+        @Test
+        fun `should return 400 UsernameNotFoundException user is userName not found`() {
+            // given
+            every {
+                securityService.authUser(newUser)
+            } returns Mono.error(UserDoesNotExistException.fromUserName(newUser.userName))
+
+            // when/then
+            StepVerifier
+                .create(
+                    userService.signIn(newUser),
+                )
+                .verifyError(UserDoesNotExistException::class.java)
+        }
+    }
+}

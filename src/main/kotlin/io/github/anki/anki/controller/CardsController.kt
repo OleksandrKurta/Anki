@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono
 @RequestMapping(CardsController.BASE_URL)
 class CardsController(
     private val cardService: CardsService,
-    val securityService: SecurityService,
+    private val securityService: SecurityService,
 ) {
 
     @PostMapping
@@ -48,7 +48,7 @@ class CardsController(
                 )
             }
             .map(Card::toDto)
-            .doOnNext { LOG.info("OUT: $CardsController $BASE_URL created card ${it} with id = $deckId") }
+            .doOnNext { LOG.info("OUT: $CardsController $BASE_URL created card $it with id = $deckId") }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)

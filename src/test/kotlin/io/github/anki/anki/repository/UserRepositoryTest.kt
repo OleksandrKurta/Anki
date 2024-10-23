@@ -9,7 +9,6 @@ import io.github.anki.testing.getRandomString
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -21,7 +20,7 @@ import kotlin.test.BeforeTest
 
 @IntegrationTest
 class UserRepositoryTest @Autowired constructor(
-    val userRepository: UserRepository,
+    private val userRepository: UserRepository,
 ) {
     private lateinit var newUser: MongoUser
 
@@ -41,7 +40,7 @@ class UserRepositoryTest @Autowired constructor(
             .create(
                 userRepository
                     .insert(newUser)
-                    .flatMap { userRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE) }
+                    .flatMap { userRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE) },
             )
             .expectNext(true)
             .verifyComplete()
@@ -53,7 +52,7 @@ class UserRepositoryTest @Autowired constructor(
             .create(
                 userRepository
                     .insert(newUser)
-                    .flatMap { userRepository.findByUserName(userName = it.userName!!) }
+                    .flatMap { userRepository.findByUserName(userName = it.userName!!) },
             )
             .assertNext {
                 it.userName shouldBe newUser.userName
@@ -74,7 +73,7 @@ class UserRepositoryTest @Autowired constructor(
         StepVerifier
             .create(
                 userRepository.insert(newUser)
-                    .flatMap { userRepository.existsByUserName(it.userName) }
+                    .flatMap { userRepository.existsByUserName(it.userName) },
             )
             .expectNext(true)
             .verifyComplete()

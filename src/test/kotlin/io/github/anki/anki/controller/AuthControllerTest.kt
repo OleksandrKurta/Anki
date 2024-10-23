@@ -11,14 +11,12 @@ import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.UserRepository
-import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
 import io.github.anki.anki.service.secure.AuthenticationManager
-import io.github.anki.anki.service.secure.jwt.JwtUtils
-import io.github.anki.testing.ReactiveIntegrationTest
+import io.github.anki.testing.IntegrationTestWithClient
 import io.github.anki.testing.getRandomEmail
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.randomUser
@@ -26,45 +24,41 @@ import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.springframework.test.web.reactive.server.expectBody
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
 
-@ReactiveIntegrationTest
+@IntegrationTestWithClient
 class AuthControllerTest @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val userRepository: UserRepository,
-    private val jwtUtil: JwtUtils,
     private val encoder: PasswordEncoder,
     private val authenticationManager: AuthenticationManager,
     private val webTestClient: WebTestClient,
 ) {
-    private lateinit var newUser: SignUpRequestDto
+    private lateinit var newUserDto: SignUpRequestDto
     private lateinit var token: String
 
     @BeforeTest
     fun setUp() {
-        newUser = SignUpRequestDto.randomUser()
-        userRepository.insert(newUser.toUser(encoder.encode(newUser.password)).toMongoUser()).block()
+        newUserDto = SignUpRequestDto.randomUser()
+        val newUser = newUserDto.toUser(encoder)
+        userRepository.insert(newUser.toMongoUser()).block()
         token = authenticationManager
-            .authenticate(newUser.toUser())
+            .authenticate(newUser)
             .map { it.creds }
             .block()!!
     }
@@ -76,7 +70,7 @@ class AuthControllerTest @Autowired constructor(
 
         @Test
         fun `should authenticate User always`() {
-            signInUser(SignInRequestDto(newUser.userName, newUser.password))
+            signInUser(SignInRequestDto(newUserDto.userName, newUserDto.password))
                 .expectStatus()
                 .isOk
                 .expectHeader()
@@ -88,7 +82,7 @@ class AuthControllerTest @Autowired constructor(
         fun `should return 400 if user does not exist`() {
             // given
             val randomUserName = getRandomString()
-            signInUser(SignInRequestDto(randomUserName, newUser.password))
+            signInUser(SignInRequestDto(randomUserName, newUserDto.password))
                 .expectStatus()
                 .isBadRequest
                 .expectHeader()
@@ -131,7 +125,7 @@ class AuthControllerTest @Autowired constructor(
                 .create(userRepository.findByUserName(randomUser.userName!!))
                 .assertNext {
                     it.toUser().apply { id = null } shouldBeEqualToComparingFields
-                        randomUser.toUser(it.password)
+                        randomUser.toUser(encoder)
                 }
                 .verifyComplete()
         }
@@ -146,8 +140,8 @@ class AuthControllerTest @Autowired constructor(
                 signUpUser(
                     SignUpRequestDto(
                         userName = randomUserName,
-                        email = newUser.email,
-                        password = newUser.password,
+                        email = newUserDto.email,
+                        password = newUserDto.password,
                         roles = setOf(),
                     ),
                 )
@@ -170,9 +164,9 @@ class AuthControllerTest @Autowired constructor(
             val response =
                 signUpUser(
                     SignUpRequestDto(
-                        userName = newUser.userName,
+                        userName = newUserDto.userName,
                         email = getRandomEmail("initial"),
-                        password = newUser.password,
+                        password = newUserDto.password,
                         roles = setOf(),
                     ),
                 )
@@ -184,7 +178,7 @@ class AuthControllerTest @Autowired constructor(
                 .expectHeader()
                 .contentType(MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                 .expectBody(String::class.java)
-                .isEqualTo(UserAlreadyExistException.fromUserName(newUser.userName).message)
+                .isEqualTo(UserAlreadyExistException.fromUserName(newUserDto.userName).message)
         }
 
         private fun signUpUser(signUpUserRequest: SignUpRequestDto): WebTestClient.ResponseSpec =
@@ -196,7 +190,7 @@ class AuthControllerTest @Autowired constructor(
                 .exchange()
     }
     companion object {
-        private val LOG: Logger = LoggerFactory.getLogger(AuthControllerTest::class.java)
+//        private val LOG: Logger = LoggerFactory.getLogger(AuthControllerTest::class.java)
 
         @Container
         @Suppress("PropertyName")

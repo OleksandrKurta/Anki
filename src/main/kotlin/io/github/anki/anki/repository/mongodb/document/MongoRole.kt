@@ -15,7 +15,6 @@ data class MongoRole(
 ) {
     companion object {
         const val COLLECTION_NAME = "role"
-
         const val ROLE_NAME = "name"
     }
 }

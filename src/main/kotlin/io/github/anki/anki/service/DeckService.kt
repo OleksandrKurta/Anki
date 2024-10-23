@@ -33,14 +33,18 @@ class DeckService(
     fun updateDeck(deck: Deck): Mono<Deck> {
         val deckId = deck.id ?: return Mono.error(IllegalArgumentException("Deck id can not be null"))
         return validateUserHasPermissions(deckId, deck.userId)
-            .then(getDeckById(deckId))
+            .flatMap { getDeckById(deckId) }
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
     }
 
     fun deleteDeck(deckId: String, userId: String): Mono<Void> =
-        deckRepository.softDelete(deckId.toObjectId())
-            .mergeWith(cardRepository.softDeleteByDeckId(deckId.toObjectId()))
-//            .startWith(validateUserHasPermissions(deckId, userId))
+        validateUserHasPermissions(deckId, userId)
+            .flatMapMany {
+                Flux.zip(
+                    deckRepository.softDelete(deckId.toObjectId()),
+                    cardRepository.softDeleteByDeckId(deckId.toObjectId()),
+                )
+            }
             .then()
 
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
@@ -63,6 +67,7 @@ class DeckService(
     private fun saveIfNotEquals(mongoDeck: MongoDeck, deck: Deck): Mono<Deck> {
         val updatedMongoDeck = mongoDeck.update(deck)
         if (mongoDeck == updatedMongoDeck) {
+            LOG.info("Nothing to change in Deck with id {}", mongoDeck.id)
             return Mono.just(mongoDeck.toDeck())
         }
         return deckRepository

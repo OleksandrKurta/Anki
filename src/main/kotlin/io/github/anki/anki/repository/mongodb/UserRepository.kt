@@ -33,7 +33,7 @@ class UserRepository(
             entityClass,
         )
             .doFirst { log.info("Finding by userName = {} with status = {}", userName, status) }
-            .doOnSuccess { log.info("Found by userName = {} and status = {} object = {}", userName, status, it) }
+            .doOnNext { log.info("Found by userName = {} and status = {} object = {}", userName, status, it) }
 
     fun existsByUserName(
         userName: String?,

@@ -18,7 +18,8 @@ fun MongoUser.toUser(): User {
                     role
                         ?: throw IllegalArgumentException("User roles can not be null"),
                 )
-            },
+            }
+            .toSet(),
     )
 }
 

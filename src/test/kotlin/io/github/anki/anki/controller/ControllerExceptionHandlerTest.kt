@@ -15,7 +15,7 @@ import org.springframework.core.MethodParameter
 import org.springframework.http.HttpStatus
 import org.springframework.validation.BeanPropertyBindingResult
 import org.springframework.validation.FieldError
-import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.support.WebExchangeBindException
 import reactor.test.StepVerifier
 import java.util.stream.Stream
 import kotlin.test.Test
@@ -40,22 +40,22 @@ class ControllerExceptionHandlerTest {
             .verify()
     }
 
-//    @ParameterizedTest
-//    @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
-//    fun `should return 400 when MethodArgumentNotValidException`(
-//        objectName: String,
-//        fieldName: String,
-//    ) {
-//        val exception = createMethodArgumentNotValidException(objectName, fieldName)
-//        StepVerifier
-//            .create(exceptionHandler.handleValidationExceptions(exception))
-//            .assertNext {
-//                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-//                it.body shouldBe mapOf(fieldName to notBlankDefaultMessage)
-//            }
-//            .expectComplete()
-//            .verify()
-//    }
+    @ParameterizedTest
+    @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
+    fun `should return 400 when MethodArgumentNotValidException`(
+        objectName: String,
+        fieldName: String,
+    ) {
+        val exception = createWebExchangeBindException(objectName, fieldName)
+        StepVerifier
+            .create(exceptionHandler.handleValidationExceptions(exception))
+            .assertNext {
+                it.statusCode shouldBe HttpStatus.BAD_REQUEST
+                it.body shouldBe mapOf(fieldName to notBlankDefaultMessage)
+            }
+            .expectComplete()
+            .verify()
+    }
 
     @Test
     fun `should return 404 if method or path not found`() {
@@ -134,16 +134,16 @@ class ControllerExceptionHandlerTest {
             Arguments.of("NewDeckRequest", "name"),
         )
 
-    private fun createMethodArgumentNotValidException(
+    private fun createWebExchangeBindException(
         objectName: String,
         fieldName: String,
-    ): MethodArgumentNotValidException {
+    ): WebExchangeBindException {
         val fieldError = FieldError(objectName, fieldName, notBlankDefaultMessage)
         val methodParameter = mock(MethodParameter::class.java)
 
         val bindingResult = BeanPropertyBindingResult(null, objectName)
         bindingResult.addError(fieldError)
 
-        return MethodArgumentNotValidException(methodParameter, bindingResult)
+        return WebExchangeBindException(methodParameter, bindingResult)
     }
 }

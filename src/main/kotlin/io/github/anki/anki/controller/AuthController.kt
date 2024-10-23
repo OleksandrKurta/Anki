@@ -11,7 +11,6 @@ import io.github.anki.anki.service.secure.UserAuthentication
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.CrossOrigin
@@ -28,9 +27,9 @@ import reactor.core.publisher.Mono
 )
 @RestController
 @RequestMapping(AuthController.BASE_URL)
-class AuthController @Autowired constructor(
-    val userService: UserService,
-    val encoder: PasswordEncoder,
+class AuthController(
+    private val userService: UserService,
+    private val encoder: PasswordEncoder,
 ) {
 
     @PostMapping(SIGN_IN)
@@ -53,7 +52,7 @@ class AuthController @Autowired constructor(
     @ResponseStatus(HttpStatus.CREATED)
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
         userService
-            .signUp(signUpRequestDto.toUser(signUpRequestDto.password))
+            .signUp(signUpRequestDto.toUser(encoder))
             .doFirst { LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto") }
             .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }

@@ -24,7 +24,7 @@ import io.github.anki.anki.service.secure.AuthenticationManager
 import io.github.anki.anki.service.secure.jwt.JwtUtils.Companion.AUTH_HEADER_NAME
 import io.github.anki.anki.service.secure.jwt.JwtUtils.Companion.TOKEN_PREFIX
 import io.github.anki.anki.service.utils.toObjectId
-import io.github.anki.testing.ReactiveIntegrationTest
+import io.github.anki.testing.IntegrationTestWithClient
 import io.github.anki.testing.getDtoFromResponseBody
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -56,7 +56,7 @@ import java.util.stream.Stream
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@ReactiveIntegrationTest
+@IntegrationTestWithClient
 class DecksControllerTest @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val deckRepository: DeckRepository,
@@ -72,11 +72,11 @@ class DecksControllerTest @Autowired constructor(
 
     @BeforeTest
     fun setUp() {
-        val newUser = SignUpRequestDto.randomUser()
-        val mongoUser = userRepository.insert(newUser.toUser(encoder.encode(newUser.password)).toMongoUser()).block()!!
+        val newUser = SignUpRequestDto.randomUser().toUser(encoder)
+        val mongoUser = userRepository.insert(newUser.toMongoUser()).block()!!
         user = mongoUser.toUser()
         token = authenticationManager
-            .authenticate(newUser.toUser())
+            .authenticate(newUser)
             .map { it.creds }
             .block()!!
     }
@@ -116,7 +116,7 @@ class DecksControllerTest @Autowired constructor(
 
             StepVerifier
                 .create(
-                    deckRepository.findById(ObjectId(createdDeck.id))
+                    deckRepository.findById(ObjectId(createdDeck.id)),
                 )
                 .assertNext {
                     it.toDeck().toDto() shouldBe createdDeck
@@ -225,7 +225,7 @@ class DecksControllerTest @Autowired constructor(
 
             StepVerifier
                 .create(
-                    deckRepository.findById(insertedDeck.id!!)
+                    deckRepository.findById(insertedDeck.id!!),
                 )
                 .assertNext {
                     it.name shouldBe patchDeckRequest.name
@@ -250,7 +250,7 @@ class DecksControllerTest @Autowired constructor(
 
             StepVerifier
                 .create(
-                    deckRepository.existsById(ObjectId(notExistingDeckID))
+                    deckRepository.existsById(ObjectId(notExistingDeckID)),
                 )
                 .expectNext(false)
                 .verifyComplete()
@@ -311,8 +311,8 @@ class DecksControllerTest @Autowired constructor(
                                     DocumentStatus.DELETED,
                                     limit = insertedCards.size,
                                 )
-                                .collectList()
-                        )
+                                .collectList(),
+                        ),
                 )
                 .assertNext {
                     it.t1 shouldBe false

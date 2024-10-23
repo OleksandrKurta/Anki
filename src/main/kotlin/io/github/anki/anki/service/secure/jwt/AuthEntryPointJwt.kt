@@ -1,7 +1,5 @@
 package io.github.anki.anki.service.secure.jwt
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.server.reactive.ServerHttpResponse
 import org.springframework.security.core.AuthenticationException
@@ -19,9 +17,5 @@ class AuthEntryPointJwt : ServerAuthenticationEntryPoint {
         return response.writeWith(
             Mono.just(response.bufferFactory().wrap("Error: Unauthorized1".encodeToByteArray())),
         )
-    }
-
-    companion object {
-        private val LOG: Logger = LoggerFactory.getLogger(AuthEntryPointJwt::class.java)
     }
 }
