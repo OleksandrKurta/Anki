@@ -6,20 +6,20 @@ import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
-import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toJwtDto
-import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.UserAuthentication
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Mono
 
 @CrossOrigin(
     origins = ["*"],
@@ -27,36 +27,35 @@ import org.springframework.web.bind.annotation.RestController
 )
 @RestController
 @RequestMapping(AuthController.BASE_URL)
-class AuthController @Autowired constructor(
-    val userService: UserService,
-    val secureService: SecurityService,
+class AuthController(
+    private val userService: UserService,
+    private val encoder: PasswordEncoder,
 ) {
 
     @PostMapping(SIGN_IN)
     @ResponseStatus(HttpStatus.OK)
-    fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto?): JwtResponseDto {
-        LOG.info(
-            "IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with userName${signInRequestDto!!.userName}",
-        )
-
-        userService.signIn(signInRequestDto.toUser())
-        val authentication = secureService.authUser(signInRequestDto)
-        val authUser = authentication.principal as User
-
-        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
-        return authUser.toJwtDto(secureService.jwtUtils.generateJwtToken(authentication))
-    }
+    fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto): Mono<JwtResponseDto> =
+        userService
+            .signIn(signInRequestDto.toUser())
+            .doFirst {
+                LOG.info(
+                    "IN: ${AuthController::class.java.name}:" +
+                        " ${BASE_URL}${SIGN_IN} with userName${signInRequestDto.userName}",
+                )
+            }
+            .map(UserAuthentication::toJwtDto)
+            .doOnNext {
+                LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}")
+            }
 
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
-    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): UserCreatedMessageResponseDto {
-        LOG.info("IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_UP} with $signUpRequestDto")
-
-        userService.signUp(signUpRequestDto.toUser(secureService.encoder.encode(signUpRequestDto.password)))
-
-        LOG.info("OUT: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with ${HttpStatus.OK}")
-        return UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)
-    }
+    fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
+        userService
+            .signUp(signUpRequestDto.toUser(encoder))
+            .doFirst { LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto") }
+            .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
+            .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(AuthController::class.java)

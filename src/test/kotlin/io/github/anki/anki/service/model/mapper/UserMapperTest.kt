@@ -1,10 +1,10 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.repository.mongodb.document.Role
 import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.secure.UserAuthentication
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.assertions.throwables.shouldThrowExactly
@@ -54,7 +54,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
 
             // when
@@ -64,21 +64,6 @@ class UserMapperTest {
             actualMongoUser shouldBe expectedMongoUser
 
             actualMongoUser.id shouldBe null
-        }
-
-        @Test
-        fun `should raise IllegalArgumentException when no roles`() {
-            // given
-            val user =
-                User(
-                    userName = randomUserName,
-                    email = randomUserEmail,
-                    password = randomUserPassword,
-                    authorities = null,
-                )
-
-            // when
-            shouldThrowExactly<IllegalArgumentException> { user.toMongoUser() }
         }
     }
 
@@ -95,7 +80,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole(name = Role.ROLE_USER.name)),
+                    roles = setOf(Role.ROLE_USER.name),
                 )
 
             val expectedUser =
@@ -104,7 +89,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
+                    authorities = setOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
 
             // when
@@ -124,7 +109,7 @@ class UserMapperTest {
                     userName = randomUserName,
                     email = randomUserEmail,
                     password = randomUserPassword,
-                    roles = setOf(MongoRole()),
+                    roles = setOf(null),
                 )
 
             // when
@@ -135,7 +120,7 @@ class UserMapperTest {
     @Nested
     @DisplayName("User.toJwtDto(token)")
     @TestInstance(Lifecycle.PER_CLASS)
-    inner class UserToJwtDto {
+    inner class UserAuthenticationToJwtDto {
         @Test
         fun `should map MongoUser to User`() {
             // given
@@ -158,29 +143,13 @@ class UserMapperTest {
                     roles = setOf(Role.ROLE_USER.name),
                 )
 
+            val userAuthentication = UserAuthentication(user, token)
+
             // when
-            val actualJwtDto = user.toJwtDto(token)
+            val actualJwtDto = userAuthentication.toJwtDto()
 
             // then
             actualJwtDto shouldBe expectedJwtDto
-
-            actualJwtDto.accessToken shouldBe expectedJwtDto.accessToken
-        }
-
-        @Test
-        fun `should raise IllegalArgumentException when no roles`() {
-            // given
-            val token = getRandomString()
-            val user =
-                User(
-                    userName = randomUserName,
-                    email = randomUserEmail,
-                    password = randomUserPassword,
-                    authorities = null,
-                )
-
-            // when
-            shouldThrowExactly<IllegalArgumentException> { user.toJwtDto(token) }
         }
     }
 }

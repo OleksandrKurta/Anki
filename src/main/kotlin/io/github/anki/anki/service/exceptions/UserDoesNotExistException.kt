@@ -6,6 +6,6 @@ class UserDoesNotExistException(
 ) : BaseBadRequestException, RuntimeException(message, cause) {
     companion object {
         fun fromUserName(userName: String?) =
-            UserDoesNotExistException("User with id = $userName does not exist")
+            UserDoesNotExistException("User with userName = $userName does not exist")
     }
 }

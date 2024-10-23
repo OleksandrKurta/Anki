@@ -33,7 +33,6 @@ data class MongoCard(
 
     companion object {
         const val COLLECTION_NAME = "cards"
-
         const val DECK_ID = "deckId"
         const val KEY = "key"
         const val VALUE = "value"

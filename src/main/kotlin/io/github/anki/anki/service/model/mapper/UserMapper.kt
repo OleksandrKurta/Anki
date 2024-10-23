@@ -1,49 +1,47 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-import io.github.anki.anki.repository.mongodb.document.MongoRole
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.model.User
+import io.github.anki.anki.service.secure.UserAuthentication
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import java.util.stream.Collectors
 
 fun MongoUser.toUser(): User {
     return User(
         this.id.toString(),
-        this.userName.toString(),
-        this.email.toString(),
-        this.password.toString(),
+        this.userName,
+        this.email,
+        this.password,
         this.roles
             .map { role ->
                 SimpleGrantedAuthority(
-                    role?.name
+                    role
                         ?: throw IllegalArgumentException("User roles can not be null"),
                 )
-            },
+            }
+            .toSet(),
     )
 }
 
-fun User.toJwtDto(token: String): JwtResponseDto {
+fun UserAuthentication.toJwtDto(): JwtResponseDto {
     val roles: Set<String> =
-        this.authorities?.stream()
-            ?.map { authority -> authority.toString() }
-            ?.collect(Collectors.toSet())
-            ?: throw throw IllegalArgumentException("User roles can not be null")
+        this.authorities
+            .map { authority -> authority.toString() }
+            .toSet()
     return JwtResponseDto(
-        accessToken = token,
-        id = this.id,
-        email = this.email,
-        userName = this.userName,
+        accessToken = this.creds,
+        id = user.id,
+        email = user.email,
+        userName = user.userName,
         roles = roles,
     )
 }
 
 fun User.toMongoUser(): MongoUser {
-    val roles: Set<MongoRole> =
-        this.authorities?.stream()
-            ?.map { authority -> MongoRole(name = authority.toString()) }
-            ?.collect(Collectors.toSet())
-            ?: throw IllegalArgumentException("User authorities can not be null")
+    val roles: Set<String> =
+        this.authorities
+            .map { it.toString() }
+            .toSet()
     return MongoUser(
         userName = this.username.toString(),
         email = this.email.toString(),

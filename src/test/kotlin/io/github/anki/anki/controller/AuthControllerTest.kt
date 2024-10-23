@@ -15,16 +15,15 @@ import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
-import io.github.anki.anki.service.secure.jwt.JwtUtils
-import io.github.anki.testing.MVCTest
+import io.github.anki.anki.service.secure.AuthenticationManager
+import io.github.anki.testing.IntegrationTestWithClient
+import io.github.anki.testing.getRandomEmail
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.randomUser
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
-import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -32,44 +31,36 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.Authentication
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.ResultActionsDsl
-import org.springframework.test.web.servlet.post
+import org.springframework.test.web.reactive.server.WebTestClient
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
+import reactor.test.StepVerifier
+import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
 
-@MVCTest
+@IntegrationTestWithClient
 class AuthControllerTest @Autowired constructor(
-    val mockMvc: MockMvc,
-    val objectMapper: ObjectMapper,
-    val userRepository: UserRepository,
-    val jwtUtil: JwtUtils,
-    val authenticationManager: AuthenticationManager,
+    private val objectMapper: ObjectMapper,
+    private val userRepository: UserRepository,
+    private val encoder: PasswordEncoder,
+    private val authenticationManager: AuthenticationManager,
+    private val webTestClient: WebTestClient,
 ) {
-
-    private lateinit var newUser: SignUpRequestDto
+    private lateinit var newUserDto: SignUpRequestDto
     private lateinit var token: String
-    private val encoder: BCryptPasswordEncoder = BCryptPasswordEncoder()
 
     @BeforeTest
     fun setUp() {
-        newUser = SignUpRequestDto.randomUser()
-        val user = newUser.toUser(encoder.encode(newUser.password))
-        userRepository.insert(user.toMongoUser()).get().id.toString()
-        val authentication: Authentication =
-            authenticationManager.authenticate(
-                UsernamePasswordAuthenticationToken(user.userName, newUser.password),
-            )
-        SecurityContextHolder.getContext().setAuthentication(authentication)
-        token = jwtUtil.generateJwtToken(authentication)
+        newUserDto = SignUpRequestDto.randomUser()
+        val newUser = newUserDto.toUser(encoder)
+        userRepository.insert(newUser.toMongoUser()).block()
+        token = authenticationManager
+            .authenticate(newUser)
+            .map { it.creds }
+            .block()!!
     }
 
     @Nested
@@ -79,53 +70,34 @@ class AuthControllerTest @Autowired constructor(
 
         @Test
         fun `should authenticate User always`() {
-            // when
-            val performPost = signInUser(SignInRequestDto(newUser.userName, newUser.password))
-
-            val response =
-                performPost.andReturn()
-                    .response
-                    .contentAsString
-                    .let { objectMapper.readValue(it, JwtResponseDto::class.java) }
-
-            // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isOk() }
-                    content {
-                        contentType(MediaType.APPLICATION_JSON)
-                        json(objectMapper.writeValueAsString(response))
-                    }
-                }
-
-            val userFromMongo = userRepository.findById(ObjectId(response.id)).get()
-
-//            response shouldBe userFromMongo!!.toUser().toJwtDto(token) flaky
+            signInUser(SignInRequestDto(newUserDto.userName, newUserDto.password))
+                .expectStatus()
+                .isOk
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
+                .expectBody(JwtResponseDto::class.java)
         }
 
         @Test
         fun `should return 400 if user does not exist`() {
             // given
             val randomUserName = getRandomString()
-
-            // when
-            val performPost = signInUser(SignInRequestDto(randomUserName, newUser.password))
-            val result =
-                performPost
-                    .andDo { print() }
-                    .andExpect { status { isBadRequest() } }
-                    .andReturn()
-            // then
-            result.response.contentAsString shouldBe
-                UserDoesNotExistException.fromUserName(randomUserName).message
+            signInUser(SignInRequestDto(randomUserName, newUserDto.password))
+                .expectStatus()
+                .isBadRequest
+                .expectHeader()
+                .contentType(MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .expectBody(String::class.java)
+                .isEqualTo(UserDoesNotExistException.fromUserName(randomUserName).message)
         }
 
-        private fun signInUser(signInUserRequest: SignInRequestDto): ResultActionsDsl =
-            mockMvc.post(BASE_URL + SIGN_IN) {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(signInUserRequest)
-            }
+        private fun signInUser(signInUserRequest: SignInRequestDto): WebTestClient.ResponseSpec =
+            webTestClient
+                .post()
+                .uri(BASE_URL + SIGN_IN)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(objectMapper.writeValueAsString(signInUserRequest))
+                .exchange()
     }
 
     @Nested
@@ -135,88 +107,91 @@ class AuthControllerTest @Autowired constructor(
 
         @Test
         fun `should create User always`() {
-            // when
-            val randomUser = SignUpRequestDto.randomUser()
-            val performPost = signUpUser(randomUser)
+            // given
+            val randomUser: SignUpRequestDto = SignUpRequestDto.randomUser()
 
-            val createdUserResponse =
-                performPost.andReturn()
-                    .response
-                    .contentAsString
-                    .let { objectMapper.readValue(it, UserCreatedMessageResponseDto::class.java) }
+            // when
+            val response: WebTestClient.ResponseSpec = signUpUser(randomUser)
 
             // then
-            performPost
-                .andDo { print() }
-                .andExpect {
-                    status { isCreated() }
-                    content {
-                        contentType(MediaType.APPLICATION_JSON)
-                    }
+            response
+                .expectStatus()
+                .isCreated
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
+                .expectBody(UserCreatedMessageResponseDto::class.java)
+                .isEqualTo(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE))
+            StepVerifier
+                .create(userRepository.findByUserName(randomUser.userName!!))
+                .assertNext {
+                    it.toUser().apply { id = null } shouldBeEqualToComparingFields
+                        randomUser.toUser(encoder)
                 }
-
-            val userFromMongo = userRepository.findByUserName(randomUser.userName!!).get()
-            userFromMongo shouldNotBe null
-            val actualUser = userFromMongo!!.toUser()
-            actualUser.id = null
-
-            createdUserResponse.message shouldBe UserCreatedMessageResponseDto(CREATED_USER_MESSAGE).message
-
-            actualUser shouldBeEqualToComparingFields randomUser.toUser(userFromMongo.password)
+                .verifyComplete()
         }
 
         @Test
         fun `should return 200 if user with email exist but and doesn't create one`() {
             // given
             val randomUserName = getRandomString()
+
             // when
-            val performPost =
+            val response =
                 signUpUser(
                     SignUpRequestDto(
                         userName = randomUserName,
-                        email = newUser.email,
-                        password = newUser.password,
+                        email = newUserDto.email,
+                        password = newUserDto.password,
                         roles = setOf(),
                     ),
                 )
 
-            val createdUserResponse =
-                performPost.andReturn()
-                    .response
-                    .contentAsString
-                    .let { objectMapper.readValue(it, UserCreatedMessageResponseDto::class.java) }
-
-            performPost
-                .andDo { print() }
-                .andExpect { status { isCreated() } }
-                .andReturn()
-
             // then
-            createdUserResponse.message shouldBe UserCreatedMessageResponseDto(CREATED_USER_MESSAGE).message
-            userRepository.existsByUserName(userName = randomUserName).get() shouldBe false
+            response
+                .expectStatus()
+                .isCreated
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
+                .expectBody(String::class.java)
+                .isEqualTo(objectMapper.writeValueAsString(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
+
+            userRepository.existsByUserName(userName = randomUserName).block() shouldBe false
         }
 
         @Test
         fun `should return 400 if user with userName exist`() {
             // when
-            val performPost = signUpUser(newUser)
-            val result =
-                performPost
-                    .andDo { print() }
-                    .andExpect { status { isBadRequest() } }
-                    .andReturn()
+            val response =
+                signUpUser(
+                    SignUpRequestDto(
+                        userName = newUserDto.userName,
+                        email = getRandomEmail("initial"),
+                        password = newUserDto.password,
+                        roles = setOf(),
+                    ),
+                )
+
             // then
-            result.response.contentAsString shouldBe
-                UserAlreadyExistException.fromUserName(newUser.userName).message
+            response
+                .expectStatus()
+                .isBadRequest
+                .expectHeader()
+                .contentType(MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
+                .expectBody(String::class.java)
+                .isEqualTo(UserAlreadyExistException.fromUserName(newUserDto.userName).message)
         }
 
-        private fun signUpUser(signUpUserRequest: SignUpRequestDto): ResultActionsDsl =
-            mockMvc.post(BASE_URL + SIGN_UP) {
-                contentType = MediaType.APPLICATION_JSON
-                content = objectMapper.writeValueAsString(signUpUserRequest)
-            }
+        private fun signUpUser(signUpUserRequest: SignUpRequestDto): WebTestClient.ResponseSpec =
+            webTestClient
+                .post()
+                .uri(BASE_URL + SIGN_UP)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(objectMapper.writeValueAsString(signUpUserRequest))
+                .exchange()
     }
     companion object {
+//        private val LOG: Logger = LoggerFactory.getLogger(AuthControllerTest::class.java)
+
         @Container
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()

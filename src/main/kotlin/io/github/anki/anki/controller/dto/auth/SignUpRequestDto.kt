@@ -14,12 +14,11 @@ class SignUpRequestDto(
     @Size(max = 50)
     @Email
     String? = null,
-    var roles: Set<String>? = null,
+    var roles: Set<String> = emptySet(),
     val password:
     @NotBlank
     @Size(min = 6, max = 40)
     String? = null,
 ) {
-
     companion object
 }

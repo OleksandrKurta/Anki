@@ -3,53 +3,50 @@ package io.github.anki.anki.service
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
-import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
-import io.github.anki.anki.service.utils.getOrThrowCause
+import io.github.anki.anki.service.secure.SecurityService
+import io.github.anki.anki.service.secure.UserAuthentication
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UserDetailsService
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
+import reactor.core.publisher.Mono
 
 @Service
 class UserService @Autowired constructor(
-    var userRepository: UserRepository,
-) : UserDetailsService {
+    private val userRepository: UserRepository,
+    private val securityService: SecurityService,
+) {
 
-    @Throws(UsernameNotFoundException::class)
-    override fun loadUserByUsername(userName: String): UserDetails {
-        val mongoUser: MongoUser =
-            userRepository.findByUserName(userName).get()
-                ?: throw UsernameNotFoundException("User Not Found with username: $userName")
-        return mongoUser.toUser()
-    }
+    fun signIn(user: User): Mono<UserAuthentication> =
+        securityService.authUser(user)
 
-    fun signIn(user: User): User {
-        if (userRepository.existsByUserName(user.userName).get()) {
-            return user
-        }
-        throw UserDoesNotExistException.fromUserName(user.userName)
-    }
+    fun signUp(user: User): Mono<User> =
+        userRepository.insert(user.toMongoUser())
+            .map(MongoUser::toUser)
+            .onErrorResume(
+                DuplicateKeyException::class.java,
+                { mapDuplicateKeyException(it, user) },
+            )
 
-    fun signUp(user: User): User {
-        try {
-            return userRepository.insert(user.toMongoUser()).getOrThrowCause().toUser()
-        } catch (ex: DuplicateKeyException) {
-            LOG.error(ex.toString())
-            if (ex.stackTraceToString().contains(MongoUser.USER_NAME)) {
-                throw UserAlreadyExistException.fromUserName(user.userName)
-            } else if (!ex.stackTraceToString().contains(MongoUser.EMAIL)) {
-                throw ex
+    private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): Mono<User> =
+        Mono
+            .just(error.stackTraceToString())
+            .flatMap {
+                when {
+                    it.contains(MongoUser.USER_NAME)
+                    -> Mono.error(UserAlreadyExistException.fromUserName(user.userName))
+
+                    !it.contains(MongoUser.EMAIL) -> Mono.error(error)
+                    else ->
+                        Mono
+                            .just(user)
+                            .doFirst { LOG.error("User with this email {} already exists", user.email) }
+                }
             }
-        }
-        return user
-    }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(UserService::class.java)

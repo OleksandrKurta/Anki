@@ -1,89 +1,43 @@
 package io.github.anki.anki.service.secure
 
-import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.secure.jwt.AuthEntryPointJwt
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter
-import org.springframework.beans.factory.annotation.Autowired
+import io.github.anki.anki.service.secure.jwt.JwtUtils
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.authentication.AuthenticationManager
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider
-import org.springframework.security.config.Customizer
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer
-import org.springframework.security.config.annotation.web.configurers.ExceptionHandlingConfigurer
-import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer
-import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder
+import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
+import org.springframework.web.server.WebFilter
 
-// jsr250Enabled = true,
-// prePostEnabled = true) // by default
-@Configuration // @EnableWebSecurity
-@EnableMethodSecurity // (securedEnabled = true,
-class WebSecurityConfig {
-    // extends WebSecurityConfigurerAdapter {
-    @Autowired
-    var userDetailsService: UserService? = null
+@Configuration
+@EnableWebFluxSecurity
+class WebSecurityConfig(
+    private val unauthorizedHandler: AuthEntryPointJwt,
+    private val jwtUtils: JwtUtils,
+) {
 
-    @Autowired
-    private val unauthorizedHandler: AuthEntryPointJwt? = null
-
-    @Bean
-    fun authenticationJwtTokenFilter(): AuthTokenFilter = AuthTokenFilter()
-
-    @Bean
-    fun authenticationProvider(): DaoAuthenticationProvider {
-        val authProvider = DaoAuthenticationProvider()
-
-        authProvider.setUserDetailsService(userDetailsService)
-        authProvider.setPasswordEncoder(passwordEncoder())
-
-        return authProvider
-    }
-
-    @Bean
-    @Throws(Exception::class)
-    fun authenticationManager(
-        authConfig: AuthenticationConfiguration,
-    ): AuthenticationManager =
-        authConfig.authenticationManager
+    private fun getWebFilter(): WebFilter = AuthTokenFilter(jwtUtils)
 
     @Bean
     fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 
     @Bean
-    @Throws(Exception::class)
-    fun filterChain(http: HttpSecurity): SecurityFilterChain {
-        http.csrf { csrf: CsrfConfigurer<HttpSecurity> -> csrf.disable() }
-            .exceptionHandling { exception: ExceptionHandlingConfigurer<HttpSecurity?> ->
-                exception.authenticationEntryPoint(
-                    unauthorizedHandler,
-                )
+    fun securityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+        http.csrf { it.disable() }
+            .exceptionHandling { it.authenticationEntryPoint(unauthorizedHandler) }
+            .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
+            .authorizeExchange {
+                it
+                    .pathMatchers("/api/auth/**")
+                    .permitAll()
+                    .anyExchange()
+                    .authenticated()
             }
-            .sessionManagement { session: SessionManagementConfigurer<HttpSecurity?> ->
-                session.sessionCreationPolicy(
-                    SessionCreationPolicy.STATELESS,
-                )
-            }
-            .authorizeHttpRequests(
-                Customizer { auth ->
-                    auth.requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/test/**")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated()
-                },
-            )
-
-        http.authenticationProvider(authenticationProvider())
-
-        http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter::class.java)
-
-        return http.build()
-    }
+            .addFilterBefore(getWebFilter(), SecurityWebFiltersOrder.AUTHENTICATION)
+            .build()
 }

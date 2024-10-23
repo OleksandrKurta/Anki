@@ -9,18 +9,19 @@ import io.github.anki.testing.getRandomString
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
-import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
+import reactor.core.publisher.Flux
+import reactor.test.StepVerifier
 import kotlin.test.BeforeTest
 
 @IntegrationTest
 class CardRepositoryTest @Autowired constructor(
-    val cardRepository: CardRepository,
+    private val cardRepository: CardRepository,
 ) {
     private lateinit var newCard: MongoCard
 
@@ -36,73 +37,89 @@ class CardRepositoryTest @Autowired constructor(
 
     @Test
     fun `should insert card`() {
-        // when
-        val cardFromMongo = cardRepository.insert(newCard).get()
-
-        // then
-        cardFromMongo.id shouldNotBe null
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe true
+        StepVerifier
+            .create(
+                cardRepository
+                    .insert(newCard)
+                    .flatMap { cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE) },
+            )
+            .expectNext(true)
+            .verifyComplete()
     }
 
     @Test
     fun `should soft delete existing card by id`() {
-        // given
-        val cardFromMongo = cardRepository.insert(newCard).get()
-
-        // when
-        cardRepository.softDelete(cardFromMongo.id!!).get()
-
-        // then
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.ACTIVE).get() shouldBe false
-        cardRepository.existsByIdWithStatus(cardFromMongo.id!!, DocumentStatus.DELETED).get() shouldBe true
+        StepVerifier
+            .create(
+                cardRepository
+                    .insert(newCard)
+                    .flatMapMany {
+                        cardRepository.softDelete(it.id!!)
+                            .thenMany(
+                                Flux
+                                    .zip(
+                                        cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.ACTIVE),
+                                        cardRepository.existsByIdWithStatus(it.id!!, DocumentStatus.DELETED),
+                                    ),
+                            )
+                    },
+            )
+            .assertNext {
+                it.t1 shouldBe false
+                it.t2 shouldBe true
+            }
+            .verifyComplete()
     }
 
     @Test
     fun `should delete NOT existing card by id`() {
-        // given
         val notExistingCardId = getRandomID()
-
-        // when
-        cardRepository.softDelete(notExistingCardId).get()
-
-        // then
-        cardRepository.existsById(notExistingCardId).get() shouldBe false
+        StepVerifier
+            .create(
+                cardRepository.softDelete(notExistingCardId)
+                    .then(cardRepository.existsById(notExistingCardId)),
+            )
+            .expectNext(false)
+            .verifyComplete()
     }
 
     @Test
     fun `should NOT find card by not exist deckId`() {
-        // given
-        val notExistingDeckId = getRandomID()
-
-        // when
-        val card = cardRepository.findByDeckIdWithStatus(deckId = notExistingDeckId).get()
-
-        // then
-        card shouldBe listOf()
+        StepVerifier
+            .create(cardRepository.findByDeckIdWithStatus(deckId = getRandomID()))
+            .expectNextCount(0)
+            .verifyComplete()
     }
 
     @Test
     fun `should find card by deckId`() {
-        // given
-        val expectedCard = cardRepository.insert(newCard).get()
-
-        // when
-        val card = cardRepository.findByDeckIdWithStatus(deckId = newCard.deckId!!).get()
-
-        // then
-        card shouldBe listOf(expectedCard)
+        StepVerifier
+            .create(
+                cardRepository
+                    .insert(newCard)
+                    .concatWith(cardRepository.findByDeckIdWithStatus(deckId = newCard.deckId!!))
+                    .buffer(2),
+            )
+            .assertNext {
+                it[0] shouldBe it[1]
+            }
+            .verifyComplete()
     }
 
     @Test
     fun `should soft delete by card by deckId`() {
-        // given
-        val expectedCard = cardRepository.insert(newCard).get()
-
-        // when
-        cardRepository.softDeleteByDeckId(deckId = newCard.deckId!!).get()
-
-        // then
-        cardRepository.findByIdWithStatus(expectedCard.id!!, DocumentStatus.ACTIVE).get() shouldBe null
+        StepVerifier
+            .create(
+                cardRepository
+                    .insert(newCard)
+                    .flatMap {
+                        cardRepository
+                            .softDeleteByDeckId(deckId = it.deckId!!)
+                            .then(cardRepository.findByIdWithStatus(it.id!!, DocumentStatus.ACTIVE))
+                    },
+            )
+            .expectNextCount(0)
+            .verifyComplete()
     }
 
     companion object {

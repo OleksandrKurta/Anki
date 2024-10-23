@@ -1,7 +1,7 @@
 package io.github.anki.testing
 
 import org.junit.jupiter.api.Tag
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -13,5 +13,5 @@ import org.testcontainers.junit.jupiter.Testcontainers
 annotation class IntegrationTest
 
 @IntegrationTest
-@AutoConfigureMockMvc
-annotation class MVCTest
+@AutoConfigureWebTestClient
+annotation class IntegrationTestWithClient
