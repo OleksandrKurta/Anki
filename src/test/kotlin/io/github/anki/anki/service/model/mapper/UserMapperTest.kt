@@ -1,24 +1,24 @@
-//package io.github.anki.anki.service.model.mapper
+// package io.github.anki.anki.service.model.mapper
 //
-//import io.github.anki.anki.controller.dto.auth.JwtResponseDto
-//import io.github.anki.anki.repository.mongodb.document.MongoRole
-//import io.github.anki.anki.repository.mongodb.document.MongoUser
-//import io.github.anki.anki.repository.mongodb.document.Role
-//import io.github.anki.anki.service.model.User
-//import io.github.anki.testing.getRandomID
-//import io.github.anki.testing.getRandomString
-//import io.kotest.assertions.throwables.shouldThrowExactly
-//import io.kotest.matchers.shouldBe
-//import org.bson.types.ObjectId
-//import org.junit.jupiter.api.DisplayName
-//import org.junit.jupiter.api.Nested
-//import org.junit.jupiter.api.TestInstance
-//import org.junit.jupiter.api.TestInstance.Lifecycle
-//import org.springframework.security.core.authority.SimpleGrantedAuthority
-//import kotlin.test.BeforeTest
-//import kotlin.test.Test
+// import io.github.anki.anki.controller.dto.auth.JwtResponseDto
+// import io.github.anki.anki.repository.mongodb.document.MongoRole
+// import io.github.anki.anki.repository.mongodb.document.MongoUser
+// import io.github.anki.anki.repository.mongodb.document.Role
+// import io.github.anki.anki.service.model.User
+// import io.github.anki.testing.getRandomID
+// import io.github.anki.testing.getRandomString
+// import io.kotest.assertions.throwables.shouldThrowExactly
+// import io.kotest.matchers.shouldBe
+// import org.bson.types.ObjectId
+// import org.junit.jupiter.api.DisplayName
+// import org.junit.jupiter.api.Nested
+// import org.junit.jupiter.api.TestInstance
+// import org.junit.jupiter.api.TestInstance.Lifecycle
+// import org.springframework.security.core.authority.SimpleGrantedAuthority
+// import kotlin.test.BeforeTest
+// import kotlin.test.Test
 //
-//class UserMapperTest {
+// class UserMapperTest {
 //
 //    private lateinit var randomUserId: ObjectId
 //    private lateinit var randomUserName: String
@@ -183,4 +183,4 @@
 //            shouldThrowExactly<IllegalArgumentException> { user.toJwtDto(token) }
 //        }
 //    }
-//}
+// }

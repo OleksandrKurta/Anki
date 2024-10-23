@@ -6,7 +6,6 @@ import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.mapper.toUser
 import org.springframework.security.core.userdetails.ReactiveUserDetailsService
 import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Component
 import reactor.core.publisher.Mono
 

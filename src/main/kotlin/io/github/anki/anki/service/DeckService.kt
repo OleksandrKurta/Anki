@@ -4,12 +4,13 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
-import io.github.anki.anki.service.exceptions.CardDoesNotExistException
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
 import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.anki.service.utils.toObjectId
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -30,7 +31,7 @@ class DeckService(
             .map(MongoDeck::toDeck)
 
     fun updateDeck(deck: Deck): Mono<Deck> {
-        val deckId = deck.id ?: throw IllegalArgumentException("Deck id can not be null")
+        val deckId = deck.id ?: return Mono.error(IllegalArgumentException("Deck id can not be null"))
         return validateUserHasPermissions(deckId, deck.userId)
             .then(getDeckById(deckId))
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
@@ -39,14 +40,14 @@ class DeckService(
     fun deleteDeck(deckId: String, userId: String): Mono<Void> =
         deckRepository.softDelete(deckId.toObjectId())
             .mergeWith(cardRepository.softDeleteByDeckId(deckId.toObjectId()))
-            .startWith(validateUserHasPermissions(deckId, userId))
+//            .startWith(validateUserHasPermissions(deckId, userId))
             .then()
 
-    fun validateUserHasPermissions(deckId: String, userId: String): Mono<Void> =
+    fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
         hasPermissions(deckId, userId)
-            .filter { result -> result }
+            .filter { it }
             .switchIfEmpty(Mono.error(DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)))
-            .then()
+            .doOnSuccess { LOG.info("User {} has permissions to deck {}", userId, deckId) }
 
     private fun getDeckById(deckId: String): Mono<MongoDeck> =
         deckRepository.findByIdWithStatus(deckId.toObjectId(), DocumentStatus.ACTIVE)
@@ -74,4 +75,8 @@ class DeckService(
             name = deck.name ?: this.name,
             description = deck.description ?: this.description,
         )
+
+    companion object {
+        private val LOG: Logger = LoggerFactory.getLogger(DeckService::class.java)
+    }
 }

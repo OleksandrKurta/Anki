@@ -1,13 +1,10 @@
 package io.github.anki.anki.repository.mongodb
 
-import io.github.anki.anki.configuration.ThreadPoolsConfiguration
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query

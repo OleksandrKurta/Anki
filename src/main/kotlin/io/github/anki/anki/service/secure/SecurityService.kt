@@ -3,13 +3,8 @@ package io.github.anki.anki.service.secure
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.secure.jwt.JwtUtils
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpHeaders
-import org.springframework.security.authentication.ReactiveAuthenticationManager
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
-import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.crypto.password.PasswordEncoder
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 
@@ -22,7 +17,17 @@ class SecurityService @Autowired constructor(
     fun authUser(user: User): Mono<UserAuthentication> =
         authenticationManager.authenticate(user)
 
+    fun getUserIdFromAuthentication(): Mono<String> =
+        getCurrentAuthentication()
+            .flatMap { it.getUserId() }
+
+    private fun getCurrentAuthentication(): Mono<UserAuthentication> =
+        ReactiveSecurityContextHolder
+            .getContext()
+            .map(SecurityContext::getAuthentication)
+            .cast(UserAuthentication::class.java)
+
+
     // TODO: Rewirte other methods from jwtUtils
 //    fun getUserIdFromAuthHeader(header: HttpHeaders): String = jwtUtils.getUserIdFromAuthHeader(header)
-
 }

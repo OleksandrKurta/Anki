@@ -14,11 +14,9 @@ import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
 import io.github.anki.anki.service.exceptions.UserDoesNotExistException
-import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
 import io.github.anki.anki.service.secure.AuthenticationManager
-import io.github.anki.anki.service.secure.UserAuthentication
 import io.github.anki.anki.service.secure.jwt.JwtUtils
 import io.github.anki.testing.ReactiveIntegrationTest
 import io.github.anki.testing.getRandomEmail
@@ -38,18 +36,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.security.authentication.ReactiveAuthenticationManager
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
+import reactor.test.StepVerifier
+import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
-import org.springframework.security.crypto.password.PasswordEncoder
-
 
 @ReactiveIntegrationTest
 class AuthControllerTest @Autowired constructor(
@@ -82,8 +78,9 @@ class AuthControllerTest @Autowired constructor(
         fun `should authenticate User always`() {
             signInUser(SignInRequestDto(newUser.userName, newUser.password))
                 .expectStatus()
-                .also { LOG.info(it.toString()) }
                 .isOk
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
                 .expectBody(JwtResponseDto::class.java)
         }
 
@@ -92,7 +89,10 @@ class AuthControllerTest @Autowired constructor(
             // given
             val randomUserName = getRandomString()
             signInUser(SignInRequestDto(randomUserName, newUser.password))
-                .expectStatus().isBadRequest
+                .expectStatus()
+                .isBadRequest
+                .expectHeader()
+                .contentType(MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                 .expectBody(String::class.java)
                 .isEqualTo(UserDoesNotExistException.fromUserName(randomUserName).message)
         }
@@ -123,14 +123,17 @@ class AuthControllerTest @Autowired constructor(
             response
                 .expectStatus()
                 .isCreated
-                .expectBody(String::class.java)
-                .isEqualTo(objectMapper.writeValueAsString(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
-
-            val userFromMongo: MongoUser? = userRepository.findByUserName(randomUser.userName!!).block()
-            userFromMongo shouldNotBe null
-            val actualUser = userFromMongo!!.toUser()
-
-            actualUser.apply { id = null } shouldBeEqualToComparingFields randomUser.toUser(userFromMongo.password)
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
+                .expectBody(UserCreatedMessageResponseDto::class.java)
+                .isEqualTo(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE))
+            StepVerifier
+                .create(userRepository.findByUserName(randomUser.userName!!))
+                .assertNext {
+                    it.toUser().apply { id = null } shouldBeEqualToComparingFields
+                        randomUser.toUser(it.password)
+                }
+                .verifyComplete()
         }
 
         @Test
@@ -153,6 +156,8 @@ class AuthControllerTest @Autowired constructor(
             response
                 .expectStatus()
                 .isCreated
+                .expectHeader()
+                .contentType(MediaType.APPLICATION_JSON)
                 .expectBody(String::class.java)
                 .isEqualTo(objectMapper.writeValueAsString(UserCreatedMessageResponseDto(CREATED_USER_MESSAGE)))
 
@@ -176,6 +181,8 @@ class AuthControllerTest @Autowired constructor(
             response
                 .expectStatus()
                 .isBadRequest
+                .expectHeader()
+                .contentType(MediaType(MediaType.TEXT_PLAIN, StandardCharsets.UTF_8))
                 .expectBody(String::class.java)
                 .isEqualTo(UserAlreadyExistException.fromUserName(newUser.userName).message)
         }

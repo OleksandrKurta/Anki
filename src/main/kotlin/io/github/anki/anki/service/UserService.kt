@@ -1,10 +1,8 @@
 package io.github.anki.anki.service
 
 import io.github.anki.anki.repository.mongodb.UserRepository
-import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.anki.service.exceptions.UserAlreadyExistException
-import io.github.anki.anki.service.exceptions.UserDoesNotExistException
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.model.mapper.toUser
@@ -14,11 +12,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DuplicateKeyException
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.Authentication
-import org.springframework.security.core.userdetails.ReactiveUserDetailsService
-import org.springframework.security.core.userdetails.UserDetails
-import org.springframework.security.core.userdetails.UsernameNotFoundException
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 
@@ -36,7 +29,7 @@ class UserService @Autowired constructor(
             .map(MongoUser::toUser)
             .onErrorResume(
                 DuplicateKeyException::class.java,
-                { mapDuplicateKeyException(it, user) }
+                { mapDuplicateKeyException(it, user) },
             )
 
     private fun mapDuplicateKeyException(error: DuplicateKeyException, user: User): Mono<User> {

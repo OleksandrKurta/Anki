@@ -2,8 +2,6 @@ package io.github.anki.anki.service.secure.jwt
 
 import io.github.anki.anki.service.model.User
 import io.github.anki.anki.service.secure.UserAuthentication
-import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
-import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.TOKEN_PREFIX
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.Jwts
 import io.jsonwebtoken.SignatureAlgorithm
@@ -13,15 +11,12 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
-import org.springframework.security.core.Authentication
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.AuthorityUtils
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Component
 import java.security.Key
 import java.util.*
-import javax.crypto.SecretKey
 
 @Component
 class JwtUtils {
@@ -49,6 +44,7 @@ class JwtUtils {
     }
 
     fun getAuthentication(token: String): UserAuthentication {
+        LOG.info("Provided token {}", token)
         val claims: Claims =
             Jwts.parserBuilder()
                 .setSigningKey(getKey())
@@ -92,6 +88,7 @@ class JwtUtils {
     fun validateJwtToken(authToken: String?): Boolean {
         try {
             Jwts.parserBuilder().setSigningKey(getKey()).build().parse(authToken)
+            LOG.info("Token is valid")
             return true
         } catch (e: IllegalArgumentException) {
             LOG.error("JWT claims string is empty: {}", e.message)
@@ -104,5 +101,7 @@ class JwtUtils {
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(JwtUtils::class.java)
         private const val AUTHORITIES_KEY: String = "roles"
+        const val AUTH_HEADER_NAME: String = "Authorization"
+        const val TOKEN_PREFIX: String = "Bearer "
     }
 }

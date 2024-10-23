@@ -7,15 +7,12 @@ import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.model.mapper.toJwtDto
-import io.github.anki.anki.service.secure.SecurityService
 import io.github.anki.anki.service.secure.UserAuthentication
-import io.github.anki.anki.service.secure.jwt.JwtUtils
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.PostMapping
@@ -33,8 +30,6 @@ import reactor.core.publisher.Mono
 @RequestMapping(AuthController.BASE_URL)
 class AuthController @Autowired constructor(
     val userService: UserService,
-//    val secureService: SecurityService,
-//    val jwtUtils: JwtUtils,
     val encoder: PasswordEncoder,
 ) {
 
@@ -59,7 +54,7 @@ class AuthController @Autowired constructor(
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
         userService
             .signUp(signUpRequestDto.toUser(signUpRequestDto.password))
-            .doFirst {LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto")}
+            .doFirst { LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto") }
             .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
 

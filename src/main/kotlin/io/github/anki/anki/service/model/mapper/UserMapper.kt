@@ -27,7 +27,6 @@ fun UserAuthentication.toJwtDto(): JwtResponseDto {
         this.authorities
             .map { authority -> authority.toString() }
             .toSet()
-    require(roles.isEmpty(), { "User roles can not be null" })
     return JwtResponseDto(
         accessToken = this.creds,
         id = user.id,
@@ -40,9 +39,8 @@ fun UserAuthentication.toJwtDto(): JwtResponseDto {
 fun User.toMongoUser(): MongoUser {
     val roles: Set<String> =
         this.authorities
-            ?.map { it.toString() }
-            ?.toSet()
-            ?: throw IllegalArgumentException("User authorities can not be null")
+            .map { it.toString() }
+            .toSet()
     return MongoUser(
         userName = this.username.toString(),
         email = this.email.toString(),

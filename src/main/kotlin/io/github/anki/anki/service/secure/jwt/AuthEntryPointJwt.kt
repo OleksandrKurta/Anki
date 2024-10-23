@@ -14,12 +14,10 @@ import reactor.core.publisher.Mono
 class AuthEntryPointJwt : ServerAuthenticationEntryPoint {
 
     override fun commence(exchange: ServerWebExchange, ex: AuthenticationException): Mono<Void> {
-        LOG.error("Unauthorized error: ${ex.message}, ${ex.stackTrace}")
-        ex.printStackTrace()
         val response: ServerHttpResponse = exchange.response
         response.setStatusCode(HttpStatus.UNAUTHORIZED)
         return response.writeWith(
-            Mono.just(response.bufferFactory().wrap("Error: Unauthorized".encodeToByteArray()))
+            Mono.just(response.bufferFactory().wrap("Error: Unauthorized1".encodeToByteArray())),
         )
     }
 

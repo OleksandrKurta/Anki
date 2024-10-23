@@ -1,5 +1,6 @@
 package io.github.anki.anki.repository.mongodb
 
+import com.mongodb.client.result.UpdateResult
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId

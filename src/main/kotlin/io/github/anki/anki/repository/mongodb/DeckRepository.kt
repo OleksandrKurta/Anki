@@ -1,14 +1,11 @@
 package io.github.anki.anki.repository.mongodb
 
-import io.github.anki.anki.configuration.ThreadPoolsConfiguration
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Query
@@ -38,6 +35,12 @@ class DeckRepository(
             .doFirst { log.info("Finding by userId = {} and status = {}", userId, status) }
             .buffer(CHUNK_SIZE_TO_LOG)
             .doOnNext { log.info("Found by userId = {} and status = {} objects = {}", userId, status, it) }
+//            .switchIfEmpty {
+//                Flux.defer {
+//                    log.info("Nothing was found by userId = {} and status = {}", userId, status)
+//                    Flux.empty<MongoDeck>()
+//                }
+//            }
             .flatMapIterable { list -> list }
 
     fun findByIdAndUserIdWithStatus(
