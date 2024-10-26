@@ -19,8 +19,7 @@ class SecurityService(
             .flatMap { it.getUserId() }
 
     private fun getCurrentAuthentication(): Mono<UserAuthentication> =
-        ReactiveSecurityContextHolder
-            .getContext()
+        ReactiveSecurityContextHolder.getContext()
             .map(SecurityContext::getAuthentication)
             .cast(UserAuthentication::class.java)
 }

@@ -18,6 +18,5 @@ fun SignUpRequestDto.toUser(encoder: PasswordEncoder): User =
         userName = this.userName,
         password = encoder.encode(this.password),
         authorities =
-        this.roles.map
-            { role -> SimpleGrantedAuthority(role) }.toSet(),
+        this.roles.map { role -> SimpleGrantedAuthority(role) }.toSet(),
     )

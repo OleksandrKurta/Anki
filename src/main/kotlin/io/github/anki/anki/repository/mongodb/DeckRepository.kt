@@ -25,17 +25,16 @@ class DeckRepository(
         userId: ObjectId,
         status: DocumentStatus = DocumentStatus.ACTIVE,
     ): Flux<MongoDeck> =
-        mongoTemplate
-            .find(
-                Query(
-                    Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
-                ),
-                entityClass,
-            )
+        mongoTemplate.find(
+            Query(
+                Criteria.where(MongoDeck.USER_ID).`is`(userId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
+            ),
+            entityClass,
+        )
             .doFirst { log.info("Finding by userId = {} and status = {}", userId, status) }
             .buffer(CHUNK_SIZE_TO_LOG)
             .doOnNext { log.info("Found by userId = {} and status = {} objects = {}", userId, status, it) }
-            .flatMapIterable { list -> list }
+            .flatMapIterable { it }
 
     fun existsByIdAndUserIdWithStatus(
         id: ObjectId,

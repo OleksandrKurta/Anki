@@ -33,7 +33,6 @@ import io.github.anki.testing.randomUser
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
-import org.bson.types.ObjectId
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestInstance
@@ -116,7 +115,7 @@ class DecksControllerTest @Autowired constructor(
 
             StepVerifier
                 .create(
-                    deckRepository.findById(ObjectId(createdDeck.id)),
+                    deckRepository.findById(createdDeck.id.toObjectId()),
                 )
                 .assertNext {
                     it.toDeck().toDto() shouldBe createdDeck
@@ -250,7 +249,7 @@ class DecksControllerTest @Autowired constructor(
 
             StepVerifier
                 .create(
-                    deckRepository.existsById(ObjectId(notExistingDeckID)),
+                    deckRepository.existsById(notExistingDeckID.toObjectId()),
                 )
                 .expectNext(false)
                 .verifyComplete()

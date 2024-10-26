@@ -28,28 +28,26 @@ class CardRepository(
         limit: Int = 50,
         offset: Int = 0,
     ): Flux<MongoCard> =
-        mongoTemplate
-            .find(
-                Query(
-                    Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
-                ).limit(limit).skip(offset.toLong()),
-                entityClass,
-            )
+        mongoTemplate.find(
+            Query(
+                Criteria.where(MongoCard.DECK_ID).`is`(deckId).and(MongoDocument.DOCUMENT_STATUS).`is`(status),
+            ).limit(limit).skip(offset.toLong()),
+            entityClass,
+        )
             .doFirst { log.info("Finding by deckId = {} and status = {}", deckId, status) }
             .buffer(CHUNK_SIZE_TO_LOG)
             .doOnNext { log.info("Found by deckId = {} and status = {} objects = {}", deckId, status, it) }
-            .flatMapIterable { list -> list }
+            .flatMapIterable { it }
 
-    fun softDeleteByDeckId(deckId: ObjectId): Mono<Void> =
-        mongoTemplate
-            .updateMulti(
-                Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),
-                Update().set(MongoDocument.DOCUMENT_STATUS, DocumentStatus.DELETED),
-                entityClass,
-            )
+    fun softDeleteByDeckId(deckId: ObjectId): Mono<Unit> =
+        mongoTemplate.updateMulti(
+            Query(Criteria.where(MongoCard.DECK_ID).`is`(deckId)),
+            Update().set(MongoDocument.DOCUMENT_STATUS, DocumentStatus.DELETED),
+            entityClass,
+        )
             .doFirst { log.info("Soft deleting by deckId = {}", deckId) }
             .doOnNext { log.info("Soft deleted by deckId = {}", deckId) }
-            .then()
+            .then(Mono.empty())
 
     companion object {
         private const val CHUNK_SIZE_TO_LOG: Int = 50

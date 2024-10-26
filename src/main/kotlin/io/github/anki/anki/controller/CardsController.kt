@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
 @RestController
@@ -38,9 +39,8 @@ class CardsController(
         @Valid @RequestBody request: NewCardRequest,
         @PathVariable deckId: String,
     ): Mono<CardDtoResponse> =
-        securityService
-            .getUserIdFromAuthentication()
-            .doFirst { LOG.info("IN: $CardsController $BASE_URL create card $request in deck with id = $deckId") }
+        securityService.getUserIdFromAuthentication()
+            .doFirst { LOG.info("IN: $CardsController $BASE_URL create card $request in deck with id = {}", deckId) }
             .flatMap {
                 cardService.createNewCard(
                     userId = it,
@@ -48,7 +48,7 @@ class CardsController(
                 )
             }
             .map(Card::toDto)
-            .doOnNext { LOG.info("OUT: $CardsController $BASE_URL created card $it with id = $deckId") }
+            .doOnNext { LOG.info("OUT: $CardsController $BASE_URL created card $it with id = {}", deckId) }
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -64,10 +64,9 @@ class CardsController(
             required = false,
             defaultValue = PaginationDto.DEFAULT_OFFSET.toString(),
         ) offset: Int,
-    ): Mono<List<CardDtoResponse>> =
-        securityService
-            .getUserIdFromAuthentication()
-            .doFirst { LOG.info("IN: $CardsController $BASE_URL get all cards in deck with id = $deckId") }
+    ): Flux<CardDtoResponse> =
+        securityService.getUserIdFromAuthentication()
+            .doFirst { LOG.info("IN: $CardsController $BASE_URL get all cards in deck with id = {}", deckId) }
             .flatMapMany {
                 cardService.findCardsByDeckWithPagination(
                     deckId = deckId,
@@ -76,8 +75,7 @@ class CardsController(
                 )
             }
             .map(Card::toDto)
-            .collectList()
-            .doOnNext { LOG.info("OUT: $CardsController $BASE_URL got cards $it from deck with id = $deckId") }
+            .doOnComplete { LOG.info("OUT: $CardsController $BASE_URL got cards from deck with id = $deckId") }
 
     @PatchMapping(CONCRETE_CARD)
     @ResponseStatus(HttpStatus.OK)
@@ -86,10 +84,9 @@ class CardsController(
         @PathVariable cardId: String,
         @RequestBody request: PatchCardRequest,
     ): Mono<CardDtoResponse> =
-        securityService
-            .getUserIdFromAuthentication()
+        securityService.getUserIdFromAuthentication()
             .doFirst {
-                LOG.info("IN: $CardsController $BASE_URL patch card with id $cardId from deck with id = $deckId")
+                LOG.info("IN: $CardsController $BASE_URL patch card with id $cardId from deck with id = {}", deckId)
             }
             .flatMap {
                 cardService.updateCard(
@@ -99,7 +96,7 @@ class CardsController(
             }
             .map(Card::toDto)
             .doOnNext {
-                LOG.info("OUT: $CardsController $BASE_URL patched card with id $cardId from deck with id = $deckId")
+                LOG.info("OUT: $CardsController $BASE_URL patched card with id $cardId from deck with id = {}", deckId)
             }
 
     @DeleteMapping(CONCRETE_CARD)
@@ -107,11 +104,10 @@ class CardsController(
     fun deleteCard(
         @PathVariable deckId: String,
         @PathVariable cardId: String,
-    ): Mono<Void> =
-        securityService
-            .getUserIdFromAuthentication()
+    ): Mono<Unit> =
+        securityService.getUserIdFromAuthentication()
             .doFirst {
-                LOG.info("IN: $CardsController $BASE_URL delete card with id $cardId from deck with id = $deckId")
+                LOG.info("IN: $CardsController $BASE_URL delete card with id $cardId from deck with id = {}", deckId)
             }
             .flatMap {
                 cardService.deleteCard(
@@ -121,7 +117,7 @@ class CardsController(
                 )
             }
             .doOnSuccess {
-                LOG.info("OUT: $CardsController $BASE_URL deleted card with id $cardId from deck with id = $deckId")
+                LOG.info("OUT: $CardsController $BASE_URL deleted card with id $cardId from deck with id = {}", deckId)
             }
 
     companion object {

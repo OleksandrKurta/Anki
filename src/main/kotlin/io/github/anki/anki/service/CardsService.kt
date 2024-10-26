@@ -8,7 +8,7 @@ import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.Pagination
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
-import org.bson.types.ObjectId
+import io.github.anki.anki.service.utils.toObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -21,8 +21,7 @@ class CardsService(
     private val deckService: DeckService,
 ) {
     fun createNewCard(userId: String, card: Card): Mono<Card> =
-        deckService
-            .validateUserHasPermissions(card.deckId, userId)
+        deckService.validateUserHasPermissions(card.deckId, userId)
             .flatMap { cardRepository.insert(card.toMongo()) }
             .map(MongoCard::toCard)
 
@@ -31,7 +30,7 @@ class CardsService(
             .flatMapMany {
                 cardRepository
                     .findByDeckIdWithStatus(
-                        deckId = ObjectId(deckId),
+                        deckId = deckId.toObjectId(),
                         limit = pagination.limit,
                         offset = pagination.offset,
                     )
@@ -45,23 +44,24 @@ class CardsService(
             .flatMap { saveIfNotEquals(it, card) }
     }
 
-    fun deleteCard(deckId: String, userId: String, cardId: String): Mono<Void> =
+    fun deleteCard(deckId: String, userId: String, cardId: String): Mono<Unit> =
         deckService.validateUserHasPermissions(deckId, userId)
-            .flatMap { cardRepository.softDelete(ObjectId(cardId)) }
+            .flatMap { cardRepository.softDelete(cardId.toObjectId()) }
 
     private fun saveIfNotEquals(mongoCard: MongoCard, card: Card): Mono<Card> {
         val updatedMongoCard = mongoCard.update(card)
-        if (mongoCard == updatedMongoCard) {
+        return if (mongoCard == updatedMongoCard) {
             LOG.info("Nothing to change in Card with id {}", mongoCard.id)
-            return Mono.just(mongoCard.toCard())
+            Mono.just(mongoCard.toCard())
+        } else {
+            cardRepository
+                .save(updatedMongoCard)
+                .map(MongoCard::toCard)
         }
-        return cardRepository
-            .save(updatedMongoCard)
-            .map(MongoCard::toCard)
     }
 
     private fun getCardById(cardId: String): Mono<MongoCard> =
-        cardRepository.findByIdWithStatus(ObjectId(cardId), DocumentStatus.ACTIVE)
+        cardRepository.findByIdWithStatus(cardId.toObjectId(), DocumentStatus.ACTIVE)
             .switchIfEmpty(Mono.error(CardDoesNotExistException.fromCardId(cardId)))
 
     private fun MongoCard.update(card: Card): MongoCard =

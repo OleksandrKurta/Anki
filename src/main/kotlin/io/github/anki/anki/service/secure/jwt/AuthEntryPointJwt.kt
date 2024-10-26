@@ -15,7 +15,7 @@ class AuthEntryPointJwt : ServerAuthenticationEntryPoint {
         val response: ServerHttpResponse = exchange.response
         response.setStatusCode(HttpStatus.UNAUTHORIZED)
         return response.writeWith(
-            Mono.just(response.bufferFactory().wrap("Error: Unauthorized1".encodeToByteArray())),
+            Mono.just(response.bufferFactory().wrap("Error: Unauthorized".encodeToByteArray())),
         )
     }
 }

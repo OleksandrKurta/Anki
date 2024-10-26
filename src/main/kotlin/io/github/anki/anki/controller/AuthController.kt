@@ -35,12 +35,11 @@ class AuthController(
     @PostMapping(SIGN_IN)
     @ResponseStatus(HttpStatus.OK)
     fun authenticateUser(@RequestBody signInRequestDto: @Valid SignInRequestDto): Mono<JwtResponseDto> =
-        userService
-            .signIn(signInRequestDto.toUser())
+        userService.signIn(signInRequestDto.toUser())
             .doFirst {
                 LOG.info(
-                    "IN: ${AuthController::class.java.name}:" +
-                        " ${BASE_URL}${SIGN_IN} with userName${signInRequestDto.userName}",
+                    "IN: ${AuthController::class.java.name}: ${BASE_URL}${SIGN_IN} with userName {}",
+                    signInRequestDto.userName,
                 )
             }
             .map(UserAuthentication::toJwtDto)
@@ -51,9 +50,13 @@ class AuthController(
     @PostMapping(SIGN_UP)
     @ResponseStatus(HttpStatus.CREATED)
     fun registerUser(@RequestBody signUpRequestDto: @Valid SignUpRequestDto): Mono<UserCreatedMessageResponseDto> =
-        userService
-            .signUp(signUpRequestDto.toUser(encoder))
-            .doFirst { LOG.info("IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with $signUpRequestDto") }
+        userService.signUp(signUpRequestDto.toUser(encoder))
+            .doFirst {
+                LOG.info(
+                    "IN: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP with {}",
+                    signUpRequestDto,
+                )
+            }
             .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
             .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
 

@@ -37,7 +37,7 @@ class DeckService(
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
     }
 
-    fun deleteDeck(deckId: String, userId: String): Mono<Void> =
+    fun deleteDeck(deckId: String, userId: String): Mono<Unit> =
         validateUserHasPermissions(deckId, userId)
             .flatMapMany {
                 Flux.zip(
@@ -45,7 +45,7 @@ class DeckService(
                     cardRepository.softDeleteByDeckId(deckId.toObjectId()),
                 )
             }
-            .then()
+            .then(Mono.empty())
 
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
         hasPermissions(deckId, userId)
@@ -66,13 +66,14 @@ class DeckService(
 
     private fun saveIfNotEquals(mongoDeck: MongoDeck, deck: Deck): Mono<Deck> {
         val updatedMongoDeck = mongoDeck.update(deck)
-        if (mongoDeck == updatedMongoDeck) {
+        return if (mongoDeck == updatedMongoDeck) {
             LOG.info("Nothing to change in Deck with id {}", mongoDeck.id)
-            return Mono.just(mongoDeck.toDeck())
+            Mono.just(mongoDeck.toDeck())
+        } else {
+            deckRepository
+                .save(updatedMongoDeck)
+                .map(MongoDeck::toDeck)
         }
-        return deckRepository
-            .save(updatedMongoDeck)
-            .map(MongoDeck::toDeck)
     }
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =
