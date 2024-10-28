@@ -33,8 +33,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-oauth2-client")
     implementation("org.springframework.security:spring-security-oauth2-client")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-
     implementation("com.fasterxml.jackson.core:jackson-databind")
+    implementation("io.projectreactor.kotlin:reactor-kotlin-extensions:1.2.3")
     implementation("io.projectreactor:reactor-core")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")

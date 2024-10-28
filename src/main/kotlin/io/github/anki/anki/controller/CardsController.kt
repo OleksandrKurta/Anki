@@ -8,7 +8,6 @@ import io.github.anki.anki.controller.dto.mapper.toCard
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.service.CardsService
-import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -41,13 +40,8 @@ class CardsController(
     ): Mono<CardDtoResponse> =
         securityService.getUserIdFromAuthentication()
             .doFirst { LOG.info("IN: $CardsController $BASE_URL create card $request in deck with id = {}", deckId) }
-            .flatMap {
-                cardService.createNewCard(
-                    userId = it,
-                    request.toCard(deckId),
-                )
-            }
-            .map(Card::toDto)
+            .flatMap { cardService.createNewCard(userId = it, request.toCard(deckId)) }
+            .map { it.toDto() }
             .doOnNext { LOG.info("OUT: $CardsController $BASE_URL created card $it with id = {}", deckId) }
 
     @GetMapping
@@ -74,7 +68,7 @@ class CardsController(
                     pagination = PaginationDto(limit, offset).toPagination(),
                 )
             }
-            .map(Card::toDto)
+            .map { it.toDto() }
             .doOnComplete { LOG.info("OUT: $CardsController $BASE_URL got cards from deck with id = $deckId") }
 
     @PatchMapping(CONCRETE_CARD)
@@ -88,13 +82,8 @@ class CardsController(
             .doFirst {
                 LOG.info("IN: $CardsController $BASE_URL patch card with id $cardId from deck with id = {}", deckId)
             }
-            .flatMap {
-                cardService.updateCard(
-                    userId = it,
-                    request.toCard(cardId, deckId),
-                )
-            }
-            .map(Card::toDto)
+            .flatMap { cardService.updateCard(userId = it, request.toCard(cardId, deckId)) }
+            .map { it.toDto() }
             .doOnNext {
                 LOG.info("OUT: $CardsController $BASE_URL patched card with id $cardId from deck with id = {}", deckId)
             }
@@ -109,13 +98,7 @@ class CardsController(
             .doFirst {
                 LOG.info("IN: $CardsController $BASE_URL delete card with id $cardId from deck with id = {}", deckId)
             }
-            .flatMap {
-                cardService.deleteCard(
-                    deckId = deckId,
-                    userId = it,
-                    cardId = cardId,
-                )
-            }
+            .flatMap { cardService.deleteCard(deckId = deckId, userId = it, cardId = cardId) }
             .doOnSuccess {
                 LOG.info("OUT: $CardsController $BASE_URL deleted card with id $cardId from deck with id = {}", deckId)
             }

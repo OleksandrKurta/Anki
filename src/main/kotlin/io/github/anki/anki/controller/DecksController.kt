@@ -6,7 +6,6 @@ import io.github.anki.anki.controller.dto.PatchDeckRequest
 import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.service.DeckService
-import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
@@ -38,10 +37,8 @@ class DecksController(
         securityService
             .getUserIdFromAuthentication()
             .doFirst { LOG.info("IN: $DecksController $BASE_URL create deck with name {}", request.name) }
-            .flatMap {
-                service.createNewDeck(request.toDeck(it))
-            }
-            .map(Deck::toDto)
+            .flatMap { service.createNewDeck(request.toDeck(it)) }
+            .map { it.toDto() }
             .doOnNext { LOG.info("OUT: $DecksController $BASE_URL created deck with id = {}", it.id) }
 
     @GetMapping
@@ -51,7 +48,7 @@ class DecksController(
             .getUserIdFromAuthentication()
             .doFirst { LOG.info("IN: $DecksController $BASE_URL get decks") }
             .flatMapMany { service.getDecks(it) }
-            .map(Deck::toDto)
+            .map { it.toDto() }
             .doOnComplete { LOG.info("OUT: $DecksController $BASE_URL got all decks") }
 
     @PatchMapping(CONCRETE_DECK)
@@ -63,11 +60,8 @@ class DecksController(
         securityService
             .getUserIdFromAuthentication()
             .doFirst { LOG.info("IN: $DecksController $BASE_URL patch $request deck with id = {}", deckId) }
-            .flatMap {
-                service
-                    .updateDeck(request.toDeck(deckId = deckId, userId = it))
-            }
-            .map(Deck::toDto)
+            .flatMap { service.updateDeck(request.toDeck(deckId = deckId, userId = it)) }
+            .map { it.toDto() }
             .doOnNext { LOG.info("OUT: $DecksController $BASE_URL patched deck with id = {}", deckId) }
 
     @DeleteMapping(CONCRETE_DECK)
@@ -76,10 +70,7 @@ class DecksController(
         securityService
             .getUserIdFromAuthentication()
             .doFirst { LOG.info("IN: $DecksController $BASE_URL delete deck with id = {}", deckId) }
-            .flatMap {
-                service
-                    .deleteDeck(deckId, it)
-            }
+            .flatMap { service.deleteDeck(deckId, it) }
             .doOnSuccess { LOG.info("OUT: $DecksController $BASE_URL deleted deck with id = {}", deckId) }
 
     companion object {

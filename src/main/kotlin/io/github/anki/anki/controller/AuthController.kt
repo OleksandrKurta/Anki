@@ -7,7 +7,6 @@ import io.github.anki.anki.controller.dto.auth.UserCreatedMessageResponseDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.service.UserService
 import io.github.anki.anki.service.model.mapper.toJwtDto
-import io.github.anki.anki.service.secure.UserAuthentication
 import jakarta.validation.Valid
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -42,9 +41,12 @@ class AuthController(
                     signInRequestDto.userName,
                 )
             }
-            .map(UserAuthentication::toJwtDto)
+            .map { it.toJwtDto() }
             .doOnNext {
-                LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}")
+                LOG.info(
+                    "OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN user with userName {} is authenticated",
+                    signInRequestDto.userName,
+                )
             }
 
     @PostMapping(SIGN_UP)
@@ -58,7 +60,12 @@ class AuthController(
                 )
             }
             .map { UserCreatedMessageResponseDto(CREATED_USER_MESSAGE) }
-            .doOnNext { LOG.info("OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_IN with ${HttpStatus.OK}") }
+            .doOnNext {
+                LOG.info(
+                    "OUT: ${AuthController::class.java.name}: $BASE_URL$SIGN_UP user with email {} is created",
+                    signUpRequestDto.email,
+                )
+            }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(AuthController::class.java)

@@ -16,7 +16,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.validation.BeanPropertyBindingResult
 import org.springframework.validation.FieldError
 import org.springframework.web.bind.support.WebExchangeBindException
-import reactor.test.StepVerifier
 import java.util.stream.Stream
 import kotlin.test.Test
 
@@ -30,91 +29,85 @@ class ControllerExceptionHandlerTest {
     @MethodSource("getExceptionTypes")
     fun `should catch exception and return 500`(exception: Exception) {
         // when
-        StepVerifier
-            .create(exceptionHandler.globalExceptionHandler(exception))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.INTERNAL_SERVER_ERROR
-                it.body shouldBe "Internal Server Error"
-            }
-            .expectComplete()
-            .verify()
+        val responseEntity = exceptionHandler.globalExceptionHandler(exception)
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.INTERNAL_SERVER_ERROR
+
+        responseEntity.body shouldBe "Internal Server Error"
     }
 
     @ParameterizedTest
-    @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
-    fun `should return 400 when MethodArgumentNotValidException`(
+    @MethodSource("getWebExchangeBindExceptionTestArguments")
+    fun `should return 400 when WebExchangeBindException`(
         objectName: String,
         fieldName: String,
     ) {
+        // given
         val exception = createWebExchangeBindException(objectName, fieldName)
-        StepVerifier
-            .create(exceptionHandler.handleValidationExceptions(exception))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-                it.body shouldBe mapOf(fieldName to notBlankDefaultMessage)
-            }
-            .expectComplete()
-            .verify()
+
+        // when
+        val responseEntity = exceptionHandler.handleValidationExceptions(exception)
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe mapOf(fieldName to notBlankDefaultMessage)
     }
 
     @Test
     fun `should return 404 if method or path not found`() {
-        StepVerifier
-            .create(exceptionHandler.methodNotSupportedHandler())
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.NOT_FOUND
-                it.body shouldBe "Not Found"
-            }
-            .expectComplete()
-            .verify()
+        // when
+        val responseEntity = exceptionHandler.methodNotSupportedHandler()
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.NOT_FOUND
+
+        responseEntity.body shouldBe "Not Found"
     }
 
     @Test
     fun `should return 400 if user does not have such deck`() {
-        StepVerifier
-            .create(exceptionHandler.deckDoesNotExistHandler(DeckDoesNotExistException()))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-                it.body shouldBe "Deck does not exist"
-            }
-            .expectComplete()
-            .verify()
+        // when
+        val responseEntity = exceptionHandler.deckDoesNotExistHandler(DeckDoesNotExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "Deck does not exist"
     }
 
     @Test
     fun `should return 400 if user does not have such card`() {
-        StepVerifier
-            .create(exceptionHandler.cardDoesNotExistHandler(CardDoesNotExistException()))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-                it.body shouldBe "Card does not exist"
-            }
-            .expectComplete()
-            .verify()
+        // when
+        val responseEntity = exceptionHandler.cardDoesNotExistHandler(CardDoesNotExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "Card does not exist"
     }
 
     @Test
     fun `should return 400 if user not found`() {
-        StepVerifier
-            .create(exceptionHandler.userDoesNotExistHandler(UserDoesNotExistException()))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-                it.body shouldBe "User does not exist"
-            }
-            .expectComplete()
-            .verify()
+        // when
+        val responseEntity = exceptionHandler.userDoesNotExistHandler(UserDoesNotExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "User does not exist"
     }
 
     @Test
     fun `should return 400 if user has already exist`() {
-        StepVerifier
-            .create(exceptionHandler.hasAlreadyExistHandler(UserAlreadyExistException()))
-            .assertNext {
-                it.statusCode shouldBe HttpStatus.BAD_REQUEST
-                it.body shouldBe "User already exists"
-            }
-            .expectComplete()
-            .verify()
+        // when
+        val responseEntity = exceptionHandler.hasAlreadyExistHandler(UserAlreadyExistException())
+
+        // then
+        responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
+
+        responseEntity.body shouldBe "User already exists"
     }
 
     @Suppress("UnusedPrivateMember")
@@ -128,7 +121,7 @@ class ControllerExceptionHandlerTest {
     }
 
     @Suppress("UnusedPrivateMember")
-    private fun getMethodArgumentNotValidExceptionTestArguments(): Stream<Arguments> =
+    private fun getWebExchangeBindExceptionTestArguments(): Stream<Arguments> =
         Stream.of(
             Arguments.of("NewCardRequest", "deckId"),
             Arguments.of("NewDeckRequest", "name"),

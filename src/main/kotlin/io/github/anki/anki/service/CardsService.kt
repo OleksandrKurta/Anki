@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class CardsService(
@@ -23,7 +24,7 @@ class CardsService(
     fun createNewCard(userId: String, card: Card): Mono<Card> =
         deckService.validateUserHasPermissions(card.deckId, userId)
             .flatMap { cardRepository.insert(card.toMongo()) }
-            .map(MongoCard::toCard)
+            .map { it.toCard() }
 
     fun findCardsByDeckWithPagination(deckId: String, userId: String, pagination: Pagination): Flux<Card> =
         deckService.validateUserHasPermissions(deckId, userId)
@@ -35,14 +36,15 @@ class CardsService(
                         offset = pagination.offset,
                     )
             }
-            .map(MongoCard::toCard)
+            .map { it.toCard() }
 
-    fun updateCard(userId: String, card: Card): Mono<Card> {
-        card.id ?: return Mono.error(IllegalArgumentException("Card Id can not be null"))
-        return deckService.validateUserHasPermissions(card.deckId, userId)
-            .flatMap { getCardById(card.id) }
+    fun updateCard(userId: String, card: Card): Mono<Card> =
+        Mono.just(card)
+            .mapNotNull { it.id }
+            .switchIfEmpty { Mono.error(IllegalArgumentException("Card Id can not be null")) }
+            .flatMap { deckService.validateUserHasPermissions(card.deckId, userId) }
+            .flatMap { getCardById(card.id!!) }
             .flatMap { saveIfNotEquals(it, card) }
-    }
 
     fun deleteCard(deckId: String, userId: String, cardId: String): Mono<Unit> =
         deckService.validateUserHasPermissions(deckId, userId)
@@ -56,13 +58,13 @@ class CardsService(
         } else {
             cardRepository
                 .save(updatedMongoCard)
-                .map(MongoCard::toCard)
+                .map { it.toCard() }
         }
     }
 
     private fun getCardById(cardId: String): Mono<MongoCard> =
         cardRepository.findByIdWithStatus(cardId.toObjectId(), DocumentStatus.ACTIVE)
-            .switchIfEmpty(Mono.error(CardDoesNotExistException.fromCardId(cardId)))
+            .switchIfEmpty { Mono.error(CardDoesNotExistException.fromCardId(cardId)) }
 
     private fun MongoCard.update(card: Card): MongoCard =
         this.copy(

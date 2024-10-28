@@ -11,49 +11,48 @@ import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.bind.support.WebExchangeBindException
-import reactor.core.publisher.Mono
 
 @RestControllerAdvice
 class ControllerExceptionHandler {
     @ExceptionHandler(HttpRequestMethodNotSupportedException::class)
-    fun methodNotSupportedHandler(): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not Found"))
+    fun methodNotSupportedHandler(): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body("Not Found")
 
     @ExceptionHandler(WebExchangeBindException::class)
-    fun handleValidationExceptions(ex: WebExchangeBindException): Mono<ResponseEntity<Map<String, String>>> =
-        Mono.just(ResponseEntity(ex.toMap(), HttpStatus.BAD_REQUEST))
-            .doOnNext { LOG.error("Handling WebExchangeBindException exception with message {}", it.body) }
+    fun handleValidationExceptions(ex: WebExchangeBindException): ResponseEntity<Map<String, String>> =
+        ResponseEntity(ex.toMap(), HttpStatus.BAD_REQUEST)
+            .also { LOG.error("Handling WebExchangeBindException exception with message {}", it.body) }
 
     @ExceptionHandler(CardDoesNotExistException::class)
-    fun cardDoesNotExistHandler(ex: CardDoesNotExistException): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-            .doFirst { LOG.error("OUT CardsController ${CardsController.BASE_URL} {}", ex.message) }
+    fun cardDoesNotExistHandler(ex: CardDoesNotExistException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+            .also { LOG.error("OUT CardsController ${CardsController.BASE_URL} {}", ex.message) }
 
     @ExceptionHandler(DeckDoesNotExistException::class)
-    fun deckDoesNotExistHandler(ex: DeckDoesNotExistException): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-            .doFirst { LOG.error("OUT DecksController ${DecksController.BASE_URL} {}", ex.message) }
+    fun deckDoesNotExistHandler(ex: DeckDoesNotExistException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+            .also { LOG.error("OUT DecksController ${DecksController.BASE_URL} {}", ex.message) }
 
     @ExceptionHandler(UserDoesNotExistException::class)
-    fun userDoesNotExistHandler(ex: UserDoesNotExistException): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-            .doFirst {
+    fun userDoesNotExistHandler(ex: UserDoesNotExistException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+            .also {
                 LOG.error("OUT AuthController ${AuthController.BASE_URL} ${AuthController.SIGN_UP} {}", ex.message)
             }
 
     @ExceptionHandler(UserAlreadyExistException::class)
-    fun hasAlreadyExistHandler(ex: UserAlreadyExistException): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message))
-            .doFirst {
+    fun hasAlreadyExistHandler(ex: UserAlreadyExistException): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.message)
+            .also {
                 LOG.error("OUT AuthController ${AuthController.BASE_URL} ${AuthController.SIGN_UP} {}", ex.message)
             }
 
     @ExceptionHandler(Exception::class)
     fun globalExceptionHandler(
         ex: Exception,
-    ): Mono<ResponseEntity<String>> =
-        Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error"))
-            .doFirst { LOG.error("Handling global exception {} {}", ex::class.java, ex.message) }
+    ): ResponseEntity<String> =
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal Server Error")
+            .also { LOG.error("Handling global exception {} {}", ex::class.java, ex.message) }
 
     private fun WebExchangeBindException.toMap(): Map<String, String> {
         return bindingResult.fieldErrors

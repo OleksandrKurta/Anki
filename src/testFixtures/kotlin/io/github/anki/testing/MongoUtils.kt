@@ -22,7 +22,7 @@ fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): Flux<Mong
         }
         .take(numberOfDecks.toLong())
         .buffer(INSERT_BUFFER_SIZE)
-        .flatMap(this::insert)
+        .flatMap { insert(it) }
 
 fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): Flux<MongoCard> =
     Flux
@@ -37,7 +37,7 @@ fun CardRepository.insertRandom(numberOfCards: Int, deckId: ObjectId): Flux<Mong
         }
         .take(numberOfCards.toLong())
         .buffer(INSERT_BUFFER_SIZE)
-        .flatMap(this::insert)
+        .flatMap { insert(it) }
 
 fun UserRepository.insertRandom(numberOfUsers: Int): Flux<MongoUser> =
     Flux
@@ -52,4 +52,4 @@ fun UserRepository.insertRandom(numberOfUsers: Int): Flux<MongoUser> =
         }
         .take(numberOfUsers.toLong())
         .buffer(INSERT_BUFFER_SIZE)
-        .flatMap(this::insert)
+        .flatMap { insert(it) }

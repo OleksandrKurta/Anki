@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import reactor.kotlin.core.publisher.switchIfEmpty
 
 @Service
 class DeckService(
@@ -28,14 +29,15 @@ class DeckService(
     fun getDecks(userId: String): Flux<Deck> =
         deckRepository
             .findByUserIdWithStatus(userId.toObjectId())
-            .map(MongoDeck::toDeck)
+            .map { it.toDeck() }
 
-    fun updateDeck(deck: Deck): Mono<Deck> {
-        val deckId = deck.id ?: return Mono.error(IllegalArgumentException("Deck id can not be null"))
-        return validateUserHasPermissions(deckId, deck.userId)
-            .flatMap { getDeckById(deckId) }
+    fun updateDeck(deck: Deck): Mono<Deck> =
+        Mono.just(deck)
+            .mapNotNull { deck.id }
+            .switchIfEmpty { Mono.error(IllegalArgumentException("Deck id can not be null")) }
+            .flatMap { validateUserHasPermissions(deck.id!!, deck.userId) }
+            .flatMap { getDeckById(deck.id!!) }
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
-    }
 
     fun deleteDeck(deckId: String, userId: String): Mono<Unit> =
         validateUserHasPermissions(deckId, userId)
@@ -50,12 +52,12 @@ class DeckService(
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
         hasPermissions(deckId, userId)
             .filter { it }
-            .switchIfEmpty(Mono.error(DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)))
+            .switchIfEmpty { Mono.error(DeckDoesNotExistException.fromDeckIdAndUserId(deckId, userId)) }
             .doOnSuccess { LOG.info("User {} has permissions to deck {}", userId, deckId) }
 
     private fun getDeckById(deckId: String): Mono<MongoDeck> =
         deckRepository.findByIdWithStatus(deckId.toObjectId(), DocumentStatus.ACTIVE)
-            .switchIfEmpty(Mono.error(DeckDoesNotExistException.fromDeckId(deckId)))
+            .switchIfEmpty { Mono.error(DeckDoesNotExistException.fromDeckId(deckId)) }
 
     private fun hasPermissions(deckId: String, userId: String): Mono<Boolean> =
         deckRepository.existsByIdAndUserIdWithStatus(
@@ -72,7 +74,7 @@ class DeckService(
         } else {
             deckRepository
                 .save(updatedMongoDeck)
-                .map(MongoDeck::toDeck)
+                .map { it.toDeck() }
         }
     }
 

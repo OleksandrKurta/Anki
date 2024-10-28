@@ -26,7 +26,7 @@ class UserService @Autowired constructor(
 
     fun signUp(user: User): Mono<User> =
         userRepository.insert(user.toMongoUser())
-            .map(MongoUser::toUser)
+            .map { it.toUser() }
             .onErrorResume(DuplicateKeyException::class.java) {
                 mapDuplicateKeyException(it, user)
             }

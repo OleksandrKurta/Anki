@@ -20,7 +20,7 @@ class AuthenticationManager(
             .filter { user.password == it.password }
             .doOnNext { LOG.debug("Password is validated for user with userName {}", it.username) }
             .cast(User::class.java)
-            .flatMap(this::getAuthentication)
+            .flatMap { getAuthentication(it) }
 
     private fun getAuthentication(user: User): Mono<UserAuthentication> =
         Mono.fromCallable {
