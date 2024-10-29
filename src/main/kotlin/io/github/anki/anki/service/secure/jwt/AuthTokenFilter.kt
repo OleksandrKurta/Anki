@@ -17,12 +17,10 @@ class AuthTokenFilter(
             .doFirst { LOG.info("Start filtering the headers") }
             .doOnNext { LOG.info("Got user from AUTH {}", it.user) }
             .flatMap { chain.filter(exchange).contextWrite(ReactiveSecurityContextHolder.withAuthentication(it)) }
-            .doOnNext { LOG.info("Auth is set to context") }
-            .doOnError { LOG.error("Cannot set user authentication") }
-            .onErrorResume(
-                IllegalArgumentException::class.java,
-                { chain.filter(exchange) },
-            )
+            .doOnError { LOG.error("Cannot set user authentication", it) }
+            .onErrorResume(IllegalArgumentException::class.java) {
+                chain.filter(exchange)
+            }
 
     companion object {
         private val LOG: Logger = LoggerFactory.getLogger(AuthTokenFilter::class.java)

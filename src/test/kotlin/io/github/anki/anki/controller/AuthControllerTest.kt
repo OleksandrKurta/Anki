@@ -190,7 +190,6 @@ class AuthControllerTest @Autowired constructor(
                 .exchange()
     }
     companion object {
-//        private val LOG: Logger = LoggerFactory.getLogger(AuthControllerTest::class.java)
 
         @Container
         @Suppress("PropertyName")
