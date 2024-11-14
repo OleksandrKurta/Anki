@@ -7,7 +7,6 @@ import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
 import org.springframework.data.mongodb.core.index.Indexed
-import org.springframework.data.mongodb.core.mapping.DBRef
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.mapping.Field
 import java.time.Instant
@@ -29,9 +28,8 @@ data class MongoUser(
     @Size(max = 120)
     @Field(PASSWORD)
     val password: String? = null,
-    @DBRef
     @Field(ROLES)
-    val roles: Set<MongoRole?> = HashSet(),
+    val roles: Set<String?> = emptySet(),
     @Field(MongoDocument.CREATED_AT)
     @CreatedDate
     override val createdAt: Instant? = null,
@@ -44,7 +42,6 @@ data class MongoUser(
 
     companion object {
         const val COLLECTION_NAME = "user"
-
         const val USER_NAME = "userName"
         const val EMAIL = "email"
         const val PASSWORD = "password"

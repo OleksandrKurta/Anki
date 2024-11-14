@@ -10,9 +10,6 @@ import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
-import io.kotest.assertions.throwables.shouldThrowExactly
-import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
-import io.kotest.matchers.shouldBe
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.impl.annotations.InjectMockKs
@@ -28,28 +25,32 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
-import java.util.concurrent.CompletableFuture
+import reactor.core.publisher.Flux
+import reactor.core.publisher.Mono
+import reactor.test.StepVerifier
+import java.util.stream.Stream
 import kotlin.test.Test
 
 @ExtendWith(MockKExtension::class)
 class CardsServiceTest {
 
     @MockK
-    lateinit var cardRepository: CardRepository
+    private lateinit var cardRepository: CardRepository
 
     @MockK
-    lateinit var deckService: DeckService
+    private lateinit var deckService: DeckService
 
     @InjectMockKs
-    lateinit var cardService: CardsService
+    private lateinit var cardService: CardsService
 
     private val mockUserId = getRandomID().toString()
 
-    private lateinit var deckId: ObjectId
+    private val deckId: ObjectId = getRandomID()
 
-    private lateinit var initialMongoCard: MongoCard
-    private lateinit var initialCard: Card
+    private val initialMongoCard: MongoCard = getRandomMongoCards(1, deckId).first()
 
     @AfterEach
     fun tearDown() {
@@ -57,17 +58,10 @@ class CardsServiceTest {
     }
 
     @BeforeEach
-    fun baseMockPrecondition() {
+    fun baseMockConfig() {
         every {
-            deckService.validateUserHasPermissions(deckId.toString(), mockUserId)
-        } returns Unit
-    }
-
-    @BeforeEach
-    fun createTestObjects() {
-        deckId = ObjectId()
-        initialMongoCard = getRandomMongoCards(1, deckId).first()
-        initialCard = initialMongoCard.toCard()
+            deckService.validateUserHasPermissions(any(), any())
+        } returns Mono.just(true)
     }
 
     @Nested
@@ -78,27 +72,22 @@ class CardsServiceTest {
         @Test
         fun `should create new card`() {
             // given
-            val expectedMongoCard =
-                MongoCard(
-                    id = getRandomID(),
-                    deckId = initialMongoCard.deckId,
-                    key = initialCard.key,
-                    value = initialCard.value,
-                )
-
             every {
                 cardRepository.insert(initialMongoCard)
-            } returns CompletableFuture.completedFuture(expectedMongoCard)
+            } returns Mono.just(initialMongoCard)
 
-            // when
-            val actualCard = cardService.createNewCard(mockUserId, initialCard)
-
-            // then
-            actualCard shouldBe expectedMongoCard.toCard()
+            // when/then
+            StepVerifier
+                .create(
+                    cardService.createNewCard(mockUserId, initialMongoCard.toCard()),
+                )
+                .expectNext(initialMongoCard.toCard())
+                .verifyComplete()
 
             verify(exactly = 1) {
                 cardRepository.insert(initialMongoCard)
             }
+            validateValidateUserHasPermissionsWasCalled()
         }
     }
 
@@ -121,19 +110,20 @@ class CardsServiceTest {
                     limit = paginationDto.limit,
                     offset = paginationDto.offset,
                 )
-            } returns CompletableFuture.completedFuture(initialMongoCards)
+            } returns Flux.fromIterable(initialMongoCards)
 
-            // when
-            val actualDecks =
-                cardService.findCardsByDeckWithPagination(
-                    deckId.toString(),
-                    mockUserId,
-                    paginationDto.toPagination(),
+            // when/then
+            StepVerifier
+                .create(
+                    cardService.findCardsByDeckWithPagination(
+                        deckId.toString(),
+                        mockUserId,
+                        paginationDto.toPagination(),
+                    )
+                        .collectList(),
                 )
-
-            // then
-            actualDecks.size shouldBe cardsAmount
-            actualDecks shouldContainExactlyInAnyOrder initialMongoCards.map { it.toCard() }
+                .expectNext(initialMongoCards.map { it.toCard() })
+                .verifyComplete()
 
             validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
@@ -154,78 +144,72 @@ class CardsServiceTest {
         @BeforeEach
         fun baseUpdatePrecondition() {
             every {
-                cardRepository.findByIdWithStatus(ObjectId(initialCard.id), DocumentStatus.ACTIVE)
-            } returns CompletableFuture.completedFuture(initialMongoCard)
+                cardRepository.findByIdWithStatus(initialMongoCard.id!!, DocumentStatus.ACTIVE)
+            } returns Mono.just(initialMongoCard)
         }
 
-        @Test
-        fun `should update card`() {
+        @ParameterizedTest(name = "{2}")
+        @MethodSource("getArgumentsForUpdateCardTest")
+        fun `should update card`(
+            updatedCard: Card,
+            expectedCard: Card,
+            @Suppress("UNUSED_PARAMETER")
+            testName: String,
+        ) {
             // given
-            val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = getRandomString("updated"),
-                    value = getRandomString("updated"),
-                )
-            val expectedMongoCard =
-                MongoCard(
-                    id = initialMongoCard.id,
-                    deckId = initialMongoCard.deckId,
-                    key = updatedCard.key,
-                    value = updatedCard.value,
-                )
-
             every {
-                cardRepository.save(updatedCard.toMongo())
-            } returns CompletableFuture.completedFuture(expectedMongoCard)
+                cardRepository.save(expectedCard.toMongo())
+            } returns Mono.just(expectedCard.toMongo())
 
-            // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
-
-            // then
-            actualCard shouldBe expectedMongoCard.toCard()
+            // when/then
+            StepVerifier
+                .create(
+                    cardService.updateCard(mockUserId, updatedCard),
+                )
+                .expectNext(expectedCard)
+                .verifyComplete()
 
             validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
 
             verify(exactly = 1) {
-                cardRepository.save(updatedCard.toMongo())
+                cardRepository.save(expectedCard.toMongo())
             }
         }
 
         @Test
         fun `should be error if card id is null`() {
-            // when/then
-            shouldThrowExactly<IllegalArgumentException> {
-                cardService.updateCard(
-                    mockUserId,
-                    Card(
-                        id = null,
-                        deckId = deckId.toString(),
-                        key = null,
-                        value = null,
-                    ),
-                )
-            }
-        }
-
-        @Test
-        fun `should change nothing if all fields is null`() {
             // given
-            val updatedCard =
+            val cardWithNullId =
                 Card(
-                    id = initialCard.id,
+                    id = null,
                     deckId = deckId.toString(),
-                    key = null,
-                    value = null,
+                    key = getRandomString(),
+                    value = getRandomString(),
                 )
+            // when/then
+            StepVerifier
+                .create(
+                    cardService.updateCard(mockUserId, cardWithNullId),
+                )
+                .verifyError(IllegalArgumentException::class.java)
+        }
 
-            // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
-
-            // then
-            actualCard shouldBe initialCard
+        @ParameterizedTest(name = "{2}")
+        @MethodSource("getArgumentsForChangeNothingTest")
+        fun `should change nothing if all fields is null`(
+            updatedCard: Card,
+            expectedCard: Card,
+            @Suppress("UNUSED_PARAMETER")
+            testName: String,
+        ) {
+            // when/then
+            StepVerifier
+                .create(
+                    cardService.updateCard(mockUserId, updatedCard),
+                )
+                .expectNext(expectedCard)
+                .verifyComplete()
 
             validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
@@ -235,92 +219,45 @@ class CardsServiceTest {
             }
         }
 
-        @Test
-        fun `should change nothing if all fields is actual`() {
-            // when
-            val actualCard = cardService.updateCard(mockUserId, initialCard)
-
-            // then
-            actualCard shouldBe initialCard
-
-            validateValidateUserHasPermissionsWasCalled()
-            baseUpdateValidation()
-
-            verify(exactly = 0) {
-                cardRepository.save(any())
-            }
+        @Suppress("UnusedPrivateMember")
+        private fun getArgumentsForUpdateCardTest(): Stream<Arguments> {
+            val initialCard = initialMongoCard.toCard()
+            val randomCardKey = getRandomString("updated")
+            val randomCardValue = getRandomString("updated")
+            return Stream.of(
+                Arguments.of(
+                    initialCard.copy(key = randomCardKey, value = randomCardValue),
+                    initialCard.copy(key = randomCardKey, value = randomCardValue),
+                    "key and value",
+                ),
+                Arguments.of(
+                    initialCard.copy(key = randomCardKey, value = null),
+                    initialCard.copy(key = randomCardKey, value = initialCard.value),
+                    "only key",
+                ),
+                Arguments.of(
+                    initialCard.copy(key = null, value = randomCardValue),
+                    initialCard.copy(key = initialCard.key, value = randomCardValue),
+                    "only value",
+                ),
+            )
         }
 
-        @Test
-        fun `should update only cardKey`() {
-            // given
-            val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = getRandomString("updated"),
-                    value = null,
-                )
-            val expectedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = updatedCard.key,
-                    value = initialCard.value,
-                )
-
-            every {
-                cardRepository.save(expectedCard.toMongo())
-            } returns CompletableFuture.completedFuture(expectedCard.toMongo())
-
-            // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
-
-            // then
-            actualCard shouldBe expectedCard
-
-            validateValidateUserHasPermissionsWasCalled()
-            baseUpdateValidation()
-
-            verify(exactly = 1) {
-                cardRepository.save(expectedCard.toMongo())
-            }
-        }
-
-        @Test
-        fun `should update only cardValue`() {
-            // given
-            val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = null,
-                    value = getRandomString("updated"),
-                )
-            val expectedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = initialCard.key,
-                    value = updatedCard.value,
-                )
-
-            every {
-                cardRepository.save(expectedCard.toMongo())
-            } returns CompletableFuture.completedFuture(expectedCard.toMongo())
-
-            // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
-
-            // then
-            actualCard shouldBe expectedCard
-
-            validateValidateUserHasPermissionsWasCalled()
-            baseUpdateValidation()
-
-            verify(exactly = 1) {
-                cardRepository.save(expectedCard.toMongo())
-            }
+        @Suppress("UnusedPrivateMember")
+        private fun getArgumentsForChangeNothingTest(): Stream<Arguments> {
+            val initialCard = initialMongoCard.toCard()
+            return Stream.of(
+                Arguments.of(
+                    initialCard,
+                    initialCard,
+                    "all fields is initial",
+                ),
+                Arguments.of(
+                    initialCard.copy(key = null, value = null),
+                    initialCard,
+                    "all fields is null",
+                ),
+            )
         }
 
         private fun baseUpdateValidation() {
@@ -340,12 +277,16 @@ class CardsServiceTest {
             // given
             every {
                 cardRepository.softDelete(initialMongoCard.id!!)
-            } returns CompletableFuture.completedFuture(null)
+            } returns Mono.empty()
 
-            // when
-            cardService.deleteCard(initialCard.deckId, mockUserId, initialCard.id!!)
+            // when/then
+            StepVerifier
+                .create(
+                    cardService
+                        .deleteCard(initialMongoCard.deckId.toString(), mockUserId, initialMongoCard.id!!.toString()),
+                )
+                .verifyComplete()
 
-            // then
             validateValidateUserHasPermissionsWasCalled()
 
             verify(exactly = 1) {
@@ -356,7 +297,7 @@ class CardsServiceTest {
 
     private fun validateValidateUserHasPermissionsWasCalled() {
         verify(exactly = 1) {
-            deckService.validateUserHasPermissions(initialCard.deckId, mockUserId)
+            deckService.validateUserHasPermissions(initialMongoCard.deckId.toString(), mockUserId)
         }
     }
 

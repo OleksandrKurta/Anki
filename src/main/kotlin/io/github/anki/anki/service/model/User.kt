@@ -10,10 +10,10 @@ data class User(
     val email: String? = null,
     @field:JsonIgnore
     private val password: String?,
-    private val authorities: Collection<GrantedAuthority>? = null,
+    private val authorities: Collection<GrantedAuthority> = emptySet(),
 ) : UserDetails {
 
-    override fun getAuthorities(): Collection<GrantedAuthority>? = authorities
+    override fun getAuthorities(): Collection<GrantedAuthority> = authorities
     override fun getPassword(): String? = password
     override fun getUsername(): String? = userName
 }

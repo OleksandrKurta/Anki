@@ -2,12 +2,12 @@ package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.Deck
-import org.bson.types.ObjectId
+import io.github.anki.anki.service.utils.toObjectId
 
 fun Deck.toMongo(): MongoDeck =
     MongoDeck(
-        id = this.id?.let { ObjectId(it) },
-        userId = ObjectId(this.userId),
+        id = this.id?.toObjectId(),
+        userId = this.userId.toObjectId(),
         name = this.name,
         description = this.description,
     )

@@ -1,11 +1,11 @@
 package io.github.anki.anki.service.exceptions
 
 class UserAlreadyExistException(
-    override val message: String = "User has already exist",
+    override val message: String = "User already exists",
     override val cause: Throwable? = null,
 ) : BaseBadRequestException, RuntimeException(message, cause) {
     companion object {
         fun fromUserName(userName: String?) =
-            UserAlreadyExistException("User has already exist with userName = $userName")
+            UserAlreadyExistException("User already exists with userName = $userName")
     }
 }

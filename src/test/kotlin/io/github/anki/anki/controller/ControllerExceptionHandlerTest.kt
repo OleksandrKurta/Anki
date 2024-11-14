@@ -15,7 +15,7 @@ import org.springframework.core.MethodParameter
 import org.springframework.http.HttpStatus
 import org.springframework.validation.BeanPropertyBindingResult
 import org.springframework.validation.FieldError
-import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.support.WebExchangeBindException
 import java.util.stream.Stream
 import kotlin.test.Test
 
@@ -38,13 +38,13 @@ class ControllerExceptionHandlerTest {
     }
 
     @ParameterizedTest
-    @MethodSource("getMethodArgumentNotValidExceptionTestArguments")
-    fun `should return 400 when MethodArgumentNotValidException`(
+    @MethodSource("getWebExchangeBindExceptionTestArguments")
+    fun `should return 400 when WebExchangeBindException`(
         objectName: String,
         fieldName: String,
     ) {
         // given
-        val exception = createMethodArgumentNotValidException(objectName, fieldName)
+        val exception = createWebExchangeBindException(objectName, fieldName)
 
         // when
         val responseEntity = exceptionHandler.handleValidationExceptions(exception)
@@ -107,7 +107,7 @@ class ControllerExceptionHandlerTest {
         // then
         responseEntity.statusCode shouldBe HttpStatus.BAD_REQUEST
 
-        responseEntity.body shouldBe "User has already exist"
+        responseEntity.body shouldBe "User already exists"
     }
 
     @Suppress("UnusedPrivateMember")
@@ -121,22 +121,22 @@ class ControllerExceptionHandlerTest {
     }
 
     @Suppress("UnusedPrivateMember")
-    private fun getMethodArgumentNotValidExceptionTestArguments(): Stream<Arguments> =
+    private fun getWebExchangeBindExceptionTestArguments(): Stream<Arguments> =
         Stream.of(
             Arguments.of("NewCardRequest", "deckId"),
             Arguments.of("NewDeckRequest", "name"),
         )
 
-    private fun createMethodArgumentNotValidException(
+    private fun createWebExchangeBindException(
         objectName: String,
         fieldName: String,
-    ): MethodArgumentNotValidException {
+    ): WebExchangeBindException {
         val fieldError = FieldError(objectName, fieldName, notBlankDefaultMessage)
         val methodParameter = mock(MethodParameter::class.java)
 
         val bindingResult = BeanPropertyBindingResult(null, objectName)
         bindingResult.addError(fieldError)
 
-        return MethodArgumentNotValidException(methodParameter, bindingResult)
+        return WebExchangeBindException(methodParameter, bindingResult)
     }
 }

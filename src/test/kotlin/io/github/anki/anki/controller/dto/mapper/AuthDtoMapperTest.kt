@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Tag
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.security.core.authority.SimpleGrantedAuthority
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -25,6 +26,7 @@ class AuthDtoMapperTest {
     private lateinit var randomUserName: String
     private lateinit var randomEmail: String
     private lateinit var randomPassword: String
+    private val encoder = BCryptPasswordEncoder()
 
     @BeforeTest
     fun setUp() {
@@ -79,13 +81,13 @@ class AuthDtoMapperTest {
             val expectedUser =
                 User(
                     userName = randomUserName,
-                    password = randomPassword,
+                    password = encoder.encode(randomPassword),
                     email = randomEmail,
                     authorities = listOf(SimpleGrantedAuthority(Role.ROLE_USER.name)),
                 )
 
             // WHEN
-            val actual: User = signUpRequestDto.toUser(signUpRequestDto.password)
+            val actual: User = signUpRequestDto.toUser(encoder)
 
             // THEN
             actual shouldBeEqualToComparingFields expectedUser
