@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package io.github.anki.anki.api.nats.v1.deck.event;
+
+option java_multiple_files = true;
+
+message DeckEvent {
+  string deck_id = 1;
+  DeckEventType deck_event_type = 2;
+}
+
+enum DeckEventType {
+    CREATED = 0;
+    UPDATED = 1;
+    DELETED = 2;
+}

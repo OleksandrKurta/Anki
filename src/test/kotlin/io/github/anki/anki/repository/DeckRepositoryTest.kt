@@ -9,11 +9,13 @@ import io.github.anki.testing.getRandomString
 import io.github.anki.testing.insertRandom
 import io.github.anki.testing.testcontainers.TestContainersFactory
 import io.github.anki.testing.testcontainers.with
+import io.github.anki.testing.testcontainers.withNats
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
 import reactor.core.publisher.Flux
@@ -156,10 +158,19 @@ class DeckRepositoryTest @Autowired constructor(
         @Suppress("PropertyName")
         private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
 
+        @Container
+        @Suppress("PropertyName")
+        private val natsContainer: GenericContainer<*> = TestContainersFactory.newNatsContainer()
+
         @DynamicPropertySource
         @JvmStatic
-        fun setProperties(registry: DynamicPropertyRegistry) {
+        fun setMongoUri(registry: DynamicPropertyRegistry) {
             registry.with(mongoDBContainer)
         }
-    }
+
+        @DynamicPropertySource
+        @JvmStatic
+        fun setNatsUri(registry: DynamicPropertyRegistry) {
+            registry.withNats(natsContainer)
+        } }
 }

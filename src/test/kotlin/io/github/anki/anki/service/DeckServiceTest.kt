@@ -1,5 +1,8 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
+import io.github.anki.anki.api.nats.v1.deck.event.DeckEventType
+import io.github.anki.anki.api.nats.v1.deck.event.NatsSubject
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -20,6 +23,7 @@ import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
+import io.nats.client.Connection
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
@@ -42,6 +46,9 @@ class DeckServiceTest {
 
     @MockK
     private lateinit var deckRepository: DeckRepository
+
+    @MockK
+    private lateinit var natsClient: Connection
 
     @MockK
     private lateinit var cardRepository: CardRepository
@@ -75,6 +82,16 @@ class DeckServiceTest {
                 deckRepository.insert(mongoDeck)
             } returns Mono.just(createdMongoDeck)
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(expectedDeck.id)
+                    .setDeckEventType(DeckEventType.CREATED)
+                    .build()
+                    .toByteArray()
+            every {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+            } returns Unit
+
             // when/then
             StepVerifier
                 .create(
@@ -84,6 +101,9 @@ class DeckServiceTest {
                 .verifyComplete()
             verify(exactly = 1) {
                 deckRepository.insert(mongoDeck)
+            }
+            verify(exactly = 1) {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
             }
         }
     }
@@ -169,6 +189,16 @@ class DeckServiceTest {
                 deckRepository.save(expectedDeck.toMongo())
             } returns Mono.just(expectedDeck.toMongo())
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(expectedDeck.id)
+                    .setDeckEventType(DeckEventType.UPDATED)
+                    .build()
+                    .toByteArray()
+            every {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
+            } returns Unit
+
             // when
             StepVerifier
                 .create(
@@ -191,6 +221,9 @@ class DeckServiceTest {
 
             verify(exactly = 1) {
                 deckRepository.save(expectedDeck.toMongo())
+            }
+            verify(exactly = 1) {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
             }
         }
 
@@ -260,6 +293,16 @@ class DeckServiceTest {
                 deckRepository.findByIdWithStatus(initialDeck.id!!.toObjectId(), DocumentStatus.ACTIVE)
             } returns Mono.just(initialDeck.toMongo())
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(initialDeck.id)
+                    .setDeckEventType(DeckEventType.UPDATED)
+                    .build()
+                    .toByteArray()
+            every {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
+            } returns Unit
+
             // when/then
             StepVerifier
                 .create(
@@ -282,6 +325,9 @@ class DeckServiceTest {
 
             verify(exactly = 0) {
                 deckRepository.save(any())
+            }
+            verify(exactly = 1) {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
             }
         }
 
@@ -369,6 +415,16 @@ class DeckServiceTest {
             every { deckRepository.softDelete(deckId) } returns Mono.empty()
             every { cardRepository.softDeleteByDeckId(deckId) } returns Mono.empty()
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(deckId.toString())
+                    .setDeckEventType(DeckEventType.DELETED)
+                    .build()
+                    .toByteArray()
+            every {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
+            } returns Unit
+
             // when/then
             StepVerifier
                 .create(
@@ -385,6 +441,9 @@ class DeckServiceTest {
             }
             verify(exactly = 1) { deckRepository.softDelete(deckId) }
             verify(exactly = 1) { cardRepository.softDeleteByDeckId(deckId) }
+            verify(exactly = 1) {
+                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+            }
         }
     }
 }

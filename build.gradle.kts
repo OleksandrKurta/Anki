@@ -1,3 +1,4 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URI
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
     id("io.github.surpsg.delta-coverage") version "2.1.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.6"
     id("com.adarshr.test-logger") version "4.0.0"
+    id("com.google.protobuf") version "0.9.2"
     kotlin("jvm") version "1.9.23"
     kotlin("plugin.spring") version "1.9.23"
     `java-test-fixtures`
@@ -38,9 +40,12 @@ dependencies {
     implementation("io.projectreactor:reactor-core")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
+    implementation(kotlin("stdlib"))
+    implementation("com.google.protobuf:protobuf-kotlin:3.21.6")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+    implementation("io.nats:jnats:2.10.0")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -75,15 +80,14 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-detekt {
+tasks.withType<Detekt>().configureEach {
     config.setFrom("$projectDir/config/detekt.yml")
     autoCorrect = true
-    source.setFrom(
-        files(
-            project.sourceSets.map { it.kotlin },
-            buildscript.sourceFile,
-        ),
+    files(
+        project.sourceSets.map { it.kotlin },
+        buildscript.sourceFile,
     )
+    exclude("**/special/package/internal/**") // but exclude our legacy internal package
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
@@ -103,5 +107,18 @@ configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.21.6" // Set your desired version of protoc
+    }
+    generateProtoTasks {
+        all().forEach {
+            it.builtins {
+                create("kotlin")
+            }
+        }
     }
 }
