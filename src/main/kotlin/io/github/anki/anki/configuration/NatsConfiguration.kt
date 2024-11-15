@@ -14,7 +14,7 @@ class NatsConfiguration {
     private val natsServerUrl: String? = null
 
     @Bean
-    fun nATSConnection(): Connection {
+    fun natsConnection(): Connection {
         val options: Options =
             Options.Builder()
                 .server(natsServerUrl)

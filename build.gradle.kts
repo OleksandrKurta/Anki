@@ -87,7 +87,7 @@ tasks.withType<Detekt>().configureEach {
         project.sourceSets.map { it.kotlin },
         buildscript.sourceFile,
     )
-    exclude("**/special/package/internal/**") // but exclude our legacy internal package
+    exclude("**/build/**") // but exclude our legacy internal package
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {

@@ -10,7 +10,8 @@ message DeckEvent {
 }
 
 enum DeckEventType {
-    CREATED = 0;
-    UPDATED = 1;
-    DELETED = 2;
+  UNSPECIFIED = 0;
+  CREATED = 1;
+  UPDATED = 2;
+  DELETED = 3;
 }
