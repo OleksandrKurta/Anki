@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
 @Configuration
-class NatsConfiguration {
+internal class NatsConfig {
 
     @Value("\${nats.server.url}")
     private val natsServerUrl: String? = null

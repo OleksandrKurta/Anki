@@ -32,9 +32,6 @@ import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.insertRandom
 import io.github.anki.testing.randomUser
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
-import io.github.anki.testing.testcontainers.withNats
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -46,12 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.core.publisher.Flux
 import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
@@ -343,27 +335,5 @@ class DecksControllerTest @Autowired constructor(
                 .uri { it.path(deleteBaseUrl).build(deckId) }
                 .header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
                 .exchange()
-    }
-
-    companion object {
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @Container
-        @Suppress("PropertyName")
-        private val natsContainer: GenericContainer<*> = TestContainersFactory.newNatsContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setNatsUri(registry: DynamicPropertyRegistry) {
-            registry.withNats(natsContainer)
-        }
     }
 }

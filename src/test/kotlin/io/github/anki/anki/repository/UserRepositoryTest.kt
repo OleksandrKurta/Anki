@@ -6,17 +6,9 @@ import io.github.anki.anki.repository.mongodb.document.MongoUser
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomEmail
 import io.github.anki.testing.getRandomString
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
-import io.github.anki.testing.testcontainers.withNats
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.GenericContainer
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.test.StepVerifier
 import kotlin.test.BeforeTest
 
@@ -87,27 +79,5 @@ class UserRepositoryTest @Autowired constructor(
             .create(userRepository.existsByUserName(getRandomString()))
             .expectNext(false)
             .verifyComplete()
-    }
-
-    companion object {
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @Container
-        @Suppress("PropertyName")
-        private val natsContainer: GenericContainer<*> = TestContainersFactory.newNatsContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setNatsUri(registry: DynamicPropertyRegistry) {
-            registry.withNats(natsContainer)
-        }
     }
 }
