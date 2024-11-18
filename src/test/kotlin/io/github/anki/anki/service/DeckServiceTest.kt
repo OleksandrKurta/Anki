@@ -2,7 +2,7 @@ package io.github.anki.anki.service
 
 import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
 import io.github.anki.anki.api.nats.v1.deck.event.DeckEventType
-import io.github.anki.anki.api.nats.v1.deck.event.NatsSubject
+import io.github.anki.anki.api.nats.v1.deck.event.KafkaTopic
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -23,7 +23,6 @@ import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
-import io.nats.client.Connection
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.DisplayName
@@ -35,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -48,7 +48,7 @@ class DeckServiceTest {
     private lateinit var deckRepository: DeckRepository
 
     @MockK
-    private lateinit var natsClient: Connection
+    private lateinit var kafkaProducer: ReactiveKafkaProducerTemplate<String, DeckEvent>
 
     @MockK
     private lateinit var cardRepository: CardRepository
@@ -87,10 +87,9 @@ class DeckServiceTest {
                     .setDeckId(expectedDeck.id)
                     .setDeckEventType(DeckEventType.CREATED)
                     .build()
-                    .toByteArray()
             every {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
-            } returns Unit
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
 
             // when/then
             StepVerifier
@@ -103,7 +102,7 @@ class DeckServiceTest {
                 deckRepository.insert(mongoDeck)
             }
             verify(exactly = 1) {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
     }
@@ -194,10 +193,9 @@ class DeckServiceTest {
                     .setDeckId(expectedDeck.id)
                     .setDeckEventType(DeckEventType.UPDATED)
                     .build()
-                    .toByteArray()
             every {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
-            } returns Unit
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
 
             // when
             StepVerifier
@@ -223,7 +221,7 @@ class DeckServiceTest {
                 deckRepository.save(expectedDeck.toMongo())
             }
             verify(exactly = 1) {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
 
@@ -298,10 +296,9 @@ class DeckServiceTest {
                     .setDeckId(initialDeck.id)
                     .setDeckEventType(DeckEventType.UPDATED)
                     .build()
-                    .toByteArray()
             every {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
-            } returns Unit
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
 
             // when/then
             StepVerifier
@@ -327,7 +324,7 @@ class DeckServiceTest {
                 deckRepository.save(any())
             }
             verify(exactly = 1) {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
 
@@ -420,10 +417,9 @@ class DeckServiceTest {
                     .setDeckId(deckId.toString())
                     .setDeckEventType(DeckEventType.DELETED)
                     .build()
-                    .toByteArray()
             every {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, any())
-            } returns Unit
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
 
             // when/then
             StepVerifier
@@ -442,7 +438,7 @@ class DeckServiceTest {
             verify(exactly = 1) { deckRepository.softDelete(deckId) }
             verify(exactly = 1) { cardRepository.softDeleteByDeckId(deckId) }
             verify(exactly = 1) {
-                natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, expectedDeckEvent)
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
     }

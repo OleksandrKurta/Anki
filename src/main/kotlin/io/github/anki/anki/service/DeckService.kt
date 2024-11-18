@@ -2,7 +2,7 @@ package io.github.anki.anki.service
 
 import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
 import io.github.anki.anki.api.nats.v1.deck.event.DeckEventType
-import io.github.anki.anki.api.nats.v1.deck.event.NatsSubject
+import io.github.anki.anki.api.nats.v1.deck.event.KafkaTopic
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -12,9 +12,9 @@ import io.github.anki.anki.service.model.Deck
 import io.github.anki.anki.service.model.mapper.toDeck
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.anki.service.utils.toObjectId
-import io.nats.client.Connection
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
@@ -24,12 +24,12 @@ import reactor.kotlin.core.publisher.switchIfEmpty
 class DeckService(
     private val deckRepository: DeckRepository,
     private val cardRepository: CardRepository,
-    private val natsClient: Connection,
+    private val kafkaProducer: ReactiveKafkaProducerTemplate<String, DeckEvent>,
 ) {
     fun createNewDeck(deck: Deck): Mono<Deck> =
         deckRepository
             .insert(deck.toMongo())
-            .doOnNext { sendEventToNats(it.id!!.toString(), DeckEventType.CREATED) }
+            .doOnNext { sendEventToKafka(it.id!!.toString(), DeckEventType.CREATED) }
             .map { mongoDeck -> mongoDeck.toDeck() }
 
     fun getDecks(userId: String): Flux<Deck> =
@@ -44,7 +44,7 @@ class DeckService(
             .flatMap { validateUserHasPermissions(deck.id!!, deck.userId) }
             .flatMap { getDeckById(deck.id!!) }
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
-            .doOnNext { sendEventToNats(deck.id!!, DeckEventType.UPDATED) }
+            .doOnNext { sendEventToKafka(deck.id!!, DeckEventType.UPDATED) }
 
     fun deleteDeck(deckId: String, userId: String): Mono<Unit> =
         validateUserHasPermissions(deckId, userId)
@@ -55,7 +55,7 @@ class DeckService(
                 )
             }
             .then(
-                Mono.fromRunnable { sendEventToNats(deckId, DeckEventType.DELETED) },
+                Mono.fromRunnable { sendEventToKafka(deckId, DeckEventType.DELETED) },
             )
 
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
@@ -87,13 +87,15 @@ class DeckService(
         }
     }
 
-    private fun sendEventToNats(deckId: String, deckEventType: DeckEventType) {
+    private fun sendEventToKafka(deckId: String, deckEventType: DeckEventType) {
         val deckEvent: DeckEvent =
             DeckEvent.newBuilder()
                 .setDeckId(deckId)
                 .setDeckEventType(deckEventType)
                 .build()
-        natsClient.publish(NatsSubject.DECK_EVENT_SUBJECT, deckEvent.toByteArray())
+        kafkaProducer.send(KafkaTopic.Deck.EVENT, deckEvent)
+            .doOnNext { LOG.info("Sending message to kafka: message={}", deckEvent.toString()) }
+            .subscribe()
     }
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =

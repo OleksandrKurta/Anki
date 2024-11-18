@@ -41,7 +41,7 @@ services:
       - "2181:2181"
 
   kafka:
-    image: bitnami/kafka:3.5
+    image: apache/kafka:latest
     ports:
       - "9092:9092"
     environment:
