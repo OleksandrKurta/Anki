@@ -1,5 +1,8 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEventType
+import io.github.anki.anki.api.nats.kafka.KafkaTopic
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -11,19 +14,23 @@ import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.anki.service.utils.toObjectId
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toMono
 
 @Service
 class DeckService(
     private val deckRepository: DeckRepository,
     private val cardRepository: CardRepository,
+    private val kafkaProducer: ReactiveKafkaProducerTemplate<String, DeckEvent>,
 ) {
     fun createNewDeck(deck: Deck): Mono<Deck> =
         deckRepository
             .insert(deck.toMongo())
+            .flatMap { sendEventToKafka(it.id!!.toString(), DeckEventType.CREATED).then(it.toMono()) }
             .map { mongoDeck -> mongoDeck.toDeck() }
 
     fun getDecks(userId: String): Flux<Deck> =
@@ -38,6 +45,7 @@ class DeckService(
             .flatMap { validateUserHasPermissions(deck.id!!, deck.userId) }
             .flatMap { getDeckById(deck.id!!) }
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
+            .flatMap { sendEventToKafka(deck.id!!, DeckEventType.UPDATED).then(it.toMono()) }
 
     fun deleteDeck(deckId: String, userId: String): Mono<Unit> =
         validateUserHasPermissions(deckId, userId)
@@ -47,7 +55,7 @@ class DeckService(
                     cardRepository.softDeleteByDeckId(deckId.toObjectId()),
                 )
             }
-            .then(Mono.empty())
+            .then(Mono.defer { sendEventToKafka(deckId, DeckEventType.DELETED) })
 
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
         hasPermissions(deckId, userId)
@@ -76,6 +84,17 @@ class DeckService(
                 .save(updatedMongoDeck)
                 .map { it.toDeck() }
         }
+    }
+
+    private fun sendEventToKafka(deckId: String, deckEventType: DeckEventType): Mono<Unit> {
+        val deckEvent: DeckEvent =
+            DeckEvent.newBuilder()
+                .setDeckId(deckId)
+                .setDeckEventType(deckEventType)
+                .build()
+        return kafkaProducer.send(KafkaTopic.Deck.EVENT, deckEvent)
+            .doOnNext { LOG.info("Sending message to kafka: message={}", deckEvent.toString()) }
+            .then(Mono.empty())
     }
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =

@@ -1,6 +1,7 @@
 package io.github.anki.anki.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import io.github.anki.anki.api.kafka.v1.deck.DeckEventType
 import io.github.anki.anki.controller.DecksController.Companion.BASE_URL
 import io.github.anki.anki.controller.DecksController.Companion.CONCRETE_DECK
 import io.github.anki.anki.controller.dto.DeckDtoResponse
@@ -11,6 +12,7 @@ import io.github.anki.anki.controller.dto.mapper.toDeck
 import io.github.anki.anki.controller.dto.mapper.toDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.CardRepository
+import io.github.anki.anki.repository.mongodb.DeckEventRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.UserRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -30,8 +32,6 @@ import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.insertRandom
 import io.github.anki.testing.randomUser
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -43,11 +43,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.core.publisher.Flux
 import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
@@ -56,9 +52,11 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 @IntegrationTestWithClient
+@Suppress("LongParameterList")
 class DecksControllerTest @Autowired constructor(
     private val objectMapper: ObjectMapper,
     private val deckRepository: DeckRepository,
+    private val deckEventRepository: DeckEventRepository,
     private val cardRepository: CardRepository,
     private val userRepository: UserRepository,
     private val authenticationManager: AuthenticationManager,
@@ -120,6 +118,15 @@ class DecksControllerTest @Autowired constructor(
                 .assertNext {
                     it.toDeck().toDto() shouldBe createdDeck
                 }
+                .verifyComplete()
+            StepVerifier
+                .create(
+                    deckEventRepository.findByDeckIdWithStatus(createdDeck.id.toObjectId()),
+                )
+                .assertNext {
+                    it.event shouldBe DeckEventType.CREATED.name
+                }
+                .verifyComplete()
         }
 
         @ParameterizedTest
@@ -328,17 +335,5 @@ class DecksControllerTest @Autowired constructor(
                 .uri { it.path(deleteBaseUrl).build(deckId) }
                 .header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
                 .exchange()
-    }
-
-    companion object {
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
     }
 }

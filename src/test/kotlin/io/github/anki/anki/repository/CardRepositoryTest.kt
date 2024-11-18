@@ -6,15 +6,9 @@ import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.testing.IntegrationTest
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.core.publisher.Flux
 import reactor.test.StepVerifier
 import kotlin.test.BeforeTest
@@ -120,17 +114,5 @@ class CardRepositoryTest @Autowired constructor(
             )
             .expectNextCount(0)
             .verifyComplete()
-    }
-
-    companion object {
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setProperties(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
     }
 }

@@ -1,5 +1,8 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.api.nats.nats.NatsSubject
+import io.github.anki.anki.api.nats.v1.card.commands.DeleteCardRequest
+import io.github.anki.anki.api.nats.v1.card.commands.DeleteCardResponse
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
@@ -9,17 +12,21 @@ import io.github.anki.anki.service.model.Pagination
 import io.github.anki.anki.service.model.mapper.toCard
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.anki.service.utils.toObjectId
+import io.nats.client.Connection
+import io.nats.client.Message
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toMono
 
 @Service
 class CardsService(
     private val cardRepository: CardRepository,
     private val deckService: DeckService,
+    private val natsClient: Connection,
 ) {
     fun createNewCard(userId: String, card: Card): Mono<Card> =
         deckService.validateUserHasPermissions(card.deckId, userId)
@@ -48,7 +55,9 @@ class CardsService(
 
     fun deleteCard(deckId: String, userId: String, cardId: String): Mono<Unit> =
         deckService.validateUserHasPermissions(deckId, userId)
-            .flatMap { cardRepository.softDelete(cardId.toObjectId()) }
+            .flatMap { requestDeleteCard(cardId) }
+            .map { parseDeleteCardResponse(it) }
+            .then(Mono.empty())
 
     private fun saveIfNotEquals(mongoCard: MongoCard, card: Card): Mono<Card> {
         val updatedMongoCard = mongoCard.update(card)
@@ -60,6 +69,18 @@ class CardsService(
                 .save(updatedMongoCard)
                 .map { it.toCard() }
         }
+    }
+
+    private fun requestDeleteCard(cardId: String): Mono<Message> =
+        natsClient.request(
+            NatsSubject.Card.CARD_DELETE_COMMAND,
+            DeleteCardRequest.newBuilder().setCardId(cardId).build().toByteArray(),
+        )
+            .toMono()
+
+    private fun parseDeleteCardResponse(msg: Message) {
+        val response = DeleteCardResponse.parseFrom(msg.data)
+        if (response.hasFailure()) throw IllegalStateException(response.failure.reason)
     }
 
     private fun getCardById(cardId: String): Mono<MongoCard> =

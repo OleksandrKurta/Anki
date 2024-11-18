@@ -1,3 +1,4 @@
+import io.gitlab.arturbosch.detekt.Detekt
 import java.net.URI
 
 plugins {
@@ -6,6 +7,7 @@ plugins {
     id("io.github.surpsg.delta-coverage") version "2.1.0"
     id("io.gitlab.arturbosch.detekt") version "1.23.6"
     id("com.adarshr.test-logger") version "4.0.0"
+    id("com.google.protobuf") version "0.9.2"
     kotlin("jvm") version "1.9.23"
     kotlin("plugin.spring") version "1.9.23"
     `java-test-fixtures`
@@ -38,9 +40,13 @@ dependencies {
     implementation("io.projectreactor:reactor-core")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("jakarta.servlet:jakarta.servlet-api:6.0.0")
+    implementation("com.google.protobuf:protobuf-java:3.21.12")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb-reactive")
+    implementation("io.nats:jnats:2.10.0")
+    implementation("org.springframework.kafka:spring-kafka")
+    implementation("io.projectreactor.kafka:reactor-kafka:1.3.16")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -57,11 +63,13 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers:1.20.0")
     testImplementation("org.testcontainers:junit-jupiter:1.20.0")
     testImplementation("org.testcontainers:mongodb:1.20.0")
+    testImplementation("org.testcontainers:kafka:1.20.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testFixturesImplementation("org.springframework.boot:spring-boot-starter-test")
     testFixturesImplementation("org.testcontainers:testcontainers:1.20.0")
     testFixturesImplementation("org.testcontainers:junit-jupiter:1.20.0")
     testFixturesImplementation("org.testcontainers:mongodb:1.20.0")
+    testFixturesImplementation("org.testcontainers:kafka:1.20.3")
     testImplementation("io.kotest:kotest-assertions-core-jvm:5.0.0")
 }
 
@@ -75,15 +83,14 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-detekt {
+tasks.withType<Detekt>().configureEach {
     config.setFrom("$projectDir/config/detekt.yml")
     autoCorrect = true
-    source.setFrom(
-        files(
-            project.sourceSets.map { it.kotlin },
-            buildscript.sourceFile,
-        ),
+    files(
+        project.sourceSets.map { it.kotlin },
+        buildscript.sourceFile,
     )
+    exclude("**/build/**") // but exclude our legacy internal package
 }
 
 configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
@@ -103,5 +110,16 @@ configure<io.github.surpsg.deltacoverage.gradle.DeltaCoverageConfiguration> {
     violationRules.failIfCoverageLessThan(0.9)
     reports {
         html.set(true)
+    }
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.21.12"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {}
+        }
     }
 }

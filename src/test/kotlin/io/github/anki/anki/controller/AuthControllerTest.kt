@@ -20,8 +20,6 @@ import io.github.anki.testing.IntegrationTestWithClient
 import io.github.anki.testing.getRandomEmail
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.randomUser
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DisplayName
@@ -32,11 +30,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
@@ -188,17 +182,5 @@ class AuthControllerTest @Autowired constructor(
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(objectMapper.writeValueAsString(signUpUserRequest))
                 .exchange()
-    }
-    companion object {
-
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
     }
 }

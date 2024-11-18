@@ -1,5 +1,8 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEventType
+import io.github.anki.anki.api.nats.kafka.KafkaTopic
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
@@ -31,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.junit.jupiter.params.provider.ValueSource
+import org.springframework.kafka.core.reactive.ReactiveKafkaProducerTemplate
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
@@ -42,6 +46,9 @@ class DeckServiceTest {
 
     @MockK
     private lateinit var deckRepository: DeckRepository
+
+    @MockK
+    private lateinit var kafkaProducer: ReactiveKafkaProducerTemplate<String, DeckEvent>
 
     @MockK
     private lateinit var cardRepository: CardRepository
@@ -75,6 +82,15 @@ class DeckServiceTest {
                 deckRepository.insert(mongoDeck)
             } returns Mono.just(createdMongoDeck)
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(expectedDeck.id)
+                    .setDeckEventType(DeckEventType.CREATED)
+                    .build()
+            every {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
+
             // when/then
             StepVerifier
                 .create(
@@ -84,6 +100,9 @@ class DeckServiceTest {
                 .verifyComplete()
             verify(exactly = 1) {
                 deckRepository.insert(mongoDeck)
+            }
+            verify(exactly = 1) {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
     }
@@ -169,6 +188,15 @@ class DeckServiceTest {
                 deckRepository.save(expectedDeck.toMongo())
             } returns Mono.just(expectedDeck.toMongo())
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(expectedDeck.id)
+                    .setDeckEventType(DeckEventType.UPDATED)
+                    .build()
+            every {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
+
             // when
             StepVerifier
                 .create(
@@ -191,6 +219,9 @@ class DeckServiceTest {
 
             verify(exactly = 1) {
                 deckRepository.save(expectedDeck.toMongo())
+            }
+            verify(exactly = 1) {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
 
@@ -260,6 +291,15 @@ class DeckServiceTest {
                 deckRepository.findByIdWithStatus(initialDeck.id!!.toObjectId(), DocumentStatus.ACTIVE)
             } returns Mono.just(initialDeck.toMongo())
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(initialDeck.id)
+                    .setDeckEventType(DeckEventType.UPDATED)
+                    .build()
+            every {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
+
             // when/then
             StepVerifier
                 .create(
@@ -282,6 +322,9 @@ class DeckServiceTest {
 
             verify(exactly = 0) {
                 deckRepository.save(any())
+            }
+            verify(exactly = 1) {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
             }
         }
 
@@ -369,6 +412,15 @@ class DeckServiceTest {
             every { deckRepository.softDelete(deckId) } returns Mono.empty()
             every { cardRepository.softDeleteByDeckId(deckId) } returns Mono.empty()
 
+            val expectedDeckEvent =
+                DeckEvent.newBuilder()
+                    .setDeckId(deckId.toString())
+                    .setDeckEventType(DeckEventType.DELETED)
+                    .build()
+            every {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            } returns Mono.empty()
+
             // when/then
             StepVerifier
                 .create(
@@ -385,6 +437,9 @@ class DeckServiceTest {
             }
             verify(exactly = 1) { deckRepository.softDelete(deckId) }
             verify(exactly = 1) { cardRepository.softDeleteByDeckId(deckId) }
+            verify(exactly = 1) {
+                kafkaProducer.send(KafkaTopic.Deck.EVENT, expectedDeckEvent)
+            }
         }
     }
 }

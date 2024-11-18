@@ -1,5 +1,9 @@
 package io.github.anki.anki.service
 
+import io.github.anki.anki.api.nats.nats.NatsSubject
+import io.github.anki.anki.api.nats.v1.card.commands.DeleteCardRequest
+import io.github.anki.anki.api.nats.v1.card.commands.DeleteCardResponse
+import io.github.anki.anki.api.nats.v1.card.commands.Success
 import io.github.anki.anki.controller.dto.PaginationDto
 import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.repository.mongodb.CardRepository
@@ -16,6 +20,8 @@ import io.mockk.impl.annotations.InjectMockKs
 import io.mockk.impl.annotations.MockK
 import io.mockk.junit5.MockKExtension
 import io.mockk.verify
+import io.nats.client.Connection
+import io.nats.client.impl.NatsMessage
 import org.bson.types.ObjectId
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -31,6 +37,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
+import java.util.concurrent.CompletableFuture
 import java.util.stream.Stream
 import kotlin.test.Test
 
@@ -42,6 +49,9 @@ class CardsServiceTest {
 
     @MockK
     private lateinit var deckService: DeckService
+
+    @MockK
+    private lateinit var natsClient: Connection
 
     @InjectMockKs
     private lateinit var cardService: CardsService
@@ -275,9 +285,25 @@ class CardsServiceTest {
         @Test
         fun `should delete the card`() {
             // given
+            val deleteCardResponse =
+                DeleteCardResponse.newBuilder()
+                    .setSuccess(Success.newBuilder().build())
+                    .build()
+
+            val natsMessage =
+                NatsMessage(
+                    getRandomString("nats-subject"),
+                    null,
+                    deleteCardResponse.toByteArray(),
+                    false,
+                )
+
             every {
-                cardRepository.softDelete(initialMongoCard.id!!)
-            } returns Mono.empty()
+                natsClient.request(
+                    NatsSubject.Card.CARD_DELETE_COMMAND,
+                    DeleteCardRequest.newBuilder().setCardId(initialMongoCard.id!!.toString()).build().toByteArray(),
+                )
+            } returns CompletableFuture.completedFuture(natsMessage)
 
             // when/then
             StepVerifier
@@ -290,7 +316,10 @@ class CardsServiceTest {
             validateValidateUserHasPermissionsWasCalled()
 
             verify(exactly = 1) {
-                cardRepository.softDelete(initialMongoCard.id!!)
+                natsClient.request(
+                    NatsSubject.Card.CARD_DELETE_COMMAND,
+                    DeleteCardRequest.newBuilder().setCardId(initialMongoCard.id!!.toString()).build().toByteArray(),
+                )
             }
         }
     }

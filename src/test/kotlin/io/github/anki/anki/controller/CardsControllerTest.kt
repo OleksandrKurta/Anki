@@ -34,8 +34,6 @@ import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.github.anki.testing.insertRandom
 import io.github.anki.testing.randomUser
-import io.github.anki.testing.testcontainers.TestContainersFactory
-import io.github.anki.testing.testcontainers.with
 import io.kotest.matchers.collections.shouldContainExactlyInAnyOrder
 import io.kotest.matchers.collections.shouldHaveSize
 import io.kotest.matchers.shouldBe
@@ -49,11 +47,7 @@ import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.security.crypto.password.PasswordEncoder
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
-import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.junit.jupiter.Container
 import reactor.test.StepVerifier
 import java.nio.charset.StandardCharsets
 import kotlin.test.BeforeTest
@@ -373,17 +367,5 @@ class CardsControllerTest @Autowired constructor(
                 .uri { it.path(deleteBaseUrl).build(deckId, cardId) }
                 .header(AUTH_HEADER_NAME, TOKEN_PREFIX + token)
                 .exchange()
-    }
-
-    companion object {
-        @Container
-        @Suppress("PropertyName")
-        private val mongoDBContainer: MongoDBContainer = TestContainersFactory.newMongoContainer()
-
-        @DynamicPropertySource
-        @JvmStatic
-        fun setMongoUri(registry: DynamicPropertyRegistry) {
-            registry.with(mongoDBContainer)
-        }
     }
 }

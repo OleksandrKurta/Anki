@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package io.github.anki.anki.api.kafka.v1.deck;
+
+option java_multiple_files = true;
+
+message DeckEvent {
+  string deck_id = 1;
+  DeckEventType deck_event_type = 2;
+}
+
+enum DeckEventType {
+  UNSPECIFIED = 0;
+  CREATED = 1;
+  UPDATED = 2;
+  DELETED = 3;
+}
