@@ -2,10 +2,8 @@ package io.github.anki.testing.testcontainers
 
 import org.testcontainers.containers.GenericContainer
 import org.testcontainers.containers.MongoDBContainer
-import org.testcontainers.kafka.ConfluentKafkaContainer
 import org.testcontainers.kafka.KafkaContainer
 import org.testcontainers.utility.DockerImageName
-import java.time.Duration
 
 object TestContainersFactory {
     fun newMongoContainer(): MongoDBContainer = MongoDBContainer("mongo:7")

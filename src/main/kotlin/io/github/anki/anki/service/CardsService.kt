@@ -56,7 +56,8 @@ class CardsService(
     fun deleteCard(deckId: String, userId: String, cardId: String): Mono<Unit> =
         deckService.validateUserHasPermissions(deckId, userId)
             .flatMap { requestDeleteCard(cardId) }
-            .flatMap { validateDeleteCardResponse(it) }
+            .map { parseDeleteCardResponse(it) }
+            .then(Mono.empty())
 
     private fun saveIfNotEquals(mongoCard: MongoCard, card: Card): Mono<Card> {
         val updatedMongoCard = mongoCard.update(card)
@@ -77,10 +78,9 @@ class CardsService(
         )
             .toMono()
 
-    private fun validateDeleteCardResponse(msg: Message): Mono<Unit> {
+    private fun parseDeleteCardResponse(msg: Message) {
         val response = DeleteCardResponse.parseFrom(msg.data)
-        if (response.hasSuccess()) return Mono.empty()
-        return Mono.error(RuntimeException(response.failure.reason))
+        if (response.hasFailure()) throw IllegalStateException(response.failure.reason)
     }
 
     private fun getCardById(cardId: String): Mono<MongoCard> =

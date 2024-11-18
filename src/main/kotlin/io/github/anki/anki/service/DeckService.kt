@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import reactor.kotlin.core.publisher.switchIfEmpty
+import reactor.kotlin.core.publisher.toMono
 
 @Service
 class DeckService(
@@ -29,7 +30,7 @@ class DeckService(
     fun createNewDeck(deck: Deck): Mono<Deck> =
         deckRepository
             .insert(deck.toMongo())
-            .doOnNext { sendEventToKafka(it.id!!.toString(), DeckEventType.CREATED) }
+            .flatMap { sendEventToKafka(it.id!!.toString(), DeckEventType.CREATED).then(it.toMono()) }
             .map { mongoDeck -> mongoDeck.toDeck() }
 
     fun getDecks(userId: String): Flux<Deck> =
@@ -44,7 +45,7 @@ class DeckService(
             .flatMap { validateUserHasPermissions(deck.id!!, deck.userId) }
             .flatMap { getDeckById(deck.id!!) }
             .flatMap { mongoDeck -> saveIfNotEquals(mongoDeck, deck) }
-            .doOnNext { sendEventToKafka(deck.id!!, DeckEventType.UPDATED) }
+            .flatMap { sendEventToKafka(deck.id!!, DeckEventType.UPDATED).then(it.toMono()) }
 
     fun deleteDeck(deckId: String, userId: String): Mono<Unit> =
         validateUserHasPermissions(deckId, userId)
@@ -54,9 +55,7 @@ class DeckService(
                     cardRepository.softDeleteByDeckId(deckId.toObjectId()),
                 )
             }
-            .then(
-                Mono.fromRunnable { sendEventToKafka(deckId, DeckEventType.DELETED) },
-            )
+            .then(Mono.defer { sendEventToKafka(deckId, DeckEventType.DELETED) })
 
     fun validateUserHasPermissions(deckId: String, userId: String): Mono<Boolean> =
         hasPermissions(deckId, userId)
@@ -87,15 +86,15 @@ class DeckService(
         }
     }
 
-    private fun sendEventToKafka(deckId: String, deckEventType: DeckEventType) {
+    private fun sendEventToKafka(deckId: String, deckEventType: DeckEventType): Mono<Unit> {
         val deckEvent: DeckEvent =
             DeckEvent.newBuilder()
                 .setDeckId(deckId)
                 .setDeckEventType(deckEventType)
                 .build()
-        kafkaProducer.send(KafkaTopic.Deck.EVENT, deckEvent)
+        return kafkaProducer.send(KafkaTopic.Deck.EVENT, deckEvent)
             .doOnNext { LOG.info("Sending message to kafka: message={}", deckEvent.toString()) }
-            .subscribe()
+            .then(Mono.empty())
     }
 
     private fun MongoDeck.update(deck: Deck): MongoDeck =

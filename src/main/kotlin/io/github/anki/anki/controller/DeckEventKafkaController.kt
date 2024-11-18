@@ -16,15 +16,14 @@ class DeckEventKafkaController(
 
     @PostConstruct
     override fun subscribeToTopic() {
-        kafkaTopicsManager.getKafkaConsumerTemplate(KAFKA_TOPIC)
+        kafkaTopicsManager.getKafkaConsumerTemplate(KafkaTopic.Deck.EVENT)
             .receive()
-            .doOnNext { LOG.info("Received message from kafka: topic={}, message={}", KAFKA_TOPIC, it) }
+            .doOnNext { LOG.info("Received message from kafka: topic={}, message={}", KafkaTopic.Deck.EVENT, it) }
             .flatMap { deckEventService.saveDeckEvent(it.value()) }
             .subscribe()
     }
 
     companion object {
-        private const val KAFKA_TOPIC: String = KafkaTopic.Deck.EVENT
         private val LOG: Logger = LoggerFactory.getLogger(DeckEventService::class.java)
     }
 }
