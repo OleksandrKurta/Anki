@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package io.github.anki.anki.api.nats.v1.deck.event;
+package io.github.anki.anki.api.kafka.v1.deck;
 
 option java_multiple_files = true;
 

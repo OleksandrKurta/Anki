@@ -1,7 +1,7 @@
 package io.github.anki.anki.configuration
 
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
-import io.github.anki.anki.api.nats.v1.deck.event.KafkaTopic
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
+import io.github.anki.anki.api.nats.kafka.KafkaTopic
 import org.apache.kafka.clients.admin.NewTopic
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
@@ -19,8 +19,7 @@ import reactor.kafka.sender.SenderOptions
 class KafkaConfig {
 
     @Value("\${spring.kafka.bootstrap-servers}")
-    @Suppress("LateinitUsage")
-    private lateinit var kafkaBootstrapServers: String
+    private var kafkaBootstrapServers: String? = null
 
     @Bean
     fun kafkaReceiverOptions(): ReceiverOptions<String, DeckEvent> {

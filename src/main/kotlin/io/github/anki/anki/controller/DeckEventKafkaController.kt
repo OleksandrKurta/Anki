@@ -1,6 +1,6 @@
 package io.github.anki.anki.controller
 
-import io.github.anki.anki.api.nats.v1.deck.event.KafkaTopic
+import io.github.anki.anki.api.nats.kafka.KafkaTopic
 import io.github.anki.anki.configuration.KafkaTopicsManager
 import io.github.anki.anki.service.DeckEventService
 import jakarta.annotation.PostConstruct

@@ -1,7 +1,7 @@
 package io.github.anki.anki.controller
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEventType
+import io.github.anki.anki.api.kafka.v1.deck.DeckEventType
 import io.github.anki.anki.controller.DecksController.Companion.BASE_URL
 import io.github.anki.anki.controller.DecksController.Companion.CONCRETE_DECK
 import io.github.anki.anki.controller.dto.DeckDtoResponse

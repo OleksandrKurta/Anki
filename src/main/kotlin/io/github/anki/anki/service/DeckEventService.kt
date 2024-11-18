@@ -1,6 +1,6 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
 import io.github.anki.anki.repository.mongodb.DeckEventRepository
 import io.github.anki.anki.repository.mongodb.document.MongoDeckEvent
 import io.github.anki.anki.service.model.mapper.toMongoDeckEvent

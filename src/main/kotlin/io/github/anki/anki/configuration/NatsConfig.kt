@@ -11,8 +11,7 @@ import org.springframework.context.annotation.Configuration
 internal class NatsConfig {
 
     @Value("\${nats.server.url}")
-    @Suppress("LateinitUsage")
-    private lateinit var natsServerUrl: String
+    private var natsServerUrl: String? = null
 
     @Bean
     fun natsConnection(): Connection {

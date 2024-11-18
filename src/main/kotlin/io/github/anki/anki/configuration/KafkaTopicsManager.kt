@@ -1,6 +1,6 @@
 package io.github.anki.anki.configuration
 
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
 import org.springframework.kafka.core.reactive.ReactiveKafkaConsumerTemplate
 import org.springframework.stereotype.Component
 import reactor.kafka.receiver.ReceiverOptions

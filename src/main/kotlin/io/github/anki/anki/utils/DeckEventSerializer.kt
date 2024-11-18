@@ -1,6 +1,6 @@
 package io.github.anki.anki.utils
 
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
 import org.apache.kafka.common.serialization.Deserializer
 import org.apache.kafka.common.serialization.Serializer
 

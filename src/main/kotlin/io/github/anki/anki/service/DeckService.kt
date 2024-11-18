@@ -1,8 +1,8 @@
 package io.github.anki.anki.service
 
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEvent
-import io.github.anki.anki.api.nats.v1.deck.event.DeckEventType
-import io.github.anki.anki.api.nats.v1.deck.event.KafkaTopic
+import io.github.anki.anki.api.kafka.v1.deck.DeckEvent
+import io.github.anki.anki.api.kafka.v1.deck.DeckEventType
+import io.github.anki.anki.api.nats.kafka.KafkaTopic
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
