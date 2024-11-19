@@ -4,12 +4,15 @@ import org.bson.types.ObjectId
 import org.springframework.data.annotation.CreatedDate
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.LastModifiedDate
+import org.springframework.data.annotation.Version
+import org.springframework.data.mongodb.config.EnableMongoAuditing
 import org.springframework.data.mongodb.core.index.Indexed
 import org.springframework.data.mongodb.core.mapping.Document
 import org.springframework.data.mongodb.core.mapping.Field
 import java.time.Instant
 
 @Document(collection = MongoCard.COLLECTION_NAME)
+@EnableMongoAuditing
 data class MongoCard(
     @Id
     @Field(MongoDocument.ID)
@@ -29,6 +32,13 @@ data class MongoCard(
     val key: String? = null,
     @Field(VALUE)
     val value: String? = null,
+    @Field(LAST_RATE_ID)
+    val lastRateId: ObjectId? = null,
+    @Field(LAST_LEARN)
+    private var lastLearn: Instant? = null,
+    @Version
+    @Field(VERSION)
+    val version: Long? = null,
 ) : MongoDocument {
 
     companion object {
@@ -37,5 +47,8 @@ data class MongoCard(
         const val DECK_ID = "deckId"
         const val KEY = "key"
         const val VALUE = "value"
+        const val LAST_RATE_ID = "lastRateId"
+        const val LAST_LEARN = "lastLearn"
+        const val VERSION = "version"
     }
 }

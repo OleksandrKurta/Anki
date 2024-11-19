@@ -16,6 +16,7 @@ import kotlin.test.Test
 class DeckMapperTest {
     private lateinit var randomUserID: ObjectId
     private lateinit var randomDeckID: ObjectId
+    private lateinit var randomPresetID: ObjectId
     private lateinit var randomDeckName: String
     private lateinit var randomDeckDescription: String
 
@@ -23,6 +24,7 @@ class DeckMapperTest {
     fun setUp() {
         randomUserID = getRandomID()
         randomDeckID = getRandomID()
+        randomPresetID = getRandomID()
         randomDeckName = getRandomString()
         randomDeckDescription = getRandomString()
     }
@@ -40,6 +42,7 @@ class DeckMapperTest {
                     userId = randomUserID.toString(),
                     name = randomDeckName,
                     description = randomDeckDescription,
+                    presetId = randomPresetID.toString(),
                 )
             val expectedMongoDeck =
                 MongoDeck(
@@ -47,6 +50,7 @@ class DeckMapperTest {
                     userId = randomUserID,
                     name = randomDeckName,
                     description = randomDeckDescription,
+                    presetId = randomPresetID,
                 )
 
             // when
@@ -67,6 +71,7 @@ class DeckMapperTest {
                     userId = randomUserID.toString(),
                     name = randomDeckName,
                     description = randomDeckDescription,
+                    presetId = randomPresetID.toString(),
                 )
             val expectedMongoDeck =
                 MongoDeck(
@@ -74,6 +79,7 @@ class DeckMapperTest {
                     userId = randomUserID,
                     name = randomDeckName,
                     description = randomDeckDescription,
+                    presetId = randomPresetID
                 )
 
             // when

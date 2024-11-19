@@ -1,12 +1,7 @@
 package io.github.anki.anki.controller
 
-import io.github.anki.anki.controller.dto.CardDtoResponse
-import io.github.anki.anki.controller.dto.NewCardRequest
-import io.github.anki.anki.controller.dto.PaginationDto
-import io.github.anki.anki.controller.dto.PatchCardRequest
-import io.github.anki.anki.controller.dto.mapper.toCard
-import io.github.anki.anki.controller.dto.mapper.toDto
-import io.github.anki.anki.controller.dto.mapper.toPagination
+import io.github.anki.anki.controller.dto.*
+import io.github.anki.anki.controller.dto.mapper.*
 import io.github.anki.anki.service.CardsService
 import io.github.anki.anki.service.secure.SecurityService
 import jakarta.validation.Valid
@@ -38,15 +33,15 @@ class CardsController(
         @Valid @RequestBody request: NewCardRequest,
         @PathVariable deckId: String,
         @RequestHeader header: HttpHeaders,
-    ): CardDtoResponse {
+    ): EntityDtoResponse {
         LOG.info("IN: $CardsController ${BASE_URL} create card in deck with id = $deckId")
         val card =
             cardService.createNewCard(
                 userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
-                request.toCard(deckId),
+                request.toCardEntity(deckId),
             )
         LOG.info("OUT: $CardsController ${BASE_URL} created card ${card.id} with id = $deckId")
-        return card.toDto()
+        return card.toEntityDto()
     }
 
     @GetMapping
@@ -64,12 +59,12 @@ class CardsController(
             required = false,
             defaultValue = PaginationDto.DEFAULT_OFFSET.toString(),
         ) offset: Int,
-    ): List<CardDtoResponse> =
+    ): List<EntityDtoResponse> =
         cardService.findCardsByDeckWithPagination(
             deckId = deckId,
             userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
             pagination = PaginationDto(limit, offset).toPagination(),
-        ).map { it.toDto() }
+        ).map { it.toEntityDto() }
 
     @PatchMapping(CONCRETE_CARD)
     @ResponseStatus(HttpStatus.OK)
@@ -78,15 +73,15 @@ class CardsController(
         @PathVariable cardId: String,
         @RequestHeader header: HttpHeaders,
         @RequestBody request: PatchCardRequest,
-    ): CardDtoResponse {
+    ): EntityDtoResponse {
         LOG.info("IN: $CardsController ${BASE_URL} patch card with id $cardId from deck with id = $deckId")
         val card =
-            cardService.updateCard(
+            cardService.updateCardEntity(
                 userId = securityService.jwtUtils.getUserIdFromAuthHeader(header),
-                request.toCard(cardId, deckId),
+                request.toCardEntity(cardId, deckId),
             )
         LOG.info("OUT: $CardsController ${BASE_URL} patched card with id $cardId from deck with id = $deckId")
-        return card.toDto()
+        return card.toEntityDto()
     }
 
     @DeleteMapping(CONCRETE_CARD)

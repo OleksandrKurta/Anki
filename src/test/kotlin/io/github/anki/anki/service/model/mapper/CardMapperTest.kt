@@ -1,7 +1,7 @@
 package io.github.anki.anki.service.model.mapper
 
 import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.service.model.Card
+
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
@@ -13,11 +13,14 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
+import service.model.CardLearningEntity
+import service.model.LearnItem
 import kotlin.test.BeforeTest
 
 class CardMapperTest {
     private lateinit var randomCardID: ObjectId
     private lateinit var randomDeckID: ObjectId
+    private lateinit var randomRateID: ObjectId
     private lateinit var randomCardKey: String
     private lateinit var randomCardValue: String
 
@@ -25,6 +28,7 @@ class CardMapperTest {
     fun setUp() {
         randomCardID = getRandomID()
         randomDeckID = getRandomID()
+        randomRateID = getRandomID()
         randomCardKey = getRandomString()
         randomCardValue = getRandomString()
     }
@@ -37,10 +41,13 @@ class CardMapperTest {
         fun `should map card to mongo when id is null`() {
             // given
             val card =
-                Card(
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    null,
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
             val expectedMongoCard =
                 MongoCard(
@@ -62,11 +69,13 @@ class CardMapperTest {
         fun `should map card to mongo when id is not null`() {
             // given
             val card =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    randomCardID.toString(),
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
             val expectedMongoCard =
                 MongoCard(
@@ -98,14 +107,17 @@ class CardMapperTest {
                     value = randomCardValue,
                 )
             val expectedCard =
-                Card(
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    null,
+                    null,
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // when
-            val actual = mongoCard.toCard()
+            val actual = mongoCard.toCardEntity()
 
             // then
             actual shouldBe expectedCard
@@ -124,15 +136,17 @@ class CardMapperTest {
                     value = randomCardValue,
                 )
             val expectedCard =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    randomCardID.toString(),
+                    null,
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // when
-            val actual = mongoCard.toCard()
+            val actual = mongoCard.toCardEntity()
 
             // then
             actual shouldBe expectedCard

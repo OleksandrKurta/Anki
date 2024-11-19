@@ -25,6 +25,8 @@ data class MongoDeck(
     @Indexed
     @Field(USER_ID)
     var userId: ObjectId,
+    @Field(PRESET_ID)
+    var presetId: ObjectId,
     @Field(NAME)
     val name: String? = null,
     @Field(DESCRIPTION)
@@ -36,5 +38,6 @@ data class MongoDeck(
         const val USER_ID = "userId"
         const val NAME = "name"
         const val DESCRIPTION = "description"
+        const val PRESET_ID = "presetId"
     }
 }

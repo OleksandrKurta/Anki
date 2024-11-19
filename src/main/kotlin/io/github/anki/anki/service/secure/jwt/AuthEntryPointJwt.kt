@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import org.springframework.security.config.annotation.web.builders.WebSecurity
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.stereotype.Component
@@ -20,6 +21,11 @@ class AuthEntryPointJwt : AuthenticationEntryPoint {
     ) {
         LOG.error("Unauthorized error: {}", authException.message)
         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Error: Unauthorized")
+    }
+
+    @Throws(Exception::class)
+    fun configure(web: WebSecurity) {
+        web.ignoring().requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**")
     }
 
     companion object {

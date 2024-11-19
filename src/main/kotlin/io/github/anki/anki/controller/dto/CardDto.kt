@@ -2,6 +2,7 @@ package io.github.anki.anki.controller.dto
 
 import jakarta.validation.constraints.NotBlank
 
+
 data class NewCardRequest(
     @field:NotBlank
     val key: String?,
@@ -10,13 +11,14 @@ data class NewCardRequest(
 )
 
 data class PatchCardRequest(
-    val key: String? = null,
-    val value: String? = null,
+    val key: Any? = null,
+    val value: Any? = null,
 )
 
-data class CardDtoResponse(
+data class EntityDtoResponse(
     val id: String,
     val deckId: String,
-    val key: String,
-    val value: String,
+    val key: Any?,
+    val value: Any?,
+    val lastRateId: String? = null,
 )

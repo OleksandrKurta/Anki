@@ -5,8 +5,7 @@ import io.github.anki.anki.controller.dto.mapper.toPagination
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
-import io.github.anki.anki.service.model.Card
-import io.github.anki.anki.service.model.mapper.toCard
+import io.github.anki.anki.service.model.mapper.toCardEntity
 import io.github.anki.anki.service.model.mapper.toMongo
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
@@ -29,6 +28,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import service.model.CardLearningEntity
+import service.model.LearnItem
 import java.util.concurrent.CompletableFuture
 import kotlin.test.Test
 
@@ -49,7 +50,7 @@ class CardsServiceTest {
     private lateinit var deckId: ObjectId
 
     private lateinit var initialMongoCard: MongoCard
-    private lateinit var initialCard: Card
+    private lateinit var initialCard: CardLearningEntity
 
     @AfterEach
     fun tearDown() {
@@ -67,7 +68,7 @@ class CardsServiceTest {
     fun createTestObjects() {
         deckId = ObjectId()
         initialMongoCard = getRandomMongoCards(1, deckId).first()
-        initialCard = initialMongoCard.toCard()
+        initialCard = initialMongoCard.toCardEntity()
     }
 
     @Nested
@@ -82,8 +83,8 @@ class CardsServiceTest {
                 MongoCard(
                     id = getRandomID(),
                     deckId = initialMongoCard.deckId,
-                    key = initialCard.key,
-                    value = initialCard.value,
+                    key = initialCard.hint.item.toString(),
+                    value = initialCard.answer.item.toString(),
                 )
 
             every {
@@ -94,7 +95,7 @@ class CardsServiceTest {
             val actualCard = cardService.createNewCard(mockUserId, initialCard)
 
             // then
-            actualCard shouldBe expectedMongoCard.toCard()
+            actualCard shouldBe expectedMongoCard.toCardEntity()
 
             verify(exactly = 1) {
                 cardRepository.insert(initialMongoCard)
@@ -133,7 +134,7 @@ class CardsServiceTest {
 
             // then
             actualDecks.size shouldBe cardsAmount
-            actualDecks shouldContainExactlyInAnyOrder initialMongoCards.map { it.toCard() }
+            actualDecks shouldContainExactlyInAnyOrder initialMongoCards.map { it.toCardEntity() }
 
             validateValidateUserHasPermissionsWasCalled()
             verify(exactly = 1) {
@@ -162,18 +163,20 @@ class CardsServiceTest {
         fun `should update card`() {
             // given
             val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = getRandomString("updated"),
-                    value = getRandomString("updated"),
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem( getRandomString("updated")),
+                    LearnItem(getRandomString("updated")),
+                    null
                 )
             val expectedMongoCard =
                 MongoCard(
                     id = initialMongoCard.id,
                     deckId = initialMongoCard.deckId,
-                    key = updatedCard.key,
-                    value = updatedCard.value,
+                    key = updatedCard.hint.item.toString(),
+                    value = updatedCard.answer.item.toString(),
                 )
 
             every {
@@ -181,10 +184,10 @@ class CardsServiceTest {
             } returns CompletableFuture.completedFuture(expectedMongoCard)
 
             // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
+            val actualCard = cardService.updateCardEntity(mockUserId, updatedCard)
 
             // then
-            actualCard shouldBe expectedMongoCard.toCard()
+            actualCard shouldBe expectedMongoCard.toCardEntity()
 
             validateValidateUserHasPermissionsWasCalled()
             baseUpdateValidation()
@@ -198,13 +201,15 @@ class CardsServiceTest {
         fun `should be error if card id is null`() {
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                cardService.updateCard(
+                cardService.updateCardEntity(
                     mockUserId,
-                    Card(
-                        id = null,
-                        deckId = deckId.toString(),
-                        key = null,
-                        value = null,
+                    CardLearningEntity(
+                        null,
+                        null,
+                        deckId.toString(),
+                         null,
+                       null,
+                        null,
                     ),
                 )
             }
@@ -214,15 +219,17 @@ class CardsServiceTest {
         fun `should change nothing if all fields is null`() {
             // given
             val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = deckId.toString(),
-                    key = null,
-                    value = null,
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem( getRandomString("updated")),
+                    LearnItem(getRandomString("updated")),
+                    null
                 )
 
             // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
+            val actualCard = cardService.updateCardEntity(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe initialCard
@@ -238,7 +245,7 @@ class CardsServiceTest {
         @Test
         fun `should change nothing if all fields is actual`() {
             // when
-            val actualCard = cardService.updateCard(mockUserId, initialCard)
+            val actualCard = cardService.updateCardEntity(mockUserId, initialCard)
 
             // then
             actualCard shouldBe initialCard
@@ -255,18 +262,22 @@ class CardsServiceTest {
         fun `should update only cardKey`() {
             // given
             val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = getRandomString("updated"),
-                    value = null,
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem( getRandomString("updated")),
+                    LearnItem(null),
+                    null
                 )
             val expectedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = updatedCard.key,
-                    value = initialCard.value,
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem(updatedCard.hint.item.toString()),
+                    LearnItem(initialCard.answer.item.toString()),
+                    null,
                 )
 
             every {
@@ -274,7 +285,7 @@ class CardsServiceTest {
             } returns CompletableFuture.completedFuture(expectedCard.toMongo())
 
             // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
+            val actualCard = cardService.updateCardEntity(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe expectedCard
@@ -291,18 +302,22 @@ class CardsServiceTest {
         fun `should update only cardValue`() {
             // given
             val updatedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = null,
-                    value = getRandomString("updated"),
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem(null),
+                    LearnItem(getRandomString("updated")),
+                    null,
                 )
             val expectedCard =
-                Card(
-                    id = initialCard.id,
-                    deckId = initialCard.deckId,
-                    key = initialCard.key,
-                    value = updatedCard.value,
+                CardLearningEntity(
+                    initialCard.id,
+                    null,
+                    initialCard.deckId,
+                    LearnItem(initialCard.hint.item.toString()),
+                    LearnItem(updatedCard.answer.item.toString()),
+                    null,
                 )
 
             every {
@@ -310,7 +325,7 @@ class CardsServiceTest {
             } returns CompletableFuture.completedFuture(expectedCard.toMongo())
 
             // when
-            val actualCard = cardService.updateCard(mockUserId, updatedCard)
+            val actualCard = cardService.updateCardEntity(mockUserId, updatedCard)
 
             // then
             actualCard shouldBe expectedCard

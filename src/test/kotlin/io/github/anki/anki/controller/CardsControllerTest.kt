@@ -4,12 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.github.anki.anki.controller.CardsController.Companion.BASE_URL
 import io.github.anki.anki.controller.CardsController.Companion.CONCRETE_CARD
-import io.github.anki.anki.controller.dto.CardDtoResponse
-import io.github.anki.anki.controller.dto.NewCardRequest
-import io.github.anki.anki.controller.dto.PaginationDto
-import io.github.anki.anki.controller.dto.PatchCardRequest
+import io.github.anki.anki.controller.dto.*
 import io.github.anki.anki.controller.dto.auth.SignUpRequestDto
 import io.github.anki.anki.controller.dto.mapper.toDto
+import io.github.anki.anki.controller.dto.mapper.toEntityDto
 import io.github.anki.anki.controller.dto.mapper.toUser
 import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.DeckRepository
@@ -18,7 +16,7 @@ import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.exceptions.DeckDoesNotExistException
-import io.github.anki.anki.service.model.mapper.toCard
+import io.github.anki.anki.service.model.mapper.toCardEntity
 import io.github.anki.anki.service.model.mapper.toMongoUser
 import io.github.anki.anki.service.secure.SecurityService
 import io.github.anki.anki.service.secure.jwt.AuthTokenFilter.Companion.AUTH_HEADER_NAME
@@ -58,6 +56,7 @@ import org.springframework.test.web.servlet.patch
 import org.springframework.test.web.servlet.post
 import org.testcontainers.containers.MongoDBContainer
 import org.testcontainers.junit.jupiter.Container
+import service.model.CardLearningEntity
 import kotlin.test.BeforeTest
 
 @MVCTest
@@ -106,7 +105,7 @@ class CardsControllerTest @Autowired constructor(
                 performPost.andReturn()
                     .response
                     .contentAsString
-                    .let { objectMapper.readValue(it, CardDtoResponse::class.java) }
+                    .let { objectMapper.readValue(it, EntityDtoResponse::class.java) }
 
             // then
             performPost
@@ -123,7 +122,7 @@ class CardsControllerTest @Autowired constructor(
 
             cardFromMongo shouldNotBe null
 
-            createdCard shouldBe cardFromMongo!!.toCard().toDto()
+            createdCard shouldBe cardFromMongo!!.toCardEntity().toEntityDto()
         }
 
         @Test
@@ -191,12 +190,12 @@ class CardsControllerTest @Autowired constructor(
                 status { isOk() }
             }
 
-            val cardsFromResponse: List<CardDtoResponse> =
+            val cardsFromResponse: List<EntityDtoResponse> =
                 result
                     .andReturn()
                     .let { objectMapper.readValue(it.response.contentAsString) }
 
-            cardsFromResponse shouldBe mongoCards.map { it.toCard().toDto() }
+            cardsFromResponse shouldBe mongoCards.map { it.toCardEntity().toEntityDto() }
         }
 
         @ParameterizedTest
@@ -205,7 +204,7 @@ class CardsControllerTest @Autowired constructor(
             // given
             val mongoCards = cardRepository.insertRandom(cardsAmount, insertedDeck.id!!)
 
-            val cardsFromResponses = mutableListOf<CardDtoResponse>()
+            val cardsFromResponses = mutableListOf<EntityDtoResponse>()
 
             var requestCounter = 0
 
@@ -216,7 +215,7 @@ class CardsControllerTest @Autowired constructor(
                 result.andExpect {
                     status { isOk() }
                 }
-                val cardsFromThisResponse: List<CardDtoResponse> =
+                val cardsFromThisResponse: List<EntityDtoResponse> =
                     result.andReturn().let {
                         objectMapper.readValue(it.response.contentAsString)
                     }
@@ -226,7 +225,7 @@ class CardsControllerTest @Autowired constructor(
             } while (cardsFromThisResponse.size == paginationDto.limit)
 
             // then
-            cardsFromResponses shouldBe mongoCards.map { it.toCard().toDto() }
+            cardsFromResponses shouldBe mongoCards.map { it.toCardEntity().toEntityDto() }
 
             requestCounter shouldBe cardsAmount / PaginationDto.DEFAULT_LIMIT + 1
         }
@@ -350,7 +349,7 @@ class CardsControllerTest @Autowired constructor(
             deckId: String,
             cardId: String,
             patchCardRequest: PatchCardRequest,
-        ): CardDtoResponse =
+        ): EntityDtoResponse =
             sendPatchCard(deckId, cardId, patchCardRequest)
                 .andExpect {
                     status { isOk() }

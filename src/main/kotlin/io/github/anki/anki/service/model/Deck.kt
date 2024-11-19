@@ -5,4 +5,5 @@ data class Deck(
     val userId: String,
     val name: String?,
     val description: String?,
+    var presetId: String? = null,
 )

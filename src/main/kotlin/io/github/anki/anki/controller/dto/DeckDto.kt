@@ -11,6 +11,7 @@ data class NewDeckRequest(
 data class PatchDeckRequest(
     val name: String? = null,
     val description: String? = null,
+    val presetId: String? = null,
 )
 
 data class DeckDtoResponse(
@@ -18,4 +19,5 @@ data class DeckDtoResponse(
     val userId: String,
     val name: String,
     val description: String?,
+    val presetId: String,
 )

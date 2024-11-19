@@ -4,13 +4,15 @@ import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.service.model.Deck
 import org.bson.types.ObjectId
 
-fun Deck.toMongo(): MongoDeck =
-    MongoDeck(
-        id = this.id?.let { ObjectId(it) },
+fun Deck.toMongo(): MongoDeck {
+    return MongoDeck(
         userId = ObjectId(this.userId),
         name = this.name,
         description = this.description,
+        presetId = ObjectId(this.presetId),
     )
+}
+
 
 fun MongoDeck.toDeck() =
     Deck(
@@ -18,4 +20,5 @@ fun MongoDeck.toDeck() =
         userId = this.userId.toString(),
         name = this.name,
         description = this.description,
+        presetId = this.presetId.toString(),
     )

@@ -16,8 +16,11 @@ import java.util.concurrent.CompletableFuture
 class DeckService(
     private val deckRepository: DeckRepository,
     private val cardRepository: CardRepository,
+    private val presetService: PresetService,
 ) {
+
     fun createNewDeck(deck: Deck): Deck {
+        deck.presetId = presetService.getDefaultPresetOrCreateNew(deck.userId).id
         return deckRepository
             .insert(deck.toMongo())
             .get()

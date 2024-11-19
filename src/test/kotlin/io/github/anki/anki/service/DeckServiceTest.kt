@@ -68,6 +68,7 @@ class DeckServiceTest {
                     userId = userId,
                     name = deck.name,
                     description = deck.description,
+                    presetId = getRandomID(),
                 )
             val createdMongoDeck = mongoDeck.copy(id = getRandomID())
             val expectedDeck = deck.copy(id = createdMongoDeck.id!!.toHexString())
@@ -122,6 +123,7 @@ class DeckServiceTest {
                         userId = userId,
                         name = getRandomString(DATA_PREFIX),
                         description = getRandomString(DATA_PREFIX),
+                        presetId = getRandomID(),
                     ),
                 )
             }

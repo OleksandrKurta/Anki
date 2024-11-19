@@ -1,6 +1,6 @@
 package io.github.anki.anki.repository.mongodb
 
-import io.github.anki.anki.configuration.ThreadPoolsConfiguration
+import io.github.anki.anki.configuration.AppConfiguration
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture
 @Repository
 class DeckRepository(
     override val mongoTemplate: MongoTemplate,
-    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
+    @Qualifier(AppConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
 ) : MongoRepository<MongoDeck>(threadPool) {
 
     override val entityClass = MongoDeck::class.java
@@ -57,34 +57,5 @@ class DeckRepository(
                 ),
                 entityClass,
             ).also { log.info("Found by id = {} and userId = {} and status = {} object = {}", id, userId, status, it) }
-        }
-
-    fun existsByIdAndUserIdWithStatus(
-        id: ObjectId,
-        userId: ObjectId,
-        status: DocumentStatus,
-    ): CompletableFuture<Boolean> =
-        threadPool.submitCompletable<Boolean> {
-            log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status)
-            mongoTemplate.exists(
-                Query(
-                    Criteria
-                        .where(MongoDocument.ID)
-                        .`is`(id)
-                        .and(MongoDeck.USER_ID)
-                        .`is`(userId)
-                        .and(MongoDocument.DOCUMENT_STATUS)
-                        .`is`(status),
-                ),
-                entityClass,
-            ).also {
-                log.info(
-                    "Does exist by id = {} and userId = {} and status = {} object = {}",
-                    id,
-                    userId,
-                    status,
-                    it,
-                )
-            }
         }
 }

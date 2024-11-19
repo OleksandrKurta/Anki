@@ -1,12 +1,12 @@
 package io.github.anki.anki.controller.dto.mapper
 
-import io.github.anki.anki.controller.dto.CardDtoResponse
+import io.github.anki.anki.controller.dto.EntityDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
 import io.github.anki.anki.controller.dto.PatchCardRequest
-import io.github.anki.anki.service.model.Card
 import io.github.anki.testing.getRandomID
 import io.github.anki.testing.getRandomString
 import io.kotest.assertions.throwables.shouldThrowExactly
+import io.kotest.matchers.equality.shouldBeEqualToComparingFields
 import io.kotest.matchers.equality.shouldBeEqualToIgnoringFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
@@ -22,6 +22,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
+import service.model.CardLearningEntity
+import service.model.LearnItem
+import java.time.Instant
 import java.util.stream.Stream
 import kotlin.test.BeforeTest
 
@@ -29,8 +32,10 @@ import kotlin.test.BeforeTest
 class CardDtoMapperTest {
     private lateinit var randomCardID: ObjectId
     private lateinit var randomDeckID: ObjectId
+    private lateinit var randomRateID: ObjectId
     private lateinit var randomCardKey: String
     private lateinit var randomCardValue: String
+    private lateinit var lastRateID: ObjectId
 
     private val validator: Validator = Validation.buildDefaultValidatorFactory().validator
 
@@ -38,6 +43,8 @@ class CardDtoMapperTest {
     fun setUp() {
         randomCardID = getRandomID()
         randomDeckID = getRandomID()
+        randomRateID = getRandomID()
+        lastRateID = getRandomID()
         randomCardKey = getRandomString()
         randomCardValue = getRandomString()
     }
@@ -55,24 +62,28 @@ class CardDtoMapperTest {
                     value = randomCardValue,
                 )
             val expectedCard =
-                Card(
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    null,
+                    null,
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // WHEN
-            val actual: Card = newCardRequest.toCard(randomDeckID.toString())
+            val actual: CardLearningEntity = newCardRequest.toCardEntity(randomDeckID.toString())
 
             // THEN
-            actual.shouldBeEqualToIgnoringFields(expectedCard, Card::id)
+            actual.hint.item shouldBe expectedCard.hint.item
+            actual.answer.item shouldBe expectedCard.answer.item
 
             actual.id shouldBe null
         }
 
         @ParameterizedTest
         @MethodSource("invalidNewCardRequestProvider")
-        fun `should be error if cardKey is not valid`(cardKeyValue: String?) {
+        fun `should be error if cardKey is not valid`(cardKeyValue: Any) {
             // given
             val newCardRequest =
                 NewCardRequest(
@@ -93,7 +104,7 @@ class CardDtoMapperTest {
 
         @ParameterizedTest
         @MethodSource("invalidNewCardRequestProvider")
-        fun `should be error if cardValue is not valid`(cardValueValue: String?) {
+        fun `should be error if cardValue is not valid`(cardValueValue: Any?) {
             // given
             val newCardRequest =
                 NewCardRequest(
@@ -134,22 +145,25 @@ class CardDtoMapperTest {
                     value = randomCardValue,
                 )
             val expectedCard =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    randomCardID.toString(),
+                    null,
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // WHEN
-            val actualCard: Card =
-                patchCardRequest.toCard(
+            val actualCard: CardLearningEntity =
+                patchCardRequest.toCardEntity(
                     cardId = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
+
                 )
 
             // THEN
-            actualCard shouldBe expectedCard
+            actualCard shouldBeEqualToComparingFields expectedCard
         }
     }
 
@@ -161,22 +175,25 @@ class CardDtoMapperTest {
         fun `should map Card to CardDtoResponse`() {
             // given
             val card =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+               CardLearningEntity(
+                    randomCardID.toString(),
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
             val expectedCard =
-                CardDtoResponse(
+                EntityDtoResponse(
                     id = randomCardID.toString(),
                     deckId = randomDeckID.toString(),
                     key = randomCardKey,
                     value = randomCardValue,
+                    lastRateId = randomRateID.toString()
                 )
 
             // when
-            val actual = card.toDto()
+            val actual = card.toEntityDto()
 
             // then
             actual shouldBe expectedCard
@@ -188,16 +205,18 @@ class CardDtoMapperTest {
         fun `should be error if id is null`() {
             // given
             val card =
-                Card(
-                    id = null,
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    null,
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                card.toDto()
+                card.toEntityDto()
             }
         }
 
@@ -205,16 +224,18 @@ class CardDtoMapperTest {
         fun `should be error if key is null`() {
             // given
             val card =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = null,
-                    value = randomCardValue,
+                CardLearningEntity(
+                    randomCardID.toString(),
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    null,
+                    LearnItem(randomCardValue),
+                    null,
                 )
 
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                card.toDto()
+                card.toEntityDto()
             }
         }
 
@@ -222,16 +243,18 @@ class CardDtoMapperTest {
         fun `should be error if value is null`() {
             // given
             val card =
-                Card(
-                    id = randomCardID.toString(),
-                    deckId = randomDeckID.toString(),
-                    key = randomCardKey,
-                    value = null,
+                CardLearningEntity(
+                    randomCardID.toString(),
+                    randomRateID.toString(),
+                    randomDeckID.toString(),
+                    LearnItem(randomCardKey),
+                    null,
+                    null,
                 )
 
             // when/then
             shouldThrowExactly<IllegalArgumentException> {
-                card.toDto()
+                card.toEntityDto()
             }
         }
     }

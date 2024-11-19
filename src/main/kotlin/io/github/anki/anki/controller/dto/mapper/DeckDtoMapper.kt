@@ -26,4 +26,5 @@ fun Deck.toDto(): DeckDtoResponse =
         userId = this.userId,
         name = this.name ?: throw IllegalArgumentException("Deck name can not be null"),
         description = this.description,
+        presetId = this.presetId ?: throw IllegalArgumentException("Preset id can not be null"),
     )

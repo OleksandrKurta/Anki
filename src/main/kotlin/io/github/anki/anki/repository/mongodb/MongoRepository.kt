@@ -1,6 +1,7 @@
 package io.github.anki.anki.repository.mongodb
 
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
+import io.github.anki.anki.repository.mongodb.document.MongoDeck
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import org.bson.types.ObjectId
 import org.slf4j.Logger
@@ -88,5 +89,34 @@ abstract class MongoRepository<T : MongoDocument>(
                 ),
                 entityClass,
             ).also { log.info("Does exist by id = {} and status = {} object = {}", id, status, it) }
+        }
+
+    fun existsByIdAndUserIdWithStatus(
+        id: ObjectId,
+        userId: ObjectId,
+        status: DocumentStatus = DocumentStatus.ACTIVE,
+    ): CompletableFuture<Boolean> =
+        threadPool.submitCompletable<Boolean> {
+            log.info("Checking existing by id = {} and userId = {} and status = {}", id, userId, status)
+            mongoTemplate.exists(
+                Query(
+                    Criteria
+                        .where(MongoDocument.ID)
+                        .`is`(id)
+                        .and(MongoDeck.USER_ID)
+                        .`is`(userId)
+                        .and(MongoDocument.DOCUMENT_STATUS)
+                        .`is`(status),
+                ),
+                entityClass,
+            ).also {
+                log.info(
+                    "Does exist by id = {} and userId = {} and status = {} object = {}",
+                    id,
+                    userId,
+                    status,
+                    it,
+                )
+            }
         }
 }

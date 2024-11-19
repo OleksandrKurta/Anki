@@ -1,13 +1,15 @@
 package io.github.anki.anki.configuration
 
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.AsyncTaskExecutor
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor
 
+
 @Configuration
-class ThreadPoolsConfiguration {
+class AppConfiguration {
 
     @Bean
     @Qualifier(MONGO_THREAD_POOL_QUALIFIER)
@@ -19,6 +21,11 @@ class ThreadPoolsConfiguration {
             setThreadNamePrefix(MONGO_THREAD_NAME_PREFIX)
             initialize()
         }
+    }
+
+    @Bean
+    fun learnScope(): BeanFactoryPostProcessor {
+        return LearnScopeBeanFactoryPostProcessor()
     }
 
     companion object {

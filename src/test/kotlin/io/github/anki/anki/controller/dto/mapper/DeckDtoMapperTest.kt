@@ -25,6 +25,7 @@ import kotlin.test.Test
 class DeckDtoMapperTest {
     private lateinit var randomUserID: ObjectId
     private lateinit var randomDeckID: ObjectId
+    private lateinit var randomPresetId: ObjectId
     private lateinit var randomDeckName: String
     private lateinit var randomDeckDescription: String
 
@@ -36,6 +37,7 @@ class DeckDtoMapperTest {
     fun setUp() {
         randomUserID = getRandomID()
         randomDeckID = getRandomID()
+        randomPresetId = getRandomID()
         randomDeckName = getRandomString()
         randomDeckDescription = getRandomString()
     }
@@ -151,6 +153,7 @@ class DeckDtoMapperTest {
                     userId = randomUserID.toString(),
                     name = randomDeckName,
                     description = randomDeckDescription,
+                    presetId = randomPresetId.toString(),
                 )
 
             // when

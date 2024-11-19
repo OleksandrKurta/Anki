@@ -1,6 +1,6 @@
 package io.github.anki.anki.repository.mongodb
 
-import io.github.anki.anki.configuration.ThreadPoolsConfiguration
+import io.github.anki.anki.configuration.AppConfiguration
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoDocument
 import io.github.anki.anki.repository.mongodb.document.MongoUser
@@ -17,7 +17,7 @@ import java.util.concurrent.CompletableFuture
 @Repository
 class UserRepository(
     override val mongoTemplate: MongoTemplate,
-    @Qualifier(ThreadPoolsConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
+    @Qualifier(AppConfiguration.MONGO_THREAD_POOL_QUALIFIER) override val threadPool: AsyncTaskExecutor,
 ) : MongoRepository<MongoUser>(threadPool) {
     override val entityClass = MongoUser::class.java
     override val log: Logger = LoggerFactory.getLogger(UserRepository::class.java)

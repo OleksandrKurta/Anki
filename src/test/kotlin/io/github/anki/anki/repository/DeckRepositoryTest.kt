@@ -30,8 +30,10 @@ class DeckRepositoryTest @Autowired constructor(
         newDeck =
             MongoDeck(
                 userId = getRandomID(),
+                presetId = getRandomID(),
                 name = getRandomString(),
                 description = getRandomString(),
+
             )
     }
 

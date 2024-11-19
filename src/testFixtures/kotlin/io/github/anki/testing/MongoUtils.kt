@@ -17,6 +17,7 @@ fun DeckRepository.insertRandom(numberOfDecks: Int, userId: ObjectId): List<Mong
                 userId = userId,
                 name = getRandomString(prefix),
                 description = getRandomString(prefix),
+                presetId = getRandomID(),
             ),
         )
     }

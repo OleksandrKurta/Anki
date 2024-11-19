@@ -1,29 +1,35 @@
 package io.github.anki.anki.controller.dto.mapper
 
-import io.github.anki.anki.controller.dto.CardDtoResponse
+import io.github.anki.anki.controller.dto.EntityDtoResponse
 import io.github.anki.anki.controller.dto.NewCardRequest
 import io.github.anki.anki.controller.dto.PatchCardRequest
-import io.github.anki.anki.service.model.Card
+import service.model.CardLearningEntity
 
-fun NewCardRequest.toCard(deckId: String): Card =
-    Card(
-        deckId = deckId,
-        key = this.key,
-        value = this.value,
+
+fun NewCardRequest.toCardEntity(deckId: String): CardLearningEntity =
+    CardLearningEntity.buildFromDto(
+        deckId,
+        this.key,
+        this.value,
     )
 
-fun PatchCardRequest.toCard(cardId: String, deckId: String): Card =
-    Card(
-        id = cardId,
-        deckId = deckId,
-        key = this.key,
-        value = this.value,
+
+fun PatchCardRequest.toCardEntity(cardId: String, deckId: String): CardLearningEntity =
+    CardLearningEntity.buildFromPatchDto(
+        cardId,
+        deckId,
+        this.key,
+        this.value,
     )
 
-fun Card.toDto(): CardDtoResponse =
-    CardDtoResponse(
+fun CardLearningEntity.toEntityDto(): EntityDtoResponse {
+    var hint = this.hint ?: throw IllegalArgumentException("Card hint can not be null")
+    var answer = this.answer ?: throw IllegalArgumentException("Card answer can not be null")
+    return EntityDtoResponse(
         id = this.id ?: throw IllegalArgumentException("Card id can not be null"),
         deckId = this.deckId,
-        key = this.key ?: throw IllegalArgumentException("Card key can not be null"),
-        value = this.value ?: throw IllegalArgumentException("Card value can not be null"),
+        key = hint.item.toString(),
+        value = answer.item.toString(),
+        lastRateId = this.rateId,
     )
+}

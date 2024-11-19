@@ -4,27 +4,28 @@ import io.github.anki.anki.repository.mongodb.CardRepository
 import io.github.anki.anki.repository.mongodb.document.DocumentStatus
 import io.github.anki.anki.repository.mongodb.document.MongoCard
 import io.github.anki.anki.service.exceptions.CardDoesNotExistException
-import io.github.anki.anki.service.model.Card
 import io.github.anki.anki.service.model.Pagination
-import io.github.anki.anki.service.model.mapper.toCard
+import io.github.anki.anki.service.model.mapper.toCardEntity
 import io.github.anki.anki.service.model.mapper.toMongo
 import org.bson.types.ObjectId
 import org.springframework.stereotype.Service
+import service.model.CardLearningEntity
+import java.time.Instant
 
 @Service
 class CardsService(
     private val cardRepository: CardRepository,
     private val deckService: DeckService,
 ) {
-    fun createNewCard(userId: String, card: Card): Card {
+    fun createNewCard(userId: String, card: CardLearningEntity): CardLearningEntity {
         deckService.validateUserHasPermissions(card.deckId, userId)
         return cardRepository
             .insert(card.toMongo())
             .get()
-            .toCard()
+            .toCardEntity()
     }
 
-    fun findCardsByDeckWithPagination(deckId: String, userId: String, pagination: Pagination): List<Card> {
+    fun findCardsByDeckWithPagination(deckId: String, userId: String, pagination: Pagination): List<CardLearningEntity> {
         deckService.validateUserHasPermissions(deckId, userId)
         return cardRepository
             .findByDeckIdWithStatus(
@@ -33,17 +34,17 @@ class CardsService(
                 offset = pagination.offset,
             )
             .get()
-            .map { it.toCard() }
+            .map { it.toCardEntity() }
     }
 
-    fun updateCard(userId: String, card: Card): Card {
+    fun updateCardEntity(userId: String, card: CardLearningEntity): CardLearningEntity {
         deckService.validateUserHasPermissions(card.deckId, userId)
         val mongoCard: MongoCard = getCardById(card.id ?: throw IllegalArgumentException("Card Id can not be null"))
         val updatedMongoCard: MongoCard = mongoCard.update(card)
         if (mongoCard == updatedMongoCard) {
-            return mongoCard.toCard()
+            return mongoCard.toCardEntity()
         }
-        return cardRepository.save(updatedMongoCard).get().toCard()
+        return cardRepository.save(updatedMongoCard).get().toCardEntity()
     }
 
     fun deleteCard(deckId: String, userId: String, cardId: String) {
@@ -56,9 +57,11 @@ class CardsService(
             ObjectId(cardId), DocumentStatus.ACTIVE,
         ).get() ?: throw CardDoesNotExistException.fromCardId(cardId)
 
-    private fun MongoCard.update(card: Card): MongoCard =
+    private fun MongoCard.update(card: CardLearningEntity): MongoCard =
         this.copy(
-            key = card.key ?: this.key,
-            value = card.value ?: this.value,
+            key = (card.hint ?: this.key).toString(),
+            value = (card.answer ?: this.value).toString(),
+            lastRateId = ObjectId(card.rateId ?: this.value),
+            lastLearn = card.lastLearn ?: Instant.now(),
         )
 }
